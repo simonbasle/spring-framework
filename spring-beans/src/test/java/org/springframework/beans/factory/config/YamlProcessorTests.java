@@ -176,6 +176,40 @@ class YamlProcessorTests {
 		});
 	}
 
+	// gh-27020
+	@Test
+	void mapWithBracketInKey() {
+		setYaml("""
+			webservices:
+			  "[domain.test]":
+			   - username: me
+			     password: myPassword
+			   - username: alsoMe
+			     password: myOtherPassword
+			""");
+		this.processor.setIncludeSimpleLists(true);
+
+		this.processor.process((properties, map) -> {
+			assertThat(properties)
+					//the webservices.[[domain.test]] key is not added because it is a list of maps
+					.doesNotContainKeys("webservices", "webservices.[[domain.test]]")
+					.containsOnlyKeys(
+							"webservices.[[domain.test]][0].username",
+							"webservices.[[domain.test]][0].password",
+							"webservices.[[domain.test]][1].username",
+							"webservices.[[domain.test]][1].password");
+
+			assertThat(properties.getProperty("webservices.[[domain.test]][0].username"))
+					.as("first username").isEqualTo("me");
+			assertThat(properties.getProperty("webservices.[[domain.test]][0].password"))
+					.as("first password").isEqualTo("myPassword");
+			assertThat(properties.getProperty("webservices.[[domain.test]][1].username"))
+					.as("second username").isEqualTo("alsoMe");
+			assertThat(properties.getProperty("webservices.[[domain.test]][1].password"))
+					.as("second password").isEqualTo("myOtherPassword");
+		});
+	}
+
 	@Test
 	void stringResource() {
 		setYaml("foo # a document that is a literal");

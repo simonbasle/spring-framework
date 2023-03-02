@@ -296,6 +296,38 @@ public abstract class YamlProcessor {
 		}
 	}
 
+	/**
+	 * Customize how the {@code Object} keys in the raw Map from the YAML parser
+	 * are turned into {@code String} keys in a {@code Map<String, Object>},
+	 * as a preparation step to the flattening and conversion to a
+	 * {@code Properties} instance.
+	 * <p>The default implementation performs the following sanitization:
+	 * <ul>
+	 *     <li>{@code String} keys escaped with brackets in the YAML have brackets
+	 *     doubled. These will be used as full keys, dot-separated, in the Properties.</li>
+	 *     <li>non-string keys (eg. integer keys) are escaped with single brackets.
+	 *     These will be used as indexes (no dot separator) in the Properties.</li>
+	 * </ul>
+	 *
+	 * @param rawKey the raw key as parsed by the YAML parser
+	 * @return the sanitized key in {@code String} form
+	 */
+	protected String sanitizeKey(Object rawKey) {
+		if (rawKey instanceof CharSequence csKey) {
+			String key = csKey.toString();
+			//detecting keys escaped in brackets, turning to double brackets in properties
+			if (csKey.length() > 0 && csKey.charAt(0) == '['
+					&& csKey.charAt(csKey.length()-1) == ']') {
+				key = key.replace("[", "[[").replace("]", "]]");
+			}
+			return key;
+		}
+		else {
+			// It has to be a map key in this case
+			return "[" + rawKey + "]";
+		}
+	}
+
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private Map<String, Object> asMap(Object object) {
 		// YAML can have numbers as keys
@@ -310,13 +342,8 @@ public abstract class YamlProcessor {
 			if (value instanceof Map) {
 				value = asMap(value);
 			}
-			if (key instanceof CharSequence) {
-				result.put(key.toString(), value);
-			}
-			else {
-				// It has to be a map key in this case
-				result.put("[" + key.toString() + "]", value);
-			}
+			String sanitizedKey = sanitizeKey(key);
+			result.put(sanitizedKey, value);
 		});
 		return result;
 	}
@@ -379,7 +406,7 @@ public abstract class YamlProcessor {
 	private void buildFlattenedMap(Map<String, Object> result, Map<String, Object> source, @Nullable String path) {
 		source.forEach((key, value) -> {
 			if (StringUtils.hasText(path)) {
-				if (key.startsWith("[")) {
+				if (key.startsWith("[") && !key.startsWith("[[")) {
 					key = path + key;
 				}
 				else {
