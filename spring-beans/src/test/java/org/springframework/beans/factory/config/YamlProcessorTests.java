@@ -49,6 +49,11 @@ class YamlProcessorTests {
 
 
 	@Test
+	void addFullListsDefaultsToFalse() {
+		assertThat(this.processor.isIncludeSimpleLists()).isFalse();
+	}
+
+	@Test
 	void arrayConvertedToIndexedBeanReference() {
 		setYaml("foo: bar\nbar: [1,2,3]");
 		this.processor.process((properties, map) -> {
@@ -61,6 +66,113 @@ class YamlProcessorTests {
 			assertThat(properties.getProperty("bar[1]")).isEqualTo("2");
 			assertThat(properties.get("bar[2]")).isEqualTo(3);
 			assertThat(properties.getProperty("bar[2]")).isEqualTo("3");
+			assertThat(properties).doesNotContainKey("bar");
+		});
+	}
+
+	//gh-16381
+	@Test
+	void arrayConvertedToIndexedKeysAndFullList() {
+		setYaml("""
+			animals:
+			  mammals:
+			   - cat
+			   - dog
+			   - horse
+			  unicorns: []
+			""");
+		this.processor.setIncludeSimpleLists(true);
+
+		this.processor.process((properties, map) -> {
+			assertThat(properties)
+					.doesNotContainKey("animals")
+					.containsOnlyKeys("animals.mammals",
+							"animals.mammals[0]",
+							"animals.mammals[1]",
+							"animals.mammals[2]",
+							"animals.unicorns");
+			assertThat(properties.getProperty("animals.mammals[0]")).isEqualTo("cat");
+			assertThat(properties.getProperty("animals.mammals[1]")).isEqualTo("dog");
+			assertThat(properties.getProperty("animals.mammals[2]")).isEqualTo("horse");
+
+			@SuppressWarnings("unchecked") List<Object> allMammals = (List<Object>) properties.get("animals.mammals");
+			assertThat(allMammals).isNotNull().containsExactly("cat", "dog", "horse");
+			assertThat(properties.getProperty("animals.mammals")).as("full list String form")
+					.isEqualTo("[cat, dog, horse]");
+
+			@SuppressWarnings("unchecked") List<Object> unicorns = (List<Object>) properties.get("animals.unicorns");
+			assertThat(unicorns).isNotNull().isEmpty();
+			assertThat(properties.getProperty("animals.unicorns")).as("empty List in String form")
+					.isEqualTo("[]");
+		});
+	}
+
+	@Test
+	void arrayWithNestedMapsNotIncludingFullLists() {
+		//here we test that fullList isn't effected if the list contains a Map
+		setYaml("""
+			all:
+			  animals:
+			   - name: cat
+			     type: mammal
+			   - name: dragon
+			     type: imaginary
+			""");
+		this.processor.setIncludeSimpleLists(true);
+
+		this.processor.process((properties, map) -> {
+			assertThat(properties)
+					.doesNotContainKeys("all", "all.animals")
+					.hasSize(4)
+					.containsEntry("all.animals[0].name", "cat")
+					.containsEntry("all.animals[0].type", "mammal")
+					.containsEntry("all.animals[1].name", "dragon")
+					.containsEntry("all.animals[1].type", "imaginary");
+		});
+	}
+
+	@Test
+	void arrayWithNestedListsNotIncludingFullLists() {
+		//here we test that fullList isn't effected if the list contains a Collection
+		setYaml("""
+			foo:
+			  bar:
+			    - 1
+			    - [2,3,4]
+			    - [cat,dog]
+			""");
+		this.processor.setIncludeSimpleLists(true);
+
+		this.processor.process((properties, map) -> {
+			assertThat(properties).hasSize(8);
+			assertThat(properties)
+					.doesNotContainKeys("foo", "foo.bar")
+					.containsOnlyKeys(
+							"foo.bar[0]",
+							"foo.bar[1][0]",
+							"foo.bar[1][1]",
+							"foo.bar[1][2]",
+							"foo.bar[2][0]",
+							"foo.bar[2][1]",
+							//full lists only for the last level of nesting
+							"foo.bar[1]",
+							"foo.bar[2]");
+			assertThat(properties.get("foo.bar[0]")).isEqualTo(1);
+			assertThat(properties.getProperty("foo.bar[0]")).isEqualTo("1");
+			assertThat(properties.get("foo.bar[1][0]")).isEqualTo(2);
+			assertThat(properties.getProperty("foo.bar[1][0]")).isEqualTo("2");
+			assertThat(properties.get("foo.bar[1][2]")).isEqualTo(4);
+			assertThat(properties.getProperty("foo.bar[1][2]")).isEqualTo("4");
+			assertThat(properties.get("foo.bar[2][0]")).isEqualTo("cat");
+			assertThat(properties.getProperty("foo.bar[2][0]")).isEqualTo("cat");
+
+			@SuppressWarnings("unchecked") List<Object> numbers = (List<Object>) properties.get("foo.bar[1]");
+			assertThat(numbers).isNotNull().containsExactly(2, 3, 4);
+			assertThat(properties.getProperty("foo.bar[1]")).isEqualTo("[2, 3, 4]");
+
+			@SuppressWarnings("unchecked") List<Object> animals = (List<Object>) properties.get("foo.bar[2]");
+			assertThat(animals).isNotNull().containsExactly("cat", "dog");
+			assertThat(properties.getProperty("foo.bar[2]")).isEqualTo("[cat, dog]");
 		});
 	}
 
