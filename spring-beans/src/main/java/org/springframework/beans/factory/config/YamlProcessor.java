@@ -18,7 +18,6 @@ package org.springframework.beans.factory.config;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -69,8 +68,6 @@ public abstract class YamlProcessor {
 	private boolean matchDefault = true;
 
 	private Set<String> supportedTypes = Collections.emptySet();
-
-	private boolean isIncludeSimpleLists = false;
 
 
 	/**
@@ -151,73 +148,6 @@ public abstract class YamlProcessor {
 			this.supportedTypes = Arrays.stream(supportedTypes).map(Class::getName)
 					.collect(Collectors.toUnmodifiableSet());
 		}
-	}
-
-	/**
-	 * Set the {@code isIncludeSimpleLists} flag, which enables adding the string
-	 * representation of simple lists/arrays to the {@code Properties} in addition
-	 * to the flattened indexed keys. When set to {@code false}, the default behavior
-	 * of just adding flattened keys is restored.
-	 * <p> For example, considering the following YAML snippet:
-	 * <pre><code>
-	 * animals:
-	 *   mammals:
-	 *    - cat
-	 *    - dog
-	 *    - horse
-	 *   unicorns: []
-	 * </code></pre>
-	 * By default ({@code isAddFulllists == false}) the following entries are
-	 * added to the properties:
-	 * <pre><code>
-	 * animals.mammals[0]="cat"
-	 * animals.mammals[1]="dog"
-	 * animals.mammals[2]="horse"
-	 * animals.unicorns="" //an empty String
-	 * </code></pre>
-	 * With the flag set to {@code true}, an additional {@code animals.mammals}
-	 * key is added with the {@code List} representation of all elements.
-	 * The properties become:
-	 * <pre><code>
-	 * animals.mammals[0]="cat"
-	 * animals.mammals[1]="dog"
-	 * animals.mammals[2]="horse"
-	 * animals.mammals="[cat,dog,horse]" // can be parsed as a List
-	 * animals.unicorns="[]" // String representation of an empty List
-	 * </code></pre>
-	 * <p>This flag is ignored at levels where a list is detected to
-	 * contain a nested list, array or map:
-	 * <code><pre>
-	 * all:
-	 *   animals:
-	 *    - name: cat
-	 *      type: mammal
-	 *    - name: dragon
-	 *      type: imaginary
-	 * </pre></code>
-	 * The above YAML results in the following properties even if this flag is
-	 * set to {@code true}:
-	 * <code><pre>
-	 * all.animals[0].name=cat
-	 * all.animals[0].type=mammal
-	 * all.animals[1].name=dragon
-	 * all.animals[1].type=imaginary
-	 * </pre></code>
-	 *
-	 * @param isIncludeSimpleLists {@code true} to enabling adding full lists during
-	 * flattening, {@code false} to disable it (the default)
-	 * @since 6.0.7
-	 */
-	public void setIncludeSimpleLists(boolean isIncludeSimpleLists) {
-		this.isIncludeSimpleLists = isIncludeSimpleLists;
-	}
-
-	/**
-	 * @return the value of the {{@link #setIncludeSimpleLists(boolean) isAddFullLists flag}
-	 * @since 6.0.7
-	 */
-	protected boolean isIncludeSimpleLists() {
-		return this.isIncludeSimpleLists;
 	}
 
 	/**
@@ -423,32 +353,13 @@ public abstract class YamlProcessor {
 			else if (value instanceof Collection collection) {
 				// Need a compound key
 				if (collection.isEmpty()) {
-					result.put(key, isIncludeSimpleLists() ? Collections.emptyList() : "");
+					result.put(key, "");
 				}
 				else {
 					int count = 0;
-					List<String> subCollectionKeys = new ArrayList<>();
 					for (Object object : collection) {
-						String indexKeyPart = "[" + (count++) + "]";
-						if (object instanceof Collection || object instanceof Map) {
-							subCollectionKeys.add(indexKeyPart);
-						}
-						buildFlattenedMap(result, Collections.singletonMap(indexKeyPart, object), key);
-					}
-					if (isIncludeSimpleLists()) {
-						if (!subCollectionKeys.isEmpty()) {
-							if (this.logger.isDebugEnabled()) {
-								this.logger.debug(key + " not added as a full list because it contains "
-										+ "nested lists/maps at indexes " + subCollectionKeys.stream().collect(Collectors.joining(",")));
-							}
-							else {
-								this.logger.warn(key + " not added as a full list because it contains "
-										+ subCollectionKeys.size() + " nested lists/maps");
-							}
-						}
-						else {
-							result.put(key, collection);
-						}
+						buildFlattenedMap(result, Collections.singletonMap(
+								"[" + (count++) + "]", object), key);
 					}
 				}
 			}

@@ -1,0 +1,25 @@
+humans:
+  - Bill
+  - Bob
+  - Joe
+animals:
+  unicorns: []
+  dragons:
+  mammals:
+    - cat
+    - dog
+    - horse
+  birds:
+    - chicken
+    - eagle
+    - chicken
+listOfArrays:
+  - [ c00, c01 ]
+  - [ c10, c11 ]
+deeperList:
+  - scalar
+  - submap:
+      firstKey: firstValue
+      secondKey: secondValue
+  - [ subListOne, two, three ]
+  - [ complexSubListOne, { complexSubListTwo: innerMap }, { complexSubListThree: innerMap } ]
