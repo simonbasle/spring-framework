@@ -17,9 +17,9 @@
 package org.springframework.test.context.bean.override;
 
 import java.lang.reflect.Field;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 
-import org.springframework.lang.Nullable;
 import org.springframework.test.context.TestContext;
 import org.springframework.test.context.TestExecutionListener;
 import org.springframework.test.context.support.AbstractTestExecutionListener;
@@ -27,28 +27,17 @@ import org.springframework.test.context.support.DependencyInjectionTestExecution
 import org.springframework.util.ReflectionUtils;
 
 /**
- * Abstract {@link TestExecutionListener} to enable Bean Override support in tests.
+ * A {@link TestExecutionListener} to enable Bean Override support in tests.
  */
-public abstract class BeanOverrideTestExecutionListener<D extends BeanOverrideDefinition>
-		extends AbstractTestExecutionListener {
+public class BeanOverrideTestExecutionListener extends AbstractTestExecutionListener {
 
-	protected abstract Class<? extends BeanOverridePostProcessor<D>> getPostProcessorClass();
-
-	@Override
-	public abstract int getOrder();
-
-	protected abstract String getBeanOverrideAttributeName();
-
-	@Nullable
-	protected abstract Object doInitBeanOverride(TestContext testContext);
-
-	protected abstract boolean hasRelevantAnnotations(TestContext testContext);
-
-	protected abstract BeanOverrideDefinitionsParser<?, D> createParser();
+	String getCleanupAttributeName() {
+		return this.getClass().getSimpleName() + ".AFTER_TEST";
+	}
 
 	@Override
 	public void prepareTestInstance(TestContext testContext) throws Exception {
-		initOverrides(testContext);
+		initForCleanup(testContext).ifPresent(o -> testContext.setAttribute(getCleanupAttributeName(), o));;
 		injectFields(testContext);
 	}
 
@@ -56,55 +45,49 @@ public abstract class BeanOverrideTestExecutionListener<D extends BeanOverrideDe
 	public void beforeTestMethod(TestContext testContext) throws Exception {
 		if (Boolean.TRUE.equals(
 				testContext.getAttribute(DependencyInjectionTestExecutionListener.REINJECT_DEPENDENCIES_ATTRIBUTE))) {
-			initOverrides(testContext);
+			initForCleanup(testContext).ifPresent(o -> testContext.setAttribute(getCleanupAttributeName(), o));
 			reinjectFields(testContext);
 		}
 	}
 
 	@Override
 	public void afterTestMethod(TestContext testContext) throws Exception {
-		Object mocks = testContext.getAttribute(getBeanOverrideAttributeName());
-		if (mocks instanceof AutoCloseable closeable) {
+		Object cleanup = testContext.getAttribute(getCleanupAttributeName());
+		if (cleanup instanceof AutoCloseable closeable) {
 			closeable.close();
 		}
 	}
 
-	private void initOverrides(TestContext testContext) {
-		if (hasRelevantAnnotations(testContext)) {
-			Object o = doInitBeanOverride(testContext);
-			if (o != null) {
-				testContext.setAttribute(getBeanOverrideAttributeName(), doInitBeanOverride(testContext));
-			}
-		}
+	//FIXME make it more pluggable... how to have a single listener yet have eg. mock specific inits/cleanup
+	protected Optional<Object> initForCleanup(TestContext testContext) {
+		return Optional.empty();
 	}
 
 	private void injectFields(TestContext testContext) {
-		postProcessFields(testContext, (beanOverrideField, postProcessor) -> postProcessor.inject(beanOverrideField.field,
-				beanOverrideField.target, beanOverrideField.definition));
+		postProcessFields(testContext, (testMetadata, postProcessor) -> postProcessor.inject(
+				testMetadata.testInstance(), testMetadata.overrideMetadata()));
 	}
 
 	private void reinjectFields(final TestContext testContext) {
-		postProcessFields(testContext, (beanOverrideField, postProcessor) -> {
-			ReflectionUtils.makeAccessible(beanOverrideField.field);
-			ReflectionUtils.setField(beanOverrideField.field, testContext.getTestInstance(), null);
-			postProcessor.inject(beanOverrideField.field, beanOverrideField.target, beanOverrideField.definition);
+		postProcessFields(testContext, (testMetadata, postProcessor) -> {
+			Field f = testMetadata.overrideMetadata.field();
+			ReflectionUtils.makeAccessible(f);
+			ReflectionUtils.setField(f, testMetadata.testInstance, null);
+			postProcessor.inject(testMetadata.testInstance, testMetadata.overrideMetadata());
 		});
 	}
 
-	private void postProcessFields(TestContext testContext, BiConsumer<BeanOverrideField<D>, BeanOverridePostProcessor<D>> consumer) {
-		BeanOverrideDefinitionsParser<?, D> parser = createParser();
+	private void postProcessFields(TestContext testContext, BiConsumer<TestContextOverrideMetadata, BeanOverrideBeanPostProcessor> consumer) {
+		BeanOverrideParser parser = new BeanOverrideParser();
 		parser.parse(testContext.getTestClass());
-		if (!parser.getDefinitions().isEmpty()) {
-			BeanOverridePostProcessor<D> postProcessor = testContext.getApplicationContext().getBean(getPostProcessorClass());
-			for (D definition : parser.getDefinitions()) {
-				Field field = parser.getField(definition);
-				if (field != null) {
-					consumer.accept(new BeanOverrideField<>(field, testContext.getTestInstance(), definition), postProcessor);
-				}
+		if (!parser.getOverrideMetadata().isEmpty()) {
+			BeanOverrideBeanPostProcessor postProcessor = testContext.getApplicationContext().getBean(BeanOverrideBeanPostProcessor.class);
+			for (OverrideMetadata metadata: parser.getOverrideMetadata()) {
+				consumer.accept(new TestContextOverrideMetadata(testContext.getTestInstance(), metadata), postProcessor);
 			}
 		}
 	}
 
-	private record BeanOverrideField<D extends BeanOverrideDefinition>(Field field, Object target, D definition) {}
+	private record TestContextOverrideMetadata(Object testInstance, OverrideMetadata overrideMetadata) {}
 
 }

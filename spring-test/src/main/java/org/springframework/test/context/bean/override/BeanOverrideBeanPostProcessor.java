@@ -42,8 +42,7 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.config.ConstructorArgumentValues;
-import org.springframework.beans.factory.config.ConstructorArgumentValues.ValueHolder;
-import org.springframework.beans.factory.config.InstantiationAwareBeanPostProcessor;
+import org.springframework.beans.factory.config.SmartInstantiationAwareBeanPostProcessor;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanNameGenerator;
 import org.springframework.beans.factory.support.DefaultBeanNameGenerator;
@@ -59,54 +58,50 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
-
+//FIXME rework documentation
 /**
- * An abstract {@link BeanFactoryPostProcessor} used to register and inject
- * {@link BeanOverrideDefinition} with the {@link ApplicationContext}. An initial set of
- * definitions can be passed to the processor with additional definitions being
+ * A {@link BeanFactoryPostProcessor} used to register and inject overriding bean
+ * overrideMetadata with the {@link ApplicationContext}.An initial set of
+ * overrideMetadata can be passed to the processor with additional overrideMetadata being
  * automatically created from {@code @Configuration} classes that use a concrete
  * annotation to mark override sites. The ultimate instances of overridden beans
  * can be created externally (e.g. delegating to a mocking framework) and injected
  * in associated {@link Field fields}, or can be computed from user code (e.g. when
  * annotating a {@link Method method}).
  * class supports field injection in the case the parser triggers
- * <p>
- * Concrete implementations of this class will need to be associated to concrete
- * implementations of {@link BeanOverrideDefinition}, annotation and
- * {@link BeanOverrideDefinitionsParser}.
  *
- * @author Phillip Webb
- * @author Andy Wilkinson
- * @author Stephane Nicoll
- * @author Andreas Neiser
  * @author Simon Baslé
  * @since 6.2.0
  */
-public abstract class BeanOverridePostProcessor<D extends BeanOverrideDefinition> implements InstantiationAwareBeanPostProcessor, BeanClassLoaderAware,
+public class BeanOverrideBeanPostProcessor implements
+		SmartInstantiationAwareBeanPostProcessor, BeanClassLoaderAware,
 		BeanFactoryAware, BeanFactoryPostProcessor, Ordered {
+	//TODO use the SmartInstantiationAware stuff from the interface above
 
 	private static final String CONFIGURATION_CLASS_ATTRIBUTE = Conventions
-		.getQualifiedAttributeName(ConfigurationClassPostProcessor.class, "configurationClass");
+			.getQualifiedAttributeName(ConfigurationClassPostProcessor.class, "configurationClass");
+
+	private static final String BEAN_NAME = BeanOverrideBeanPostProcessor.class.getName();
 
 	private static final BeanNameGenerator beanNameGenerator = new DefaultBeanNameGenerator();
 
-	private final Set<D> definitions;
+	private final Set<OverrideMetadata> overrideMetadata;
 
 	private ClassLoader classLoader;
 
 	private BeanFactory beanFactory;
 
-	private final Map<D, String> beanNameRegistry = new HashMap<>();
+	private final Map<OverrideMetadata, String> beanNameRegistry = new HashMap<>();
 
 	private final Map<Field, String> fieldRegistry = new HashMap<>();
 
 	/**
-	 * Create a new {@link BeanOverridePostProcessor} instance with the given initial
-	 * definitions.
-	 * @param definitions the initial definitions
+	 * Create a new {@link BeanOverrideBeanPostProcessor} instance with the given initial
+	 * overrideMetadata.
+	 * @param overrideMetadata the initial overrideMetadata
 	 */
-	public BeanOverridePostProcessor(Set<D> definitions) {
-		this.definitions = definitions;
+	public BeanOverrideBeanPostProcessor(Set<OverrideMetadata> overrideMetadata) {
+		this.overrideMetadata = overrideMetadata;
 	}
 
 	@Override
@@ -121,8 +116,8 @@ public abstract class BeanOverridePostProcessor<D extends BeanOverrideDefinition
 		this.beanFactory = beanFactory;
 	}
 
-	protected Set<D> getDefinitions() {
-		return this.definitions;
+	protected Set<OverrideMetadata> getOverrideMetadata() {
+		return this.overrideMetadata;
 	}
 
 	@Override
@@ -132,30 +127,19 @@ public abstract class BeanOverridePostProcessor<D extends BeanOverrideDefinition
 		postProcessBeanFactory(beanFactory, (BeanDefinitionRegistry) beanFactory);
 	}
 
-	protected abstract void registerTrackerBean(ConfigurableListableBeanFactory beanFactory);
-//			beanFactory.registerSingleton(MockitoBeans.class.getName(), this.mockitoBeans);
-
-	protected abstract BeanOverrideDefinitionsParser<?, D> createBeanDefinitionParser();
-
-	protected abstract Object createAndTrackOverride(String overriddenBeanName, D definition);
-		//		this.mockitoBeans.add(override);
-//		return definition.createOverride(overriddenBeanName);
-
 	protected void copyBeanDefinitionDetails(BeanDefinition from, RootBeanDefinition to) {
 		to.setPrimary(from.isPrimary());
 	}
 
 	private void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory, BeanDefinitionRegistry registry) {
-		registerTrackerBean(beanFactory);
-		BeanOverrideDefinitionsParser<?, D> parser = createBeanDefinitionParser();
+		//TODO evaluate need for a tracker bean? can it be initialized in the MockitoProcessor ?
+		BeanOverrideParser parser = new BeanOverrideParser();
 		for (Class<?> configurationClass : getConfigurationClasses(beanFactory)) {
 			parser.parse(configurationClass);
 		}
-		Set<D> definitions = parser.getDefinitions();
-		for (D definition : definitions) {
-			//field can be null, which means we don't need to track the associated Field e.g. for injection
-			Field field = parser.getField(definition);
-			register(beanFactory, registry, definition, field);
+		Set<OverrideMetadata> overrideMetadata = parser.getOverrideMetadata();
+		for (OverrideMetadata metadata : overrideMetadata) {
+			register(beanFactory, registry, metadata);
 		}
 	}
 
@@ -179,58 +163,65 @@ public abstract class BeanOverridePostProcessor<D extends BeanOverrideDefinition
 	}
 
 	private void register(ConfigurableListableBeanFactory beanFactory, BeanDefinitionRegistry registry,
-			D definition, @Nullable Field field) {
-		RootBeanDefinition beanDefinition = createBeanDefinition(definition);
-		String beanName = getBeanName(beanFactory, registry, definition, beanDefinition);
+			OverrideMetadata overrideMetadata) {
+		RootBeanDefinition beanDefinition = createBeanDefinition(overrideMetadata);
+		String beanName = getBeanName(beanFactory, registry, overrideMetadata, beanDefinition);
 		String transformedBeanName = BeanFactoryUtils.transformedBeanName(beanName);
+
+		BeanDefinition existingBeanDefinition = null;
 		if (registry.containsBeanDefinition(transformedBeanName)) {
-			BeanDefinition existing = registry.getBeanDefinition(transformedBeanName);
-			copyBeanDefinitionDetails(existing, beanDefinition);
+			existingBeanDefinition = registry.getBeanDefinition(transformedBeanName);
+			copyBeanDefinitionDetails(existingBeanDefinition, beanDefinition);
 			registry.removeBeanDefinition(transformedBeanName);
 		}
 		registry.registerBeanDefinition(transformedBeanName, beanDefinition);
-		Object override = createAndTrackOverride(beanName, definition);
+
+		Object originalSingleton = beanFactory.getSingleton(transformedBeanName);
+		//TODO a pre-existing singleton should probably be removed from the factory.
+		Object override = overrideMetadata.createOverride(transformedBeanName, existingBeanDefinition, originalSingleton);
+
+		//TODO is this notion of registering a singleton bean valid in all potential cases?
 		beanFactory.registerSingleton(transformedBeanName, override);
 
-		this.beanNameRegistry.put(definition, beanName);
-		if (field != null) {
-			this.fieldRegistry.put(field, beanName);
-		}
+		this.beanNameRegistry.put(overrideMetadata, beanName);
+		this.fieldRegistry.put(overrideMetadata.field(), beanName);
 	}
 
-	private RootBeanDefinition createBeanDefinition(D overrideDefinition) {
-		RootBeanDefinition definition = new RootBeanDefinition(overrideDefinition.getTypeToOverride().resolve());
-		definition.setTargetType(overrideDefinition.getTypeToOverride());
-		if (overrideDefinition.getQualifier() != null) {
-			overrideDefinition.getQualifier().applyTo(definition);
+	private RootBeanDefinition createBeanDefinition(OverrideMetadata overrideOverrideMetadata) {
+		RootBeanDefinition definition = new RootBeanDefinition(overrideOverrideMetadata.typeToOverride().resolve());
+		definition.setTargetType(overrideOverrideMetadata.typeToOverride());
+		final QualifierMetadata qualifier = overrideOverrideMetadata.qualifier();
+		if (qualifier != null) {
+			qualifier.applyTo(definition);
 		}
 		return definition;
 	}
 
 	private String getBeanName(ConfigurableListableBeanFactory beanFactory, BeanDefinitionRegistry registry,
-			D overrideDefinition, RootBeanDefinition beanDefinition) {
-		if (StringUtils.hasLength(overrideDefinition.getName())) {
-			return overrideDefinition.getName();
+			OverrideMetadata overrideMetadata, RootBeanDefinition beanDefinition) {
+		String beanName = overrideMetadata.getBeanName().orElse(null);
+		if (beanName != null) {
+			return beanName;
 		}
-		Set<String> existingBeans = getExistingBeans(beanFactory, overrideDefinition.getTypeToOverride(),
-				overrideDefinition.getQualifier());
+		Set<String> existingBeans = getExistingBeans(beanFactory, overrideMetadata.typeToOverride(),
+				overrideMetadata.qualifier());
 		if (existingBeans.isEmpty()) {
-			return BeanOverridePostProcessor.beanNameGenerator.generateBeanName(beanDefinition, registry);
+			return BeanOverrideBeanPostProcessor.beanNameGenerator.generateBeanName(beanDefinition, registry);
 		}
 		if (existingBeans.size() == 1) {
 			return existingBeans.iterator().next();
 		}
-		String primaryCandidate = determinePrimaryCandidate(registry, existingBeans, overrideDefinition.getTypeToOverride());
+		String primaryCandidate = determinePrimaryCandidate(registry, existingBeans, overrideMetadata.typeToOverride());
 		if (primaryCandidate != null) {
 			return primaryCandidate;
 		}
-		throw new IllegalStateException("Unable to register mock bean " + overrideDefinition.getTypeToOverride()
+		throw new IllegalStateException("Unable to register override bean " + overrideMetadata.typeToOverride()
 				+ " expected a single matching bean to replace but found " + existingBeans);
 	}
 
 
 	private Set<String> getExistingBeans(ConfigurableListableBeanFactory beanFactory, ResolvableType type,
-			@Nullable QualifierDefinition qualifier) {
+			@Nullable QualifierMetadata qualifier) {
 		Set<String> candidates = new TreeSet<>();
 		for (String candidate : getExistingBeans(beanFactory, type)) {
 			if (qualifier == null || qualifier.matches(beanFactory, candidate)) {
@@ -297,10 +288,11 @@ public abstract class BeanOverridePostProcessor<D extends BeanOverrideDefinition
 		}
 	}
 
-	void inject(Field field, Object target, D definition) {
-		String beanName = this.beanNameRegistry.get(definition);
-		Assert.state(StringUtils.hasLength(beanName), () -> "No bean found for definition " + definition);
-		inject(field, target, beanName);
+	//TODO use in the TestExecutionListener in injectFields and reinjectFields
+	void inject(Object target, OverrideMetadata overrideMetadata) {
+		String beanName = this.beanNameRegistry.get(overrideMetadata);
+		Assert.state(StringUtils.hasLength(beanName), () -> "No bean found for overrideMetadata " + overrideMetadata);
+		inject(overrideMetadata.field(), target, beanName);
 	}
 
 	private void inject(Field field, Object target, String beanName) {
@@ -329,47 +321,49 @@ public abstract class BeanOverridePostProcessor<D extends BeanOverrideDefinition
 	 * Register the processor with a {@link BeanDefinitionRegistry}. Not required when
 	 * using the {@link SpringRunner} as registration is automatic.
 	 * @param registry the bean definition registry
-	 * @param postProcessorClass the class of {@link BeanOverridePostProcessor} to register
-	 * @param postProcessorBeanName the name of the infrastructure bean to register
-	 * (typically, the processor class {@link Class#getName() getName()})
 	 */
-	public static <D extends BeanOverrideDefinition> void register(BeanDefinitionRegistry registry,
-			Class<? extends BeanOverridePostProcessor<D>> postProcessorClass, String postProcessorBeanName) {
-		register(registry, postProcessorClass, postProcessorBeanName, null);
+	public static void register(BeanDefinitionRegistry registry) {
+		register(registry, null);
 	}
 
 	/**
 	 * Register the processor with a {@link BeanDefinitionRegistry}. Not required when
 	 * using the {@link SpringRunner} as registration is automatic.
 	 * @param registry the bean definition registry
-	 * @param postProcessorClass the class of {@link BeanOverridePostProcessor} to register
-	 * @param postProcessorBeanName the name of the infrastructure bean to register
-	 * @param definitions the initial override definitions
+	 * @param overrideMetadata the initial override metadata set
 	 */
-	public static <D extends BeanOverrideDefinition> void register(BeanDefinitionRegistry registry,
-			Class<? extends BeanOverridePostProcessor<D>> postProcessorClass,
-			String postProcessorBeanName, @Nullable Set<D> definitions) {
-		BeanDefinition definition = getOrAddBeanDefinition(registry, postProcessorClass, postProcessorBeanName);
-		ValueHolder constructorArg = definition.getConstructorArgumentValues().getIndexedArgumentValue(0, Set.class);
-		@SuppressWarnings("unchecked")
-		Set<D> existing = (Set<D>) constructorArg.getValue();
-		if (definitions != null) {
-			existing.addAll(definitions);
+	public static void register(BeanDefinitionRegistry registry, @Nullable Set<OverrideMetadata> overrideMetadata) {
+		register(registry, BeanOverrideBeanPostProcessor.class, overrideMetadata);
+	}
+
+	/**
+	 * Register the processor with a {@link BeanDefinitionRegistry}. Not required when
+	 * using the {@link SpringRunner} as registration is automatic.
+	 * @param registry the bean definition registry
+	 * @param postProcessor the post processor class to register
+	 * @param overrideMetadata the initial override metadata set
+	 */
+	@SuppressWarnings("unchecked")
+	public static void register(BeanDefinitionRegistry registry, Class<? extends BeanOverrideBeanPostProcessor> postProcessor,
+			@Nullable Set<OverrideMetadata> overrideMetadata) {
+		BeanDefinition definition = getOrAddBeanDefinition(registry, postProcessor);
+		ConstructorArgumentValues.ValueHolder constructorArg = definition.getConstructorArgumentValues().getIndexedArgumentValue(0, Set.class);
+		Set<OverrideMetadata> existing = (Set<OverrideMetadata>) constructorArg.getValue();
+		if (overrideMetadata != null && existing != null) {
+			existing.addAll(overrideMetadata);
 		}
 	}
 
-	private static <D1 extends BeanOverrideDefinition> BeanDefinition getOrAddBeanDefinition(BeanDefinitionRegistry registry,
-			Class<? extends BeanOverridePostProcessor<D1>> postProcessorClass,
-			String postProcessorBeanName) {
-		if (!registry.containsBeanDefinition(postProcessorBeanName)) {
-			RootBeanDefinition definition = new RootBeanDefinition(postProcessorClass);
+	private static BeanDefinition getOrAddBeanDefinition(BeanDefinitionRegistry registry,
+			Class<? extends BeanOverrideBeanPostProcessor> postProcessor) {
+		if (!registry.containsBeanDefinition(BEAN_NAME)) {
+			RootBeanDefinition definition = new RootBeanDefinition(postProcessor);
 			definition.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
 			ConstructorArgumentValues constructorArguments = definition.getConstructorArgumentValues();
-			constructorArguments.addIndexedArgumentValue(0, new LinkedHashSet<D1>());
-			registry.registerBeanDefinition(postProcessorBeanName, definition);
+			constructorArguments.addIndexedArgumentValue(0, new LinkedHashSet<OverrideMetadata>());
+			registry.registerBeanDefinition(BEAN_NAME, definition);
 			return definition;
 		}
-		return registry.getBeanDefinition(postProcessorBeanName);
+		return registry.getBeanDefinition(BEAN_NAME);
 	}
-
 }

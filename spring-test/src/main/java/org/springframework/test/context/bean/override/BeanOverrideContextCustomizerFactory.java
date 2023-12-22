@@ -19,36 +19,54 @@ package org.springframework.test.context.bean.override;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.test.context.ContextConfigurationAttributes;
 import org.springframework.test.context.ContextCustomizer;
 import org.springframework.test.context.ContextCustomizerFactory;
+import org.springframework.test.context.MergedContextConfiguration;
 import org.springframework.test.context.TestContextAnnotationUtils;
 
 /**
- * An abstract {@link ContextCustomizerFactory} to add support for a concrete variant of Bean Override.
+ * A {@link ContextCustomizerFactory} to add support for Bean Overriding.
  */
-public abstract class BeanOverrideContextCustomizerFactory<D extends BeanOverrideDefinition> implements ContextCustomizerFactory {
+public class BeanOverrideContextCustomizerFactory implements ContextCustomizerFactory {
 
 	@Override
 	public ContextCustomizer createContextCustomizer(Class<?> testClass,
 			List<ContextConfigurationAttributes> configAttributes) {
-		// We gather the explicit mock definitions here since they form part of the
-		// MergedContextConfiguration key. Different mocks need to have a different key.
-		BeanOverrideDefinitionsParser<?, D> parser = doCreateParser(testClass, configAttributes);
+		BeanOverrideParser parser = new BeanOverrideParser();
 		parseDefinitions(testClass, parser);
-		return doCreateContextCustomizer(parser.getDefinitions());
+		return new BeanOverrideContextCustomizer(parser.getOverrideMetadata());
 	}
 
-	private void parseDefinitions(Class<?> testClass, BeanOverrideDefinitionsParser<?, D> parser) {
+	private void parseDefinitions(Class<?> testClass, BeanOverrideParser parser) {
 		parser.parse(testClass);
 		if (TestContextAnnotationUtils.searchEnclosingClass(testClass)) {
 			parseDefinitions(testClass.getEnclosingClass(), parser);
 		}
 	}
 
-	protected abstract BeanOverrideDefinitionsParser<?,D> doCreateParser(Class<?> testClass,
-			List<ContextConfigurationAttributes> configAttributes);
+	/**
+	 * A {@link ContextCustomizer} for Bean Overriding in tests.
+	 */
+	static final class BeanOverrideContextCustomizer implements ContextCustomizer {
 
-	protected abstract ContextCustomizer doCreateContextCustomizer(Set<D> definitions);
+		private final Set<OverrideMetadata> metadata;
 
+		/**
+		 * @param metadata a set of concrete {@link OverrideMetadata} provided by
+		 * the underlying {@link BeanOverrideParser}
+		 */
+		BeanOverrideContextCustomizer(Set<OverrideMetadata> metadata) {
+			this.metadata = metadata;
+		}
+
+		@Override
+		public void customizeContext(ConfigurableApplicationContext context, MergedContextConfiguration mergedConfig) {
+			if (context instanceof BeanDefinitionRegistry registry) {
+				BeanOverrideBeanPostProcessor.register(registry, this.metadata);
+			}
+		}
+	}
 }

@@ -27,15 +27,16 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.config.DependencyDescriptor;
 import org.springframework.beans.factory.support.RootBeanDefinition;
+import org.springframework.lang.Nullable;
 
 /**
- * Definition of a Spring {@link Qualifier @Qualifier}.
+ * Metadata of a Spring {@link Qualifier @Qualifier}.
  *
  * @author Phillip Webb
  * @author Stephane Nicoll
- * @see BeanOverrideDefinition
+ * @see OverrideMetadata
  */
-public class QualifierDefinition {
+public final class QualifierMetadata {
 
 	private final Field field;
 
@@ -43,7 +44,7 @@ public class QualifierDefinition {
 
 	private final Set<Annotation> annotations;
 
-	QualifierDefinition(Field field, Set<Annotation> annotations) {
+	QualifierMetadata(Field field, Set<Annotation> annotations) {
 		// We can't use the field or descriptor as part of the context key
 		// but we can assume that if two fields have the same qualifiers then
 		// it's safe for Spring to use either for qualifier logic
@@ -68,7 +69,7 @@ public class QualifierDefinition {
 		if (obj == null || !getClass().isAssignableFrom(obj.getClass())) {
 			return false;
 		}
-		QualifierDefinition other = (QualifierDefinition) obj;
+		QualifierMetadata other = (QualifierMetadata) obj;
 		return this.annotations.equals(other.annotations);
 	}
 
@@ -77,18 +78,18 @@ public class QualifierDefinition {
 		return this.annotations.hashCode();
 	}
 
-	public static QualifierDefinition forElement(AnnotatedElement element, Predicate<? super Annotation> isQualifierPredicate) {
-		if (element != null && element instanceof Field field) {
+	@Nullable
+	public static QualifierMetadata forElement(@Nullable AnnotatedElement element, Predicate<? super Annotation> isQualifierPredicate) {
+		if (element instanceof Field field) {
 			Set<Annotation> annotations = getQualifierAnnotations(field, isQualifierPredicate);
 			if (!annotations.isEmpty()) {
-				return new QualifierDefinition(field, annotations);
+				return new QualifierMetadata(field, annotations);
 			}
 		}
 		return null;
 	}
 
 	private static Set<Annotation> getQualifierAnnotations(Field field, Predicate<? super Annotation> isQualifierPredicate) {
-		// Assume that any annotations other than @MockBean/@SpyBean are qualifiers
 		Annotation[] candidates = field.getDeclaredAnnotations();
 		Set<Annotation> annotations = new HashSet<>(candidates.length);
 		for (Annotation candidate : candidates) {

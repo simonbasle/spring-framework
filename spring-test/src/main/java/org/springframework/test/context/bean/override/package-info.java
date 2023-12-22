@@ -15,7 +15,7 @@
  */
 
 /**
- * Support Bean overriding in Spring tests.
+ * Support case-by-case Bean overriding in Spring tests.
  */
 @NonNullApi
 package org.springframework.test.context.bean.override;
