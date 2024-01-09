@@ -20,9 +20,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.lang.reflect.AnnotatedElement;
 
-import org.springframework.core.ResolvableType;
 import org.springframework.core.annotation.AliasFor;
 
 @Retention(RetentionPolicy.RUNTIME)
@@ -30,17 +28,9 @@ import org.springframework.core.annotation.AliasFor;
 public @interface BeanOverride {
 
 	@AliasFor("processors")
-	Class<? extends BeanOverrideProcessor> value() default NoOpBeanOverrideProcessor.class;
+	Class<? extends BeanOverrideProcessor> value();
 
 	@AliasFor("value")
-	Class<? extends BeanOverrideProcessor> processor() default NoOpBeanOverrideProcessor.class;
+	Class<? extends BeanOverrideProcessor> processor();
 
-
-	final class NoOpBeanOverrideProcessor implements BeanOverrideProcessor {
-
-		@Override
-		public OverrideMetadata createMetadata(AnnotatedElement element, BeanOverride syntheticAnnotation, ResolvableType typeToOverride, QualifierMetadata qualifier) {
-			return OverrideMetadata.IGNORE;
-		}
-	}
 }

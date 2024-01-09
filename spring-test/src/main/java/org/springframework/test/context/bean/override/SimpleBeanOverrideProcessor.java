@@ -21,7 +21,6 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Set;
 
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.core.ResolvableType;
@@ -65,12 +64,11 @@ public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 		}
 
 		@Override
-		protected Object createOverride(String transformedBeanName, @Nullable BeanDefinition existingBeanDefinition,
-				@Nullable Object originalSingleton) {
-
+		protected Object createOverride(String beanName, @Nullable BeanDefinition existingBeanDefinition,
+				@Nullable Object existingBeanInstance) {
 			Method methodToInvoke = this.overrideMethod;
 			if (methodToInvoke == null) {
-				methodToInvoke = ensureMethod(fieldElement().getDeclaringClass(), transformedBeanName + TestBean.CONVENTION_SUFFIX,
+				methodToInvoke = ensureMethod(fieldElement().getDeclaringClass(), beanName + TestBean.CONVENTION_SUFFIX,
 						fieldElement().getType());
 			}
 
@@ -85,11 +83,6 @@ public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 
 			return override;
 		}
-	}
-
-	@Override
-	public Set<ResolvableType> getOrDeduceTypes(AnnotatedElement element, Annotation annotation, Class<?> source) {
-		return Set.of();
 	}
 
 	@Override

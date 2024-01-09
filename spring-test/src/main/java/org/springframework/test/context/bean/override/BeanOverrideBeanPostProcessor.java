@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -128,7 +129,7 @@ public class BeanOverrideBeanPostProcessor implements BeanClassLoaderAware, Bean
 
 	/**
 	 * Return this processor's {@link OverrideMetadata} set, which includes metadata
-	 * discovered by a {@link BeanOverrideParser} on configuration classes.
+	 * discovered via Bean Override annotations in configuration classes.
 	 */
 	protected Set<OverrideMetadata> getOverrideMetadata() {
 		return this.overrideMetadata;
@@ -197,24 +198,24 @@ public class BeanOverrideBeanPostProcessor implements BeanClassLoaderAware, Bean
 	private void registerReplaceDefinition(ConfigurableListableBeanFactory beanFactory, BeanDefinitionRegistry registry,
 			OverrideMetadata overrideMetadata, Consumer<Object> tracker) {
 		RootBeanDefinition beanDefinition = createBeanDefinition(overrideMetadata);
-		String beanName = getBeanName(beanFactory, registry, overrideMetadata, beanDefinition);
-		String transformedBeanName = BeanFactoryUtils.transformedBeanName(beanName);
+		String beanName = BeanFactoryUtils.transformedBeanName(
+				getBeanName(beanFactory, registry, overrideMetadata, beanDefinition));
 
 		BeanDefinition existingBeanDefinition = null;
-		if (registry.containsBeanDefinition(transformedBeanName)) {
-			existingBeanDefinition = registry.getBeanDefinition(transformedBeanName);
+		if (registry.containsBeanDefinition(beanName)) {
+			existingBeanDefinition = registry.getBeanDefinition(beanName);
 			copyBeanDefinitionDetails(existingBeanDefinition, beanDefinition);
-			registry.removeBeanDefinition(transformedBeanName);
+			registry.removeBeanDefinition(beanName);
 		}
-		registry.registerBeanDefinition(transformedBeanName, beanDefinition);
+		registry.registerBeanDefinition(beanName, beanDefinition);
 
-		Object originalSingleton = beanFactory.getSingleton(transformedBeanName);
+		Object originalSingleton = beanFactory.getSingleton(beanName);
 		//TODO a pre-existing singleton should probably be removed from the factory.
-		Object override = overrideMetadata.createOverride(transformedBeanName, existingBeanDefinition, originalSingleton);
+		Object override = overrideMetadata.createOverride(beanName, existingBeanDefinition, originalSingleton);
 		tracker.accept(override);
 
 		//TODO is this notion of registering a singleton bean valid in all potential cases?
-		beanFactory.registerSingleton(transformedBeanName, override);
+		beanFactory.registerSingleton(beanName, override);
 
 		this.beanNameRegistry.put(overrideMetadata, beanName);
 		if (overrideMetadata.fieldElement() != null) {
@@ -299,9 +300,9 @@ public class BeanOverrideBeanPostProcessor implements BeanClassLoaderAware, Bean
 
 	private String getBeanName(ConfigurableListableBeanFactory beanFactory, BeanDefinitionRegistry registry,
 			OverrideMetadata overrideMetadata, RootBeanDefinition beanDefinition) {
-		String beanName = overrideMetadata.getBeanName().orElse(null);
-		if (beanName != null) {
-			return beanName;
+		Optional<String> explicitBeanName = overrideMetadata.getExplicitBeanName();
+		if (explicitBeanName.isPresent()) {
+			return explicitBeanName.get();
 		}
 		Set<String> existingBeans = getExistingBeanNames(beanFactory, overrideMetadata.typeToOverride(),
 				overrideMetadata.qualifier());
@@ -359,8 +360,9 @@ public class BeanOverrideBeanPostProcessor implements BeanClassLoaderAware, Bean
 	@Nullable
 	private String determineBeanName(Collection<String> existingBeans, OverrideMetadata metadata,
 			BeanDefinitionRegistry registry) {
-		if (metadata.getBeanName().isPresent()) {
-			return metadata.getBeanName().get();
+		final Optional<String> explicitBeanName = metadata.getExplicitBeanName();
+		if (explicitBeanName.isPresent()) {
+			return explicitBeanName.get();
 		}
 		if (existingBeans.size() == 1) {
 			return existingBeans.iterator().next();

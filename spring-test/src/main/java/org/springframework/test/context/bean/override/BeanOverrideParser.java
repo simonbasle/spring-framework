@@ -37,15 +37,15 @@ import org.springframework.util.ReflectionUtils;
  * A parser that discovers annotations meta-annotated with {@link BeanOverride} on
  * fields of a class and creates {@link OverrideMetadata} accordingly.
  */
-public class BeanOverrideParser {
+class BeanOverrideParser {
 
 	private final Set<OverrideMetadata> parsedMetadata;
 
-	protected BeanOverrideParser() {
+	BeanOverrideParser() {
 		this(Collections.emptySet());
 	}
 
-	protected BeanOverrideParser(Collection<? extends OverrideMetadata> existing) {
+	BeanOverrideParser(Collection<? extends OverrideMetadata> existing) {
 		this.parsedMetadata = new LinkedHashSet<>();
 		this.parsedMetadata.addAll(existing);
 	}
