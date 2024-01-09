@@ -17,6 +17,7 @@
 package org.springframework.test.context.bean.override;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -24,6 +25,7 @@ import java.util.Set;
 
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.core.ResolvableType;
+import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
@@ -46,13 +48,30 @@ public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 			this.overrideMethod = overrideMethod;
 		}
 
+		@NonNull
 		@Override
-		protected Object createOverride(String beanName, @Nullable BeanDefinition existingBeanDefinition
-				, String transformedBeanName, @Nullable Object originalSingleton) {
+		public Field fieldElement() {
+			return (Field) super.element();
+		}
+
+		@Override
+		public BeanOverrideStrategy getBeanOverrideStrategy() {
+			return BeanOverrideStrategy.REPLACE_DEFINITION;
+		}
+
+		@Override
+		public String getBeanOverrideDescription() {
+			return "method convention";
+		}
+
+		@Override
+		protected Object createOverride(String transformedBeanName, @Nullable BeanDefinition existingBeanDefinition,
+				@Nullable Object originalSingleton) {
+
 			Method methodToInvoke = this.overrideMethod;
 			if (methodToInvoke == null) {
-				methodToInvoke = ensureMethod(field().getDeclaringClass(), transformedBeanName + TestBean.CONVENTION_SUFFIX,
-						field().getType());
+				methodToInvoke = ensureMethod(fieldElement().getDeclaringClass(), transformedBeanName + TestBean.CONVENTION_SUFFIX,
+						fieldElement().getType());
 			}
 
 			methodToInvoke.setAccessible(true);
@@ -69,13 +88,8 @@ public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 	}
 
 	@Override
-	public String getOverrideCategory() {
-		return "bean override";
-	}
-
-	@Override
-	public Set<ResolvableType> getOrDeduceTypes(Field field, Annotation annotation, Class<?> source) {
-		return null;
+	public Set<ResolvableType> getOrDeduceTypes(AnnotatedElement element, Annotation annotation, Class<?> source) {
+		return Set.of();
 	}
 
 	@Override
@@ -83,19 +97,13 @@ public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 		return !(annotation instanceof TestBean) && additionalIsQualifierCheck(annotation);
 	}
 
+	/**
+	 * Additional check to extend which annotations are considered as qualifier annotations.
+	 * Not the {@link TestBean} annotation is never considered as a qualifier.
+	 * Defaults to considering all annotations.
+	 */
 	protected boolean additionalIsQualifierCheck(Annotation annotation) {
 		return true;
-	}
-
-	@Override
-	public String parseBeanName(Annotation annotation) {
-		if (annotation instanceof TestBean testBeanAnnotation) {
-			String annotationBeanName = testBeanAnnotation.beanName();
-			if (!annotationBeanName.isBlank()) {
-				return annotationBeanName;
-			}
-		}
-		return BeanOverrideProcessor.super.parseBeanName(annotation);
 	}
 
 	public static Method ensureMethod(Class<?> enclosingClass, String expectedMethodName, Class<?> expectedMethodReturnType) {
@@ -108,8 +116,12 @@ public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 	}
 
 	@Override
-	public OverrideMetadata createMetadata(Field field, BeanOverride syntheticAnnotation, ResolvableType typeToOverride,
+	public OverrideMetadata createMetadata(AnnotatedElement element, BeanOverride syntheticAnnotation, ResolvableType typeToOverride,
 			@Nullable QualifierMetadata qualifier) {
+		if (!(element instanceof Field field)) {
+			throw new UnsupportedOperationException("SimpleBeanOverrideProcessor can only process annotated Fields, got: " + element);
+		}
+
 		final Class<?> enclosingClass = field.getDeclaringClass();
 
 		// if we can get an explicit method name right away, fail false if it doesn't match

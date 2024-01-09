@@ -20,17 +20,15 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
 
 /**
- * Mark a field to represent a bean override of the bean of the same name and inject the
- * field with the overriding instance.
+ * Mark a field to represent a "method" bean override of the bean of the same name and
+ * inject the field with the overriding instance.
  * <p>The instance is created from a static method in the declaring class which return
  * type is compatible with the annotated field and which name follows the convention
- * {@code fieldName + }{@link #CONVENTION_PREFIX}, unless the annotation's {@link #methodName()}
+ * {@code fieldName + }{@link #CONVENTION_SUFFIX}, unless the annotation's {@link #methodName()}
  * is specified.
  * <p>The annotated field's name is interpreted to be the name of the original bean to
  * override, unless the annotation's {@link #beanName()} is specified.
- *
- * </p>created by a static method with a conventional
- * name: the name of the annotated field is used as the
+ * @see SimpleBeanOverrideProcessor
  */
 @Target(ElementType.FIELD)
 @BeanOverride(SimpleBeanOverrideProcessor.class)

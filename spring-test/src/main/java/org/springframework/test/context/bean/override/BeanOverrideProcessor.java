@@ -17,6 +17,7 @@
 package org.springframework.test.context.bean.override;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
 import java.lang.reflect.TypeVariable;
 import java.util.LinkedHashSet;
@@ -35,49 +36,44 @@ import org.springframework.lang.Nullable;
  * annotations, ultimately creating {@link OverrideMetadata}
  * which will be used to instantiate the overrides.
  */
+@FunctionalInterface
 public interface BeanOverrideProcessor {
-
-	/**
-	 * Return a short {@link String} describing the type of override this processor
-	 * is about (e.g. "mock"), mostly for user-facing purpose.
-	 */
-	String getOverrideCategory();
 
 	/**
 	 * Determine a {@link Set} of {@link ResolvableType} for each of
 	 * which an {@link OverrideMetadata} instance will be created.
-	 * Override to provide more than one type per field, or to use
+	 * Override to provide more than one type per annotated element, or to use
 	 * the annotation to determine type(s).
-	 * <p>Defaults to a single {@link ResolvableType} that additionally
-	 * tracks the source class if the field is a {@link TypeVariable}.
+	 * <p>Defaults to an empty set if the annotated element is not a {@link Field}.
+	 * For fields, defaults to a single {@link ResolvableType} that additionally tracks
+	 * the source class if the field is a {@link TypeVariable}.
 	 */
-	default Set<ResolvableType> getOrDeduceTypes(Field field, Annotation annotation, Class<?> source) {
+	default Set<ResolvableType> getOrDeduceTypes(AnnotatedElement element, Annotation annotation, Class<?> source) {
 		Set<ResolvableType> types = new LinkedHashSet<>();
-		types.add((field.getGenericType() instanceof TypeVariable) ? ResolvableType.forField(field, source)
+		if (element instanceof  Field field) {
+			types.add((field.getGenericType() instanceof TypeVariable) ? ResolvableType.forField(field, source)
 				: ResolvableType.forField(field));
+		}
 		return types;
 	}
 
 	/**
-	 * Create an {@link OverrideMetadata} for a given field and target
-	 * {@link #getOrDeduceTypes(Field, Annotation, Class) type}. Defaults to
-	 * a simple {@link OverrideMetadata} instance but can be overridden to
-	 * provide a more specific implementation with extra state to be used during override
+	 * Create an {@link OverrideMetadata} for a given annotated element and target
+	 * {@link #getOrDeduceTypes(AnnotatedElement, Annotation, Class) type}.
+	 * Specific implementations of metadata can have state to be used during override
 	 * {@link OverrideMetadata#createOverride(String, BeanDefinition, Object) instance creation}
-	 * (e.g. further parsing the annotation or the annotated field).
-	 * @param field the annotated field
-	 * @param syntheticAnnotation the field annotation and {@link BeanOverride} meta-annotation, synthesised
-	 * @param typeToOverride the target type (there can be multiple types per field)
+	 * (e.g. from further parsing the annotation or the annotated field).
+	 * @param element the annotated field, method or class
+	 * @param syntheticAnnotation the element annotation and {@link BeanOverride} meta-annotation, synthesised
+	 * @param typeToOverride the target type (there can be multiple types per annotated element, e.g. derived from the annotation)
 	 * @param qualifier the optional {@link QualifierMetadata}
 	 * @return a new {@link OverrideMetadata}
-	 * @see #getOrDeduceTypes(Field, Annotation, Class)
+	 * @see #getOrDeduceTypes(AnnotatedElement, Annotation, Class)
 	 * @see #isQualifierAnnotation(Annotation)
 	 * @see MergedAnnotation#synthesize()
 	 */
-	default OverrideMetadata createMetadata(Field field, BeanOverride syntheticAnnotation, ResolvableType typeToOverride,
-			@Nullable QualifierMetadata qualifier) {
-		return new OverrideMetadata(field, syntheticAnnotation, typeToOverride, qualifier);
-	}
+	OverrideMetadata createMetadata(AnnotatedElement element, BeanOverride syntheticAnnotation, ResolvableType typeToOverride,
+			@Nullable QualifierMetadata qualifier);
 
 	/**
 	 * Define if an annotation should be considered as a qualifier annotation,

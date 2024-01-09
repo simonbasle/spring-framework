@@ -29,11 +29,8 @@ import org.springframework.util.ReflectionUtils;
 /**
  * A {@link TestExecutionListener} to enable Bean Override support in tests.
  */
-public class BeanOverrideTestExecutionListener extends AbstractTestExecutionListener {
+public abstract class AbstractBeanOverrideTestExecutionListener extends AbstractTestExecutionListener {
 
-	String getCleanupAttributeName() {
-		return this.getClass().getSimpleName() + ".AFTER_TEST";
-	}
 
 	@Override
 	public void prepareTestInstance(TestContext testContext) throws Exception {
@@ -63,17 +60,21 @@ public class BeanOverrideTestExecutionListener extends AbstractTestExecutionList
 		return Optional.empty();
 	}
 
+	protected String getCleanupAttributeName() {
+		return this.getClass().getSimpleName() + ".AFTER_TEST";
+	}
+
 	private void injectFields(TestContext testContext) {
 		postProcessFields(testContext, (testMetadata, postProcessor) -> postProcessor.inject(
-				testMetadata.testInstance(), testMetadata.overrideMetadata()));
+				testMetadata.field(), testMetadata.testInstance(), testMetadata.overrideMetadata()));
 	}
 
 	private void reinjectFields(final TestContext testContext) {
 		postProcessFields(testContext, (testMetadata, postProcessor) -> {
-			Field f = testMetadata.overrideMetadata.field();
+			Field f = testMetadata.field();
 			ReflectionUtils.makeAccessible(f);
-			ReflectionUtils.setField(f, testMetadata.testInstance, null);
-			postProcessor.inject(testMetadata.testInstance, testMetadata.overrideMetadata());
+			ReflectionUtils.setField(f, testMetadata.testInstance(), null);
+			postProcessor.inject(testMetadata.field(), testMetadata.testInstance(), testMetadata.overrideMetadata());
 		});
 	}
 
@@ -83,11 +84,13 @@ public class BeanOverrideTestExecutionListener extends AbstractTestExecutionList
 		if (!parser.getOverrideMetadata().isEmpty()) {
 			BeanOverrideBeanPostProcessor postProcessor = testContext.getApplicationContext().getBean(BeanOverrideBeanPostProcessor.class);
 			for (OverrideMetadata metadata: parser.getOverrideMetadata()) {
-				consumer.accept(new TestContextOverrideMetadata(testContext.getTestInstance(), metadata), postProcessor);
+				if (metadata.element() instanceof Field field) {
+					consumer.accept(new TestContextOverrideMetadata(testContext.getTestInstance(), field, metadata), postProcessor);
+				}
 			}
 		}
 	}
 
-	private record TestContextOverrideMetadata(Object testInstance, OverrideMetadata overrideMetadata) {}
+	private record TestContextOverrideMetadata(Object testInstance, Field field, OverrideMetadata overrideMetadata) {}
 
 }

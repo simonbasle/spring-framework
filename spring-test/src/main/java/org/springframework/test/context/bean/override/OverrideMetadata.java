@@ -17,37 +17,87 @@
 package org.springframework.test.context.bean.override;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.BeanDefinitionValidationException;
 import org.springframework.core.ResolvableType;
 import org.springframework.lang.Nullable;
 
-public class OverrideMetadata {
+//FIXME harmonize getters names ? distinguish getters vs stateless methods ?
+public abstract class OverrideMetadata {
 
-	private final Field field;
+	public static final OverrideMetadata IGNORE = new OverrideMetadata(BeanOverride.NoOpBeanOverrideProcessor.class.getDeclaredConstructors()[0],
+			BeanOverride.class.getAnnotations()[0],
+			ResolvableType.forClass(BeanOverride.class),
+			null) {
+		@Override
+		public BeanOverrideStrategy getBeanOverrideStrategy() {
+			return BeanOverrideStrategy.NO_OP;
+		}
+
+		@Override
+		public String getBeanOverrideDescription() {
+			return "IGNORE";
+		}
+
+		@Override
+		protected Object createOverride(String transformedBeanName, @Nullable BeanDefinition existingBeanDefinition, Object originalSingleton) {
+			throw new UnsupportedOperationException("OverrideMetadata.IGNORE should not be used to create overrides");
+		}
+	};
+
+	private static final Consumer<Object> NO_OP = o -> {};
+
+	private final AnnotatedElement element;
 	private final Annotation overrideAnnotation;
 	private final ResolvableType typeToOverride;
 	@Nullable
 	private final QualifierMetadata qualifier;
 
-	public OverrideMetadata(Field field, Annotation overrideAnnotation,
+	public OverrideMetadata(AnnotatedElement element, Annotation overrideAnnotation,
 			ResolvableType typeToOverride, @Nullable QualifierMetadata qualifier) {
-		this.field = field;
+		this.element = element;
 		this.overrideAnnotation = overrideAnnotation;
 		this.typeToOverride = typeToOverride;
 		this.qualifier = qualifier;
 	}
 
+	public abstract BeanOverrideStrategy getBeanOverrideStrategy();
+
+	public abstract String getBeanOverrideDescription();
+
 	protected Optional<String> getBeanName() {
 		return Optional.empty();
 	}
 
-	public Field field() {
-		return this.field;
+	protected Consumer<Object> getOrCreateTracker(ConfigurableListableBeanFactory beanFactory) {
+		return NO_OP;
+	}
+
+	public AnnotatedElement element() {
+		return this.element;
+	}
+
+	@Nullable
+	public Field fieldElement() {
+		return this.element instanceof  Field f ? f : null;
+	}
+
+	@Nullable
+	public Method methodElement() {
+		return this.element instanceof Method m ? m : null;
+	}
+
+	@Nullable
+	public Class<?> classElement() {
+		return this.element instanceof Class<?> c ? c : null;
 	}
 
 	public Annotation overrideAnnotation() {
@@ -63,6 +113,7 @@ public class OverrideMetadata {
 		return this.qualifier;
 	}
 
+
 	public boolean enforceOriginalDefinition() {
 		return false;
 	}
@@ -75,10 +126,10 @@ public class OverrideMetadata {
 			@Nullable BeanDefinition existingBeanDefinition,
 			@Nullable Object originalSingleton) {
 		if (existingBeanDefinition == null && enforceOriginalDefinition()) {
-			throw new BeanDefinitionValidationException("Cannot create override, mandatory original bean definition " + transformedBeanName + " not present");
+			throw new BeanDefinitionValidationException("Cannot create " + getBeanOverrideDescription() + " override, mandatory original bean definition " + transformedBeanName + " not present");
 		}
 		if (originalSingleton == null && enforceOriginalSingleton()) {
-			throw new BeanDefinitionValidationException("Cannot create override, mandatory original singleton instance " + transformedBeanName + " not present");
+			throw new BeanDefinitionValidationException("Cannot create " + getBeanOverrideDescription() + " override, mandatory original singleton instance " + transformedBeanName + " not present");
 		}
 	}
 
@@ -89,16 +140,20 @@ public class OverrideMetadata {
 		if (originalSingleton != null) {
 			return originalSingleton;
 		}
-		throw new BeanDefinitionValidationException("Cannot create default override, no originalSingleton present");
+		throw new BeanDefinitionValidationException("Cannot create " + getBeanOverrideDescription() + " override, no originalSingleton present");
 	}
 
 
 	@Override
 	public boolean equals(Object obj) {
-		if (obj == this) return true;
-		if (obj == null || obj.getClass() != this.getClass()) return false;
+		if (obj == this) {
+			return true;
+		}
+		if (obj == null || !getClass().isAssignableFrom(obj.getClass())) {
+			return false;
+		}
 		var that = (OverrideMetadata) obj;
-		return Objects.equals(this.field, that.field) &&
+		return Objects.equals(this.element, that.element) &&
 				Objects.equals(this.overrideAnnotation, that.overrideAnnotation) &&
 				Objects.equals(this.typeToOverride, that.typeToOverride) &&
 				Objects.equals(this.qualifier, that.qualifier);
@@ -106,13 +161,14 @@ public class OverrideMetadata {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.field, this.overrideAnnotation, this.typeToOverride, this.qualifier);
+		return Objects.hash(this.element, this.overrideAnnotation, this.typeToOverride, this.qualifier);
 	}
 
 	@Override
 	public String toString() {
 		return "OverrideMetadata[" +
-				"field=" + this.field + ", " +
+				"category=" + this.getBeanOverrideDescription() + ", " +
+				"element=" + this.element + ", " +
 				"overrideAnnotation=" + this.overrideAnnotation + ", " +
 				"typeToOverride=" + this.typeToOverride + ", " +
 				"qualifier=" + this.qualifier + ']';

@@ -67,7 +67,6 @@ public class BeanOverrideParser {
 					if (processor == null) {
 						return;
 					}
-					final String overrideType = processor.getOverrideCategory();
 					Set<ResolvableType> typesToOverride = processor.getOrDeduceTypes(field, annotation, source);
 					QualifierMetadata qualifier = QualifierMetadata.forElement(field, processor::isQualifierAnnotation);
 
@@ -77,7 +76,7 @@ public class BeanOverrideParser {
 						OverrideMetadata metadata = processor.createMetadata(field, annotation, type, qualifier);
 
 						boolean isNewDefinition = this.parsedMetadata.add(metadata);
-						Assert.state(isNewDefinition, () -> "Duplicate " + overrideType + " overrideMetadata " + metadata);
+						Assert.state(isNewDefinition, () -> "Duplicate " + metadata.getBeanOverrideDescription() + " overrideMetadata " + metadata);
 					}
 				});
 	}
