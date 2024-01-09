@@ -43,6 +43,7 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.config.ConstructorArgumentValues;
+import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.beans.factory.config.SmartInstantiationAwareBeanPostProcessor;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanNameGenerator;
@@ -52,6 +53,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.ConfigurationClassPostProcessor;
 import org.springframework.core.Conventions;
 import org.springframework.core.Ordered;
+import org.springframework.core.PriorityOrdered;
 import org.springframework.core.ResolvableType;
 import org.springframework.lang.Nullable;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -81,21 +83,19 @@ import static org.springframework.test.context.bean.override.BeanOverrideStrateg
  * @author Simon Baslé
  * @since 6.2.0
  */
-public class BeanOverrideBeanPostProcessor implements
-		SmartInstantiationAwareBeanPostProcessor, BeanClassLoaderAware,
-		BeanFactoryAware, BeanFactoryPostProcessor, Ordered {
-	//FIXME should the SmartInstantiationAwareBeanPostProcessor stuff be split in order to have two differently ordered post processors ?
+public class BeanOverrideBeanPostProcessor implements BeanClassLoaderAware, BeanFactoryAware, BeanFactoryPostProcessor,
+		Ordered {
 
 	private static final String CONFIGURATION_CLASS_ATTRIBUTE = Conventions
 			.getQualifiedAttributeName(ConfigurationClassPostProcessor.class, "configurationClass");
 
-	private static final String BEAN_NAME = BeanOverrideBeanPostProcessor.class.getName();
+	private static final String INFRASTRUCTURE_BEAN_NAME = BeanOverrideBeanPostProcessor.class.getName();
+	private static final String EARLY_INFRASTRUCTURE_BEAN_NAME = BeanOverrideBeanPostProcessor.WrapEarlyBeanPostProcessor.class.getName();
 
 	private static final BeanNameGenerator beanNameGenerator = new DefaultBeanNameGenerator();
 
 	private final Set<OverrideMetadata> overrideMetadata;
-	private final Map<String, WrapEarly> earlyOverrides = new HashMap<>();
-	private final Map<String, Object> earlyReferences = new ConcurrentHashMap<>(16);
+	private final Map<String, EarlyMetadataAndTracker> earlyOverrideMetadata = new HashMap<>();
 
 	private ClassLoader classLoader;
 
@@ -229,7 +229,8 @@ public class BeanOverrideBeanPostProcessor implements
 	 * 	<li>If none, create one definition</li>
 	 * 	<li>For all definitions, put the definition in the early tracking map</li>
 	 * 	<li>The map will later be checked to see if a given bean should be wrapped
-	 * 	upon creation, during the {@link #getEarlyBeanReference(Object, String)} phase
+	 * 	upon creation, during the {@link WrapEarlyBeanPostProcessor#getEarlyBeanReference(Object, String)}
+	 * 	phase
 	 * </ul>
 	 */
 	private void registerWrapEarly(ConfigurableListableBeanFactory beanFactory, BeanDefinitionRegistry registry,
@@ -263,7 +264,7 @@ public class BeanOverrideBeanPostProcessor implements
 	}
 
 	private void registerWrapEarlyName(OverrideMetadata definition, String beanName, Consumer<Object> tracker) {
-		this.earlyOverrides.put(beanName, new WrapEarly(definition, tracker));
+		this.earlyOverrideMetadata.put(beanName, new EarlyMetadataAndTracker(definition, tracker));
 		this.beanNameRegistry.put(definition, beanName);
 		if (definition.fieldElement() != null) {
 			this.fieldRegistry.put(definition.fieldElement(), beanName);
@@ -274,10 +275,11 @@ public class BeanOverrideBeanPostProcessor implements
 	 * Check early overrides records and use the {@link OverrideMetadata} to create
 	 * an override instance from the provided bean, if relevant.
 	 * <p>Called during the {@link SmartInstantiationAwareBeanPostProcessor} phases
-	 * (see {@link #getEarlyBeanReference(Object, String)} and {@link #postProcessAfterInitialization(Object, String)}).
+	 * (see {@link WrapEarlyBeanPostProcessor#getEarlyBeanReference(Object, String)}
+	 * and {@link WrapEarlyBeanPostProcessor#postProcessAfterInitialization(Object, String)}).
 	 */
 	protected final Object wrapIfNecessary(Object bean, String beanName) throws BeansException {
-		WrapEarly record = this.earlyOverrides.get(beanName);
+		EarlyMetadataAndTracker record = this.earlyOverrideMetadata.get(beanName);
 		if (record != null && record.metadata().getBeanOverrideStrategy() == WRAP_EARLY_BEAN) {
 			bean = record.metadata().createOverride(beanName, null, bean);
 			record.tracker().accept(bean);
@@ -384,37 +386,6 @@ public class BeanOverrideBeanPostProcessor implements
 		return primaryBeanName;
 	}
 
-	@Override
-	public Object getEarlyBeanReference(Object bean, String beanName) throws BeansException {
-		if (bean instanceof FactoryBean) {
-			return bean;
-		}
-		this.earlyReferences.put(getCacheKey(bean, beanName), bean);
-		return this.wrapIfNecessary(bean, beanName);
-	}
-
-	@Override
-	public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
-		if (bean instanceof FactoryBean) {
-			return bean;
-		}
-		if (this.earlyReferences.remove(getCacheKey(bean, beanName)) != bean) {
-			return wrapIfNecessary(bean, beanName);
-		}
-		return bean;
-	}
-
-	private String getCacheKey(Object bean, String beanName) {
-		return StringUtils.hasLength(beanName) ? beanName : bean.getClass().getName();
-	}
-
-	@Override
-	public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName)
-			throws BeansException {
-		ReflectionUtils.doWithFields(bean.getClass(), (field) -> postProcessField(bean, field));
-		return pvs;
-	}
-
 	private void postProcessField(Object bean, Field field) {
 		String beanName = this.fieldRegistry.get(field);
 		if (StringUtils.hasText(beanName)) {
@@ -479,7 +450,14 @@ public class BeanOverrideBeanPostProcessor implements
 	@SuppressWarnings("unchecked")
 	public static void register(BeanDefinitionRegistry registry, Class<? extends BeanOverrideBeanPostProcessor> postProcessor,
 			@Nullable Set<OverrideMetadata> overrideMetadata) {
-		BeanDefinition definition = getOrAddBeanDefinition(registry, postProcessor);
+		//early processor
+		getOrAddInfrastructureBeanDefinition(registry, WrapEarlyBeanPostProcessor.class, EARLY_INFRASTRUCTURE_BEAN_NAME,
+				constructorArguments -> constructorArguments.addIndexedArgumentValue(0,
+						new RuntimeBeanReference(INFRASTRUCTURE_BEAN_NAME)));
+
+		//main processor
+		BeanDefinition definition = getOrAddInfrastructureBeanDefinition(registry, postProcessor, INFRASTRUCTURE_BEAN_NAME,
+				constructorArguments -> constructorArguments.addIndexedArgumentValue(0, new LinkedHashSet<OverrideMetadata>()));
 		ConstructorArgumentValues.ValueHolder constructorArg = definition.getConstructorArgumentValues().getIndexedArgumentValue(0, Set.class);
 		Set<OverrideMetadata> existing = (Set<OverrideMetadata>) constructorArg.getValue();
 		if (overrideMetadata != null && existing != null) {
@@ -487,18 +465,65 @@ public class BeanOverrideBeanPostProcessor implements
 		}
 	}
 
-	private static BeanDefinition getOrAddBeanDefinition(BeanDefinitionRegistry registry,
-			Class<? extends BeanOverrideBeanPostProcessor> postProcessor) {
-		if (!registry.containsBeanDefinition(BEAN_NAME)) {
-			RootBeanDefinition definition = new RootBeanDefinition(postProcessor);
+	private static BeanDefinition getOrAddInfrastructureBeanDefinition(BeanDefinitionRegistry registry,
+			Class<?> clazz, String beanName, Consumer<ConstructorArgumentValues> constructorArgumentsConsumer) {
+		if (!registry.containsBeanDefinition(beanName)) {
+			RootBeanDefinition definition = new RootBeanDefinition(clazz);
 			definition.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
 			ConstructorArgumentValues constructorArguments = definition.getConstructorArgumentValues();
-			constructorArguments.addIndexedArgumentValue(0, new LinkedHashSet<OverrideMetadata>());
-			registry.registerBeanDefinition(BEAN_NAME, definition);
+			constructorArgumentsConsumer.accept(constructorArguments);
+			registry.registerBeanDefinition(beanName, definition);
 			return definition;
 		}
-		return registry.getBeanDefinition(BEAN_NAME);
+		return registry.getBeanDefinition(beanName);
 	}
 
-	private record WrapEarly(OverrideMetadata metadata, Consumer<Object> tracker) {}
+	private record EarlyMetadataAndTracker(OverrideMetadata metadata, Consumer<Object> tracker) {}
+
+	private final static class WrapEarlyBeanPostProcessor implements SmartInstantiationAwareBeanPostProcessor, PriorityOrdered {
+
+		private final BeanOverrideBeanPostProcessor mainProcessor;
+		private final Map<String, Object> earlyReferences;
+
+		private WrapEarlyBeanPostProcessor(BeanOverrideBeanPostProcessor mainProcessor) {
+			this.mainProcessor = mainProcessor;
+			this.earlyReferences = new ConcurrentHashMap<>(16);
+		}
+
+		@Override
+		public int getOrder() {
+			return Ordered.HIGHEST_PRECEDENCE;
+		}
+
+		@Override
+		public Object getEarlyBeanReference(Object bean, String beanName) throws BeansException {
+			if (bean instanceof FactoryBean) {
+				return bean;
+			}
+			this.earlyReferences.put(getCacheKey(bean, beanName), bean);
+			return this.mainProcessor.wrapIfNecessary(bean, beanName);
+		}
+
+		@Override
+		public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+			if (bean instanceof FactoryBean) {
+				return bean;
+			}
+			if (this.earlyReferences.remove(getCacheKey(bean, beanName)) != bean) {
+				return this.mainProcessor.wrapIfNecessary(bean, beanName);
+			}
+			return bean;
+		}
+
+		private String getCacheKey(Object bean, String beanName) {
+			return StringUtils.hasLength(beanName) ? beanName : bean.getClass().getName();
+		}
+
+		@Override
+		public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName)
+				throws BeansException {
+			ReflectionUtils.doWithFields(bean.getClass(), (field) -> this.mainProcessor.postProcessField(bean, field));
+			return pvs;
+		}
+	}
 }
