@@ -21,16 +21,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.springframework.core.annotation.AliasFor;
-
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.ANNOTATION_TYPE})
 public @interface BeanOverride {
 
-	@AliasFor("processors")
-	Class<? extends BeanOverrideProcessor> value();
-
-	@AliasFor("value")
 	Class<? extends BeanOverrideProcessor> processor();
 
 }

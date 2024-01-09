@@ -31,7 +31,7 @@ import java.lang.annotation.Target;
  * @see SimpleBeanOverrideProcessor
  */
 @Target(ElementType.FIELD)
-@BeanOverride(SimpleBeanOverrideProcessor.class)
+@BeanOverride(processor = SimpleBeanOverrideProcessor.class)
 public @interface TestBean {
 
 	String CONVENTION_SUFFIX = "TestOverride";
