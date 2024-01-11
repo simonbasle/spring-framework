@@ -16,12 +16,14 @@
 
 package org.springframework.test.context.bean.override;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.springframework.beans.factory.support.BeanDefinitionValidationException;
@@ -59,26 +61,36 @@ class BeanOverrideParser {
 	}
 
 	private void parseField(Field field, Class<?> source) {
-		MergedAnnotations annotations = MergedAnnotations.from(field, MergedAnnotations.SearchStrategy.TYPE_HIERARCHY);
-		annotations.stream(BeanOverride.class)
-				.map(MergedAnnotation::synthesize)
-				.forEach((annotation) -> {
-					final BeanOverrideProcessor processor = getProcessorInstance(annotation.processor());
-					if (processor == null) {
-						return;
-					}
-					Set<ResolvableType> typesToOverride = processor.getOrDeduceTypes(field, annotation, source);
-					QualifierMetadata qualifier = QualifierMetadata.forElement(field, processor::isQualifierAnnotation);
+		Annotation overrideAnnotation = null;
+		Class<? extends BeanOverrideProcessor> processorClass = null;
 
-					for (ResolvableType type : typesToOverride) {
-						// By default, a simple implementation of OverrideMetadata is provided. Can be a subclass if
-						// the processing has specific needs.
-						OverrideMetadata metadata = processor.createMetadata(field, annotation, type, qualifier);
+		MergedAnnotations allAnnotations = MergedAnnotations.from(field, MergedAnnotations.SearchStrategy.TYPE_HIERARCHY);
+		final List<MergedAnnotation<Annotation>> list = allAnnotations.stream().toList();
+		for (MergedAnnotation<Annotation> m : list) {
+			if (m.isMetaPresent() && m.getType().equals(BeanOverride.class)) {
+				processorClass = ((BeanOverride) m.synthesize()).processor();
+			}
+			else if (m.isDirectlyPresent() && m.getType().isAnnotationPresent(BeanOverride.class)) {
+				overrideAnnotation = m.synthesize();
+			}
+		}
 
-						boolean isNewDefinition = this.parsedMetadata.add(metadata);
-						Assert.state(isNewDefinition, () -> "Duplicate " + metadata.getBeanOverrideDescription() + " overrideMetadata " + metadata);
-					}
-				});
+		if (overrideAnnotation == null || processorClass == null) {
+			return;
+		}
+		final BeanOverrideProcessor processor = getProcessorInstance(processorClass);
+		if (processor == null) {
+			return;
+		}
+		Set<ResolvableType> typesToOverride = processor.getOrDeduceTypes(field, overrideAnnotation, source);
+		QualifierMetadata qualifier = QualifierMetadata.forElement(field, processor::isQualifierAnnotation);
+
+		for (ResolvableType type : typesToOverride) {
+			OverrideMetadata metadata = processor.createMetadata(field, overrideAnnotation, type, qualifier);
+
+			boolean isNewDefinition = this.parsedMetadata.add(metadata);
+			Assert.state(isNewDefinition, () -> "Duplicate " + metadata.getBeanOverrideDescription() + " overrideMetadata " + metadata);
+		}
 	}
 
 	@Nullable //TODO implement caching ? have a processor attribute to determine if stateful ?

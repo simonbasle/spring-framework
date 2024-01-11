@@ -35,6 +35,7 @@ import org.springframework.lang.Nullable;
  * and specify different steps in the process of parsing these
  * annotations, ultimately creating {@link OverrideMetadata}
  * which will be used to instantiate the overrides.
+ * <p>Implementations are required to have a no-argument constructor.
  */
 @FunctionalInterface
 public interface BeanOverrideProcessor {
@@ -64,7 +65,7 @@ public interface BeanOverrideProcessor {
 	 * {@link OverrideMetadata#createOverride(String, BeanDefinition, Object) instance creation}
 	 * (e.g. from further parsing the annotation or the annotated field).
 	 * @param element the annotated field, method or class
-	 * @param syntheticAnnotation the element annotation and {@link BeanOverride} meta-annotation, synthesised
+	 * @param overrideAnnotation the element annotation
 	 * @param typeToOverride the target type (there can be multiple types per annotated element, e.g. derived from the annotation)
 	 * @param qualifier the optional {@link QualifierMetadata}
 	 * @return a new {@link OverrideMetadata}
@@ -72,7 +73,7 @@ public interface BeanOverrideProcessor {
 	 * @see #isQualifierAnnotation(Annotation)
 	 * @see MergedAnnotation#synthesize()
 	 */
-	OverrideMetadata createMetadata(AnnotatedElement element, BeanOverride syntheticAnnotation, ResolvableType typeToOverride,
+	OverrideMetadata createMetadata(AnnotatedElement element, Annotation overrideAnnotation, ResolvableType typeToOverride,
 			@Nullable QualifierMetadata qualifier);
 
 	/**

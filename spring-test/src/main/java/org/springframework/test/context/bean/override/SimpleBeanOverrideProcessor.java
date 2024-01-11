@@ -109,7 +109,7 @@ public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 	}
 
 	@Override
-	public OverrideMetadata createMetadata(AnnotatedElement element, BeanOverride syntheticAnnotation, ResolvableType typeToOverride,
+	public OverrideMetadata createMetadata(AnnotatedElement element, Annotation overrideAnnotation, ResolvableType typeToOverride,
 			@Nullable QualifierMetadata qualifier) {
 		if (!(element instanceof Field field)) {
 			throw new UnsupportedOperationException("SimpleBeanOverrideProcessor can only process annotated Fields, got: " + element);
@@ -118,14 +118,14 @@ public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 		final Class<?> enclosingClass = field.getDeclaringClass();
 
 		// if we can get an explicit method name right away, fail false if it doesn't match
-		if (syntheticAnnotation instanceof TestBean testBeanAnnotation) {
+		if (overrideAnnotation instanceof TestBean testBeanAnnotation) {
 			String annotationMethodName = testBeanAnnotation.methodName();
 			if (!annotationMethodName.isBlank()) {
 				Method overrideMethod = ensureMethod(enclosingClass, annotationMethodName, field.getType());
-				return new MethodConventionOverrideMetadata(field, overrideMethod, syntheticAnnotation, typeToOverride, qualifier);
+				return new MethodConventionOverrideMetadata(field, overrideMethod, overrideAnnotation, typeToOverride, qualifier);
 			}
 		}
 		// otherwise defer the resolution of the static method until OverrideMetadata#createOverride
-		return new MethodConventionOverrideMetadata(field, null, syntheticAnnotation, typeToOverride, qualifier);
+		return new MethodConventionOverrideMetadata(field, null, overrideAnnotation, typeToOverride, qualifier);
 	}
 }
