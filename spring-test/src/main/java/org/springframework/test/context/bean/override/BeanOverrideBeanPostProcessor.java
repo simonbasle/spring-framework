@@ -44,6 +44,7 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.config.ConstructorArgumentValues;
+import org.springframework.beans.factory.config.InstantiationAwareBeanPostProcessor;
 import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.beans.factory.config.SmartInstantiationAwareBeanPostProcessor;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
@@ -84,8 +85,9 @@ import static org.springframework.test.context.bean.override.BeanOverrideStrateg
  * @author Simon Baslé
  * @since 6.2.0
  */
-public class BeanOverrideBeanPostProcessor implements BeanClassLoaderAware, BeanFactoryAware, BeanFactoryPostProcessor,
-		Ordered {
+public class BeanOverrideBeanPostProcessor implements
+		InstantiationAwareBeanPostProcessor, BeanClassLoaderAware,
+		BeanFactoryAware, BeanFactoryPostProcessor, Ordered {
 
 	private static final String CONFIGURATION_CLASS_ATTRIBUTE = Conventions
 			.getQualifiedAttributeName(ConfigurationClassPostProcessor.class, "configurationClass");
@@ -147,6 +149,7 @@ public class BeanOverrideBeanPostProcessor implements BeanClassLoaderAware, Bean
 		for (Class<?> configurationClass : getConfigurationClasses(beanFactory)) {
 			parser.parse(configurationClass);
 		}
+		//Note that a tracker bean is registered down the line only if there is some overrideMetadata parsed
 		Set<OverrideMetadata> overrideMetadata = parser.getOverrideMetadata();
 		for (OverrideMetadata metadata : overrideMetadata) {
 			registerBeanOverride(beanFactory, registry, metadata);
@@ -185,7 +188,6 @@ public class BeanOverrideBeanPostProcessor implements BeanClassLoaderAware, Bean
 
 	private void registerBeanOverride(ConfigurableListableBeanFactory beanFactory, BeanDefinitionRegistry registry,
 			OverrideMetadata overrideMetadata) {
-		//FIXME find tracker instance(s)
 		Consumer<Object> tracker = overrideMetadata.getOrCreateTracker(beanFactory);
 
 		switch (overrideMetadata.getBeanOverrideStrategy()) {
@@ -316,7 +318,8 @@ public class BeanOverrideBeanPostProcessor implements BeanClassLoaderAware, Bean
 		if (primaryCandidate != null) {
 			return primaryCandidate;
 		}
-		throw new IllegalStateException("Unable to register override bean " + overrideMetadata.typeToOverride()
+		throw new IllegalStateException("Unable to register " + overrideMetadata.getBeanOverrideDescription()
+				+ " bean " + overrideMetadata.typeToOverride()
 				+ " expected a single matching bean to replace but found " + existingBeans);
 	}
 
@@ -439,29 +442,16 @@ public class BeanOverrideBeanPostProcessor implements BeanClassLoaderAware, Bean
 	 * @param overrideMetadata the initial override metadata set
 	 */
 	public static void register(BeanDefinitionRegistry registry, @Nullable Set<OverrideMetadata> overrideMetadata) {
-		register(registry, BeanOverrideBeanPostProcessor.class, overrideMetadata);
-	}
-
-	/**
-	 * Register the processor with a {@link BeanDefinitionRegistry}. Not required when
-	 * using the {@link SpringRunner} as registration is automatic.
-	 * @param registry the bean definition registry
-	 * @param postProcessor the post processor class to register
-	 * @param overrideMetadata the initial override metadata set
-	 */
-	@SuppressWarnings("unchecked")
-	public static void register(BeanDefinitionRegistry registry, Class<? extends BeanOverrideBeanPostProcessor> postProcessor,
-			@Nullable Set<OverrideMetadata> overrideMetadata) {
 		//early processor
 		getOrAddInfrastructureBeanDefinition(registry, WrapEarlyBeanPostProcessor.class, EARLY_INFRASTRUCTURE_BEAN_NAME,
 				constructorArguments -> constructorArguments.addIndexedArgumentValue(0,
 						new RuntimeBeanReference(INFRASTRUCTURE_BEAN_NAME)));
 
 		//main processor
-		BeanDefinition definition = getOrAddInfrastructureBeanDefinition(registry, postProcessor, INFRASTRUCTURE_BEAN_NAME,
+		BeanDefinition definition = getOrAddInfrastructureBeanDefinition(registry, BeanOverrideBeanPostProcessor.class, INFRASTRUCTURE_BEAN_NAME,
 				constructorArguments -> constructorArguments.addIndexedArgumentValue(0, new LinkedHashSet<OverrideMetadata>()));
 		ConstructorArgumentValues.ValueHolder constructorArg = definition.getConstructorArgumentValues().getIndexedArgumentValue(0, Set.class);
-		Set<OverrideMetadata> existing = (Set<OverrideMetadata>) constructorArg.getValue();
+		@SuppressWarnings("unchecked") Set<OverrideMetadata> existing = (Set<OverrideMetadata>) constructorArg.getValue();
 		if (overrideMetadata != null && existing != null) {
 			existing.addAll(overrideMetadata);
 		}

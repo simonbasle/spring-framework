@@ -17,8 +17,8 @@
 package org.springframework.test.context.bean.override;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.Collections;
@@ -53,22 +53,24 @@ class BeanOverrideParser {
 	}
 
 	void parse(Class<?> configurationClass) {
-		ReflectionUtils.doWithFields(configurationClass, field -> parseField(field, configurationClass));
+		parseElement(configurationClass, configurationClass);
+		ReflectionUtils.doWithFields(configurationClass, field -> parseElement(field, configurationClass));
 	}
 
 	Set<OverrideMetadata> getOverrideMetadata() {
 		return Collections.unmodifiableSet(this.parsedMetadata);
 	}
 
-	private void parseField(Field field, Class<?> source) {
+	private void parseElement(AnnotatedElement element, Class<?> source) {
 		Annotation overrideAnnotation = null;
 		Class<? extends BeanOverrideProcessor> processorClass = null;
 
-		MergedAnnotations allAnnotations = MergedAnnotations.from(field, MergedAnnotations.SearchStrategy.TYPE_HIERARCHY);
+		MergedAnnotations allAnnotations = MergedAnnotations.from(element, MergedAnnotations.SearchStrategy.TYPE_HIERARCHY);
 		final List<MergedAnnotation<Annotation>> list = allAnnotations.stream().toList();
 		for (MergedAnnotation<Annotation> m : list) {
 			if (m.isMetaPresent() && m.getType().equals(BeanOverride.class)) {
-				processorClass = ((BeanOverride) m.synthesize()).processor();
+				BeanOverride beanOverride = (BeanOverride) m.synthesize();
+				processorClass = beanOverride.processor();
 			}
 			else if (m.isDirectlyPresent() && m.getType().isAnnotationPresent(BeanOverride.class)) {
 				overrideAnnotation = m.synthesize();
@@ -82,11 +84,11 @@ class BeanOverrideParser {
 		if (processor == null) {
 			return;
 		}
-		Set<ResolvableType> typesToOverride = processor.getOrDeduceTypes(field, overrideAnnotation, source);
-		QualifierMetadata qualifier = QualifierMetadata.forElement(field, processor::isQualifierAnnotation);
+		Set<ResolvableType> typesToOverride = processor.getOrDeduceTypes(element, overrideAnnotation, source);
+		QualifierMetadata qualifier = QualifierMetadata.forElement(element, processor::isQualifierAnnotation);
 
 		for (ResolvableType type : typesToOverride) {
-			OverrideMetadata metadata = processor.createMetadata(field, overrideAnnotation, type, qualifier);
+			OverrideMetadata metadata = processor.createMetadata(element, overrideAnnotation, type, qualifier);
 
 			boolean isNewDefinition = this.parsedMetadata.add(metadata);
 			Assert.state(isNewDefinition, () -> "Duplicate " + metadata.getBeanOverrideDescription() + " overrideMetadata " + metadata);
