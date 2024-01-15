@@ -16,89 +16,130 @@
 
 package org.springframework.test.context.bean.override;
 
-import java.lang.annotation.Annotation;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import java.lang.reflect.AnnotatedElement;
-import java.lang.reflect.Field;
-
 import org.junit.jupiter.api.Test;
 
-import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.ResolvableType;
-import org.springframework.lang.Nullable;
+import org.springframework.test.context.bean.override.example.TestBeanOverrideAnnotation;
+import org.springframework.test.context.bean.override.example.TestBeanOverrideMetaAnnotation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatRuntimeException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.context.bean.override.example.TestBeanOverrideProcessor.DUPLICATE_TRIGGER;
 
 class BeanOverrideParserTests {
 
-	static class TestOverrideMetadata extends OverrideMetadata {
+	@Configuration
+	static class OnFieldConf {
 
-		public TestOverrideMetadata(Field field, TestBeanOverrideAnnotation overrideAnnotation,
-				ResolvableType typeToOverride, @Nullable QualifierMetadata qualifier) {
-			super(field, overrideAnnotation, typeToOverride, qualifier);
+		@TestBeanOverrideAnnotation("onField")
+		String message;
+
+		static String onField() {
+			return "OK";
 		}
 
-		@Override
-		public BeanOverrideStrategy getBeanOverrideStrategy() {
-			return BeanOverrideStrategy.REPLACE_DEFINITION;
-		}
-
-		@Override
-		public String getBeanOverrideDescription() {
-			return "test";
-		}
-
-		@Override
-		protected Object createOverride(String beanName, @Nullable BeanDefinition existingBeanDefinition,
-				@Nullable Object existingBeanInstance) {
-			return "TEST OVERRIDE";
-		}
 	}
-
-
-	static class TestBeanOverrideProcessor implements BeanOverrideProcessor {
-
-		public TestBeanOverrideProcessor() {
-		}
-
-		@Override
-		public OverrideMetadata createMetadata(AnnotatedElement element, Annotation overrideAnnotation, ResolvableType typeToOverride, QualifierMetadata qualifier) {
-			if (!(element instanceof Field f)) {
-				throw new IllegalArgumentException("TestBeanOverrideProcessor only supports annotation on fields");
-			}
-			if (!(overrideAnnotation instanceof TestBeanOverrideAnnotation annotation)) {
-				throw new IllegalStateException("synthetic annotation error");
-			}
-			return new TestOverrideMetadata(f, annotation, typeToOverride, qualifier);
-		}
-	}
-
-	@BeanOverride(processor = TestBeanOverrideProcessor.class)
-	@Target(ElementType.FIELD)
-	@Retention(RetentionPolicy.RUNTIME)
-	public static @interface TestBeanOverrideAnnotation { }
 
 	@Configuration
-	static class TestOverrideConfiguration {
+	@TestBeanOverrideAnnotation("onClass")
+	static class OnClassConf {
 
-		@TestBeanOverrideAnnotation
 		String message;
+
+		static String onClass() {
+			return "OK";
+		}
+
+	}
+
+	@Configuration
+	@TestBeanOverrideAnnotation("onClass")
+	static class OnFieldAndClassConf {
+
+		@TestBeanOverrideAnnotation("onField")
+		String message;
+
+		static String onField() {
+			return "foo";
+		}
+
+		static OnFieldAndClassConf onClass() {
+			return new OnFieldAndClassConf();
+		}
+
+	}
+
+	@Configuration
+	static class MultipleOnFieldConf {
+
+		@TestBeanOverrideAnnotation("foo")
+		@TestBeanOverrideMetaAnnotation
+		String message;
+
+		static String foo() {
+			return "foo";
+		}
+
+	}
+
+	@Configuration
+	static class DuplicateConf {
+
+		@TestBeanOverrideAnnotation(DUPLICATE_TRIGGER)
+		String message1;
+
+		@TestBeanOverrideAnnotation(DUPLICATE_TRIGGER)
+		String message2;
 
 	}
 
 	@Test
-	void test() {
+	void findsOnField() {
 		BeanOverrideParser parser = new BeanOverrideParser();
-		parser.parse(TestOverrideConfiguration.class);
+		parser.parse(OnFieldConf.class);
 
 		assertThat(parser.getOverrideMetadata()).hasSize(1)
 				.first()
-				.extracting(om -> om.createOverride("foo", null, null))
-				.hasToString("TEST OVERRIDE");
+				.extracting(om -> ((TestBeanOverrideAnnotation) om.overrideAnnotation()).value())
+				.isEqualTo("onField");
+	}
+
+	@Test
+	void findsOnClass() {
+		BeanOverrideParser parser = new BeanOverrideParser();
+		parser.parse(OnClassConf.class);
+
+		assertThat(parser.getOverrideMetadata()).hasSize(1)
+				.first()
+				.extracting(om -> ((TestBeanOverrideAnnotation) om.overrideAnnotation()).value())
+				.isEqualTo("onClass");
+	}
+
+	@Test
+	void allowMultipleProcessorsOnDifferentElements() {
+		BeanOverrideParser parser = new BeanOverrideParser();
+		parser.parse(OnFieldAndClassConf.class);
+
+		assertThat(parser.getOverrideMetadata())
+				.hasSize(2)
+				.map(om -> ((TestBeanOverrideAnnotation) om.overrideAnnotation()).value())
+				.containsOnly("onClass", "onField");
+	}
+
+	@Test
+	void rejectsMultipleAnnotationsOnSameElement() {
+		BeanOverrideParser parser = new BeanOverrideParser();
+		assertThatRuntimeException().isThrownBy(() -> parser.parse(MultipleOnFieldConf.class))
+				.withMessage("Multiple bean override annotations found on annotated element <" +
+						String.class.getName() + " " + MultipleOnFieldConf.class.getName() + ".message>");
+	}
+
+	@Test
+	void detectsDuplicateMetadata() {
+		BeanOverrideParser parser = new BeanOverrideParser();
+		assertThatRuntimeException().isThrownBy(() -> parser.parse(DuplicateConf.class))
+				.withMessage("Duplicate test overrideMetadata {DUPLICATE_TRIGGER}");
 	}
 
 }

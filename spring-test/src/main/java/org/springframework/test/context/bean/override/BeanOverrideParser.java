@@ -23,12 +23,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.beans.factory.support.BeanDefinitionValidationException;
 import org.springframework.core.ResolvableType;
-import org.springframework.core.annotation.MergedAnnotation;
 import org.springframework.core.annotation.MergedAnnotations;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -37,7 +36,7 @@ import org.springframework.util.ReflectionUtils;
 
 /**
  * A parser that discovers annotations meta-annotated with {@link BeanOverride} on
- * fields of a class and creates {@link OverrideMetadata} accordingly.
+ * a class or fields of a class and creates {@link OverrideMetadata} accordingly.
  */
 class BeanOverrideParser {
 
@@ -61,38 +60,35 @@ class BeanOverrideParser {
 		return Collections.unmodifiableSet(this.parsedMetadata);
 	}
 
+	private record AnnotationAndProcessor(Annotation annotation, Class<? extends BeanOverrideProcessor> processor) {}
+
 	private void parseElement(AnnotatedElement element, Class<?> source) {
-		Annotation overrideAnnotation = null;
-		Class<? extends BeanOverrideProcessor> processorClass = null;
+		AtomicInteger count = new AtomicInteger();
 
-		MergedAnnotations allAnnotations = MergedAnnotations.from(element, MergedAnnotations.SearchStrategy.TYPE_HIERARCHY);
-		final List<MergedAnnotation<Annotation>> list = allAnnotations.stream().toList();
-		for (MergedAnnotation<Annotation> m : list) {
-			if (m.isMetaPresent() && m.getType().equals(BeanOverride.class)) {
-				BeanOverride beanOverride = (BeanOverride) m.synthesize();
-				processorClass = beanOverride.processor();
-			}
-			else if (m.isDirectlyPresent() && m.getType().isAnnotationPresent(BeanOverride.class)) {
-				overrideAnnotation = m.synthesize();
-			}
-		}
+		MergedAnnotations.from(element, MergedAnnotations.SearchStrategy.DIRECT)
+				.stream(BeanOverride.class)
+				.map(bo -> {
+					var a = bo.getMetaSource();
+					Assert.notNull(a, "BeanOverride annotation must be meta-present");
+					var p = bo.synthesize().processor();
+					return new AnnotationAndProcessor(a.synthesize(), p);
+				})
+				.forEach(pair -> {
+					final BeanOverrideProcessor processor = getProcessorInstance(pair.processor());
+					if (processor == null) {
+						return;
+					}
+					Set<ResolvableType> typesToOverride = processor.getOrDeduceTypes(element, pair.annotation(), source);
+					QualifierMetadata qualifier = QualifierMetadata.forElement(element, processor::isQualifierAnnotation);
 
-		if (overrideAnnotation == null || processorClass == null) {
-			return;
-		}
-		final BeanOverrideProcessor processor = getProcessorInstance(processorClass);
-		if (processor == null) {
-			return;
-		}
-		Set<ResolvableType> typesToOverride = processor.getOrDeduceTypes(element, overrideAnnotation, source);
-		QualifierMetadata qualifier = QualifierMetadata.forElement(element, processor::isQualifierAnnotation);
+					Assert.state(count.incrementAndGet() == 1, "Multiple bean override annotations found on annotated element <" + element + ">");
+					for (ResolvableType type : typesToOverride) {
+						OverrideMetadata metadata = processor.createMetadata(element, pair.annotation(), type, qualifier);
 
-		for (ResolvableType type : typesToOverride) {
-			OverrideMetadata metadata = processor.createMetadata(element, overrideAnnotation, type, qualifier);
-
-			boolean isNewDefinition = this.parsedMetadata.add(metadata);
-			Assert.state(isNewDefinition, () -> "Duplicate " + metadata.getBeanOverrideDescription() + " overrideMetadata " + metadata);
-		}
+						boolean isNewDefinition = this.parsedMetadata.add(metadata);
+						Assert.state(isNewDefinition, () -> "Duplicate " + metadata.getBeanOverrideDescription() + " overrideMetadata " + metadata);
+					}
+				});
 	}
 
 	@Nullable //TODO implement caching ? have a processor attribute to determine if stateful ?

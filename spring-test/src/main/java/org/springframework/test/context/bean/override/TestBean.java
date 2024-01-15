@@ -16,21 +16,32 @@
 
 package org.springframework.test.context.bean.override;
 
+import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
  * Mark a field to represent a "method" bean override of the bean of the same name and
  * inject the field with the overriding instance.
  * <p>The instance is created from a static method in the declaring class which return
- * type is compatible with the annotated field and which name follows the convention
- * {@code fieldName + }{@link #CONVENTION_SUFFIX}, unless the annotation's {@link #methodName()}
- * is specified.
+ * type is compatible with the annotated field and which name follows the convention:
+ * <ul>
+ *     <li>if the annotation's {@link #methodName()} is specified, look for that one.</li>
+ *     <li>if not, look for a method named with the {@link #CONVENTION_SUFFIX} suffix and either:</li>
+ *     <ul>
+ *         <li>starting with the annotated field name</li>
+ *         <li>starting with the bean name</li>
+ *     </ul>
+ * </ul>
  * <p>The annotated field's name is interpreted to be the name of the original bean to
  * override, unless the annotation's {@link #beanName()} is specified.
  * @see SimpleBeanOverrideProcessor
  */
 @Target(ElementType.FIELD)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
 @BeanOverride(processor = SimpleBeanOverrideProcessor.class)
 public @interface TestBean {
 

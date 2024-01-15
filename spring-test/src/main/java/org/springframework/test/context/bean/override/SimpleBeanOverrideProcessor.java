@@ -21,13 +21,15 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.core.ResolvableType;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
-import org.springframework.util.Assert;
-import org.springframework.util.ClassUtils;
 
 /**
  * Simple {@link BeanOverrideProcessor} primarily made to work with the {@link TestBean} annotation
@@ -68,8 +70,8 @@ public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 				@Nullable Object existingBeanInstance) {
 			Method methodToInvoke = this.overrideMethod;
 			if (methodToInvoke == null) {
-				methodToInvoke = ensureMethod(fieldElement().getDeclaringClass(), beanName + TestBean.CONVENTION_SUFFIX,
-						fieldElement().getType());
+				methodToInvoke = ensureMethod(fieldElement().getDeclaringClass(), fieldElement().getType(),
+						beanName + TestBean.CONVENTION_SUFFIX, fieldElement().getName() + TestBean.CONVENTION_SUFFIX);
 			}
 
 			methodToInvoke.setAccessible(true);
@@ -99,13 +101,13 @@ public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 		return true;
 	}
 
-	public static Method ensureMethod(Class<?> enclosingClass, String expectedMethodName, Class<?> expectedMethodReturnType) {
-		Method overrideMethod = ClassUtils.getStaticMethod(enclosingClass, expectedMethodName);
-		Assert.notNull(overrideMethod, "Expected static method " + expectedMethodName + " on class " + enclosingClass.getName());
-		Assert.state(expectedMethodReturnType.isAssignableFrom(overrideMethod.getReturnType()),
-				"Method " + expectedMethodName + " on class " + enclosingClass.getName() + " doesn't return a "
-			+ expectedMethodReturnType.getName());
-		return overrideMethod;
+	public static Method ensureMethod(Class<?> enclosingClass, Class<?> expectedMethodReturnType, String... expectedMethodNames) {
+		Set<String> expectedNames = new HashSet<>(Arrays.asList(expectedMethodNames));
+		return Arrays.stream(enclosingClass.getDeclaredMethods())
+				.filter(m -> Modifier.isStatic(m.getModifiers()))
+				.filter(m -> expectedNames.contains(m.getName()) && expectedMethodReturnType.isAssignableFrom(m.getReturnType()))
+				.findFirst().orElseThrow(() -> new IllegalStateException("Expected one static method of " + expectedNames + " on class " + enclosingClass.getName()
+				+ " with return type "+ expectedMethodReturnType.getName()));
 	}
 
 	@Override
@@ -121,7 +123,7 @@ public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 		if (overrideAnnotation instanceof TestBean testBeanAnnotation) {
 			String annotationMethodName = testBeanAnnotation.methodName();
 			if (!annotationMethodName.isBlank()) {
-				Method overrideMethod = ensureMethod(enclosingClass, annotationMethodName, field.getType());
+				Method overrideMethod = ensureMethod(enclosingClass, field.getType(), annotationMethodName);
 				return new MethodConventionOverrideMetadata(field, overrideMethod, overrideAnnotation, typeToOverride, qualifier);
 			}
 		}
