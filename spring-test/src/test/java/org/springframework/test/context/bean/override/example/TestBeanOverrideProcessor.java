@@ -18,6 +18,7 @@ package org.springframework.test.context.bean.override.example;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
+import java.util.List;
 import java.util.Set;
 
 import org.springframework.core.ResolvableType;
@@ -53,13 +54,14 @@ public class TestBeanOverrideProcessor implements BeanOverrideProcessor {
 	public static final String DUPLICATE_TRIGGER = "CONSTANT";
 
 	@Override
-	public OverrideMetadata createMetadata(AnnotatedElement element, Annotation overrideAnnotation, ResolvableType typeToOverride, QualifierMetadata qualifier) {
-		if (!(overrideAnnotation instanceof TestBeanOverrideAnnotation annotation)) {
-			throw new IllegalStateException("unexpected annotation error");
+	public List<OverrideMetadata> createMetadata(AnnotatedElement element, Annotation overrideAnnotation,
+			Set<ResolvableType> typesToOverride, QualifierMetadata qualifier) {
+		if (!(overrideAnnotation instanceof TestBeanOverrideAnnotation annotation) || typesToOverride.size() != 1) {
+			throw new IllegalStateException("unexpected annotation or typesToOverride size");
 		}
 		if (annotation.value().equals(DUPLICATE_TRIGGER)) {
-			return CONSTANT;
+			return List.of(CONSTANT);
 		}
-		return new TestOverrideMetadata(element, annotation, typeToOverride, qualifier);
+		return List.of(new TestOverrideMetadata(element, annotation, typesToOverride.iterator().next(), qualifier));
 	}
 }

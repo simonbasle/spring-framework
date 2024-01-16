@@ -18,6 +18,8 @@ package org.springframework.test.context.bean.override;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Objects;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -92,9 +94,9 @@ class SimpleBeanOverrideProcessorTests {
 	@Test
 	void createMetaDataForUnknownExplicitMethod() throws NoSuchFieldException {
 		Field f = ExplicitMethodNameConf.class.getField("a");
-		final TestBean overrideAnnotation = AnnotationUtils.getAnnotation(f, TestBean.class);
+		final TestBean overrideAnnotation = Objects.requireNonNull(AnnotationUtils.getAnnotation(f, TestBean.class));
 		SimpleBeanOverrideProcessor processor = new SimpleBeanOverrideProcessor();
-		assertThatException().isThrownBy(() -> processor.createMetadata(f, overrideAnnotation, ResolvableType.forClass(ExampleService.class), null))
+		assertThatException().isThrownBy(() -> processor.createMetadata(f, overrideAnnotation, Set.of(ResolvableType.forClass(ExampleService.class)), null))
 				.withMessage("Found 0 static methods instead of exactly one, matching a name in [explicit1] with return type " +
 						ExampleService.class.getName() + " on class " + ExplicitMethodNameConf.class.getName())
 				.isInstanceOf(IllegalStateException.class);
@@ -103,19 +105,19 @@ class SimpleBeanOverrideProcessorTests {
 	@Test
 	void createMetaDataForKnownExplicitMethod() throws NoSuchFieldException {
 		Field f = ExplicitMethodNameConf.class.getField("b");
-		final TestBean overrideAnnotation = AnnotationUtils.getAnnotation(f, TestBean.class);
+		final TestBean overrideAnnotation = Objects.requireNonNull(AnnotationUtils.getAnnotation(f, TestBean.class));
 		SimpleBeanOverrideProcessor processor = new SimpleBeanOverrideProcessor();
-		assertThat(processor.createMetadata(f, overrideAnnotation, ResolvableType.forClass(ExampleService.class), null))
-				.isInstanceOf(SimpleBeanOverrideProcessor.MethodConventionOverrideMetadata.class);
+		assertThat(processor.createMetadata(f, overrideAnnotation, Set.of(ResolvableType.forClass(ExampleService.class)), null))
+				.satisfiesExactly(one -> assertThat(one).isInstanceOf(SimpleBeanOverrideProcessor.MethodConventionOverrideMetadata.class));
 	}
 
 	@Test
 	void createMetaDataWithDeferredEnsureMethodCheck() throws NoSuchFieldException {
 		Field f = MethodConventionConf.class.getField("field");
-		final TestBean overrideAnnotation = AnnotationUtils.getAnnotation(f, TestBean.class);
+		final TestBean overrideAnnotation = Objects.requireNonNull(AnnotationUtils.getAnnotation(f, TestBean.class));
 		SimpleBeanOverrideProcessor processor = new SimpleBeanOverrideProcessor();
-		assertThat(processor.createMetadata(f, overrideAnnotation, ResolvableType.forClass(ExampleService.class), null))
-				.isInstanceOf(SimpleBeanOverrideProcessor.MethodConventionOverrideMetadata.class);
+		assertThat(processor.createMetadata(f, overrideAnnotation, Set.of(ResolvableType.forClass(ExampleService.class)), null))
+				.satisfiesExactly(one -> assertThat(one).isInstanceOf(SimpleBeanOverrideProcessor.MethodConventionOverrideMetadata.class));
 	}
 
 	static class MethodConventionConf {

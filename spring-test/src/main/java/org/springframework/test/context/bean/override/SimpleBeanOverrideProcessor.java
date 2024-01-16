@@ -22,10 +22,12 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.core.ResolvableType;
@@ -99,7 +101,7 @@ public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 		final List<Method> found = Arrays.stream(enclosingClass.getDeclaredMethods())
 				.filter(m -> Modifier.isStatic(m.getModifiers()))
 				.filter(m -> expectedNames.contains(m.getName()) && expectedMethodReturnType.isAssignableFrom(m.getReturnType()))
-				.toList();
+				.collect(Collectors.toList());
 
 		Assert.state(found.size() == 1, () -> "Found " + found.size() + " static methods instead of exactly one, " +
 						"matching a name in " + expectedNames + " with return type " + expectedMethodReturnType.getName() +
@@ -123,23 +125,29 @@ public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 	}
 
 	@Override
-	public OverrideMetadata createMetadata(AnnotatedElement element, Annotation overrideAnnotation, ResolvableType typeToOverride,
-			@Nullable QualifierMetadata qualifier) {
+	public List<OverrideMetadata> createMetadata(AnnotatedElement element, Annotation overrideAnnotation,
+			Set<ResolvableType> typesToOverride, @Nullable QualifierMetadata qualifier) {
 		if (!(element instanceof Field field)) {
 			throw new IllegalArgumentException("SimpleBeanOverrideProcessor can only process annotated Fields, got a " + element.getClass().getSimpleName());
 		}
+		List<OverrideMetadata> result = new ArrayList<>(typesToOverride.size());
 
 		final Class<?> enclosingClass = field.getDeclaringClass();
-
 		// if we can get an explicit method name right away, fail fast if it doesn't match
 		if (overrideAnnotation instanceof TestBean testBeanAnnotation) {
 			String annotationMethodName = testBeanAnnotation.methodName();
 			if (!annotationMethodName.isBlank()) {
 				Method overrideMethod = ensureMethod(enclosingClass, field.getType(), annotationMethodName);
-				return new MethodConventionOverrideMetadata(field, overrideMethod, overrideAnnotation, typeToOverride, qualifier);
+				for (ResolvableType typeToOverride : typesToOverride) {
+					result.add(new MethodConventionOverrideMetadata(field, overrideMethod, overrideAnnotation, typeToOverride, qualifier));
+				}
+				return result;
 			}
 		}
 		// otherwise defer the resolution of the static method until OverrideMetadata#createOverride
-		return new MethodConventionOverrideMetadata(field, null, overrideAnnotation, typeToOverride, qualifier);
+		for (ResolvableType typeToOverride : typesToOverride) {
+			result.add(new MethodConventionOverrideMetadata(field, null, overrideAnnotation, typeToOverride, qualifier));
+		}
+		return result;
 	}
 }

@@ -21,6 +21,7 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
 import java.lang.reflect.TypeVariable;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -59,21 +60,22 @@ public interface BeanOverrideProcessor {
 	}
 
 	/**
-	 * Create an {@link OverrideMetadata} for a given annotated element and target
-	 * {@link #getOrDeduceTypes(AnnotatedElement, Annotation, Class) type}.
+	 * Create a list of {@link OverrideMetadata} for a given annotated element and target
+	 * {@link #getOrDeduceTypes(AnnotatedElement, Annotation, Class) type(s)}.
 	 * Specific implementations of metadata can have state to be used during override
 	 * {@link OverrideMetadata#createOverride(String, BeanDefinition, Object) instance creation}
 	 * (e.g. from further parsing the annotation or the annotated field).
 	 * @param element the annotated field, method or class
 	 * @param overrideAnnotation the element annotation
-	 * @param typeToOverride the target type (there can be multiple types per annotated element, e.g. derived from the annotation)
+	 * @param typesToOverride the Set of target types (there can be multiple types per
+	 * annotated element, e.g. derived from the annotation)
 	 * @param qualifier the optional {@link QualifierMetadata}
 	 * @return a new {@link OverrideMetadata}
 	 * @see #getOrDeduceTypes(AnnotatedElement, Annotation, Class)
 	 * @see #isQualifierAnnotation(Annotation)
 	 * @see MergedAnnotation#synthesize()
 	 */
-	OverrideMetadata createMetadata(AnnotatedElement element, Annotation overrideAnnotation, ResolvableType typeToOverride,
+	List<OverrideMetadata> createMetadata(AnnotatedElement element, Annotation overrideAnnotation, Set<ResolvableType> typesToOverride,
 			@Nullable QualifierMetadata qualifier);
 
 	/**

@@ -23,6 +23,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -82,9 +83,8 @@ class BeanOverrideParser {
 					QualifierMetadata qualifier = QualifierMetadata.forElement(element, processor::isQualifierAnnotation);
 
 					Assert.state(count.incrementAndGet() == 1, "Multiple bean override annotations found on annotated element <" + element + ">");
-					for (ResolvableType type : typesToOverride) {
-						OverrideMetadata metadata = processor.createMetadata(element, pair.annotation(), type, qualifier);
-
+					List<OverrideMetadata> overrideMetadataList = processor.createMetadata(element, pair.annotation(), typesToOverride, qualifier);
+					for (OverrideMetadata metadata: overrideMetadataList) {
 						boolean isNewDefinition = this.parsedMetadata.add(metadata);
 						Assert.state(isNewDefinition, () -> "Duplicate " + metadata.getBeanOverrideDescription() + " overrideMetadata " + metadata);
 					}
