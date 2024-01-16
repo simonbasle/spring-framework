@@ -200,24 +200,24 @@ public class BeanOverrideBeanPostProcessor implements
 	private void registerReplaceDefinition(ConfigurableListableBeanFactory beanFactory, BeanDefinitionRegistry registry,
 			OverrideMetadata overrideMetadata, Consumer<Object> tracker) {
 		RootBeanDefinition beanDefinition = createBeanDefinition(overrideMetadata);
-		String beanName = BeanFactoryUtils.transformedBeanName(
-				getBeanName(beanFactory, registry, overrideMetadata, beanDefinition));
+		String beanName = getBeanName(beanFactory, registry, overrideMetadata, beanDefinition);
+		String transformedBeanName = BeanFactoryUtils.transformedBeanName(beanName);
 
 		BeanDefinition existingBeanDefinition = null;
-		if (registry.containsBeanDefinition(beanName)) {
-			existingBeanDefinition = registry.getBeanDefinition(beanName);
+		if (registry.containsBeanDefinition(transformedBeanName)) {
+			existingBeanDefinition = registry.getBeanDefinition(transformedBeanName);
 			copyBeanDefinitionDetails(existingBeanDefinition, beanDefinition);
-			registry.removeBeanDefinition(beanName);
+			registry.removeBeanDefinition(transformedBeanName);
 		}
-		registry.registerBeanDefinition(beanName, beanDefinition);
+		registry.registerBeanDefinition(transformedBeanName, beanDefinition);
 
-		Object originalSingleton = beanFactory.getSingleton(beanName);
+		Object originalSingleton = beanFactory.getSingleton(transformedBeanName);
 		//TODO a pre-existing singleton should probably be removed from the factory.
 		Object override = overrideMetadata.createOverride(beanName, existingBeanDefinition, originalSingleton);
 		tracker.accept(override);
 
 		//TODO is this notion of registering a singleton bean valid in all potential cases?
-		beanFactory.registerSingleton(beanName, override);
+		beanFactory.registerSingleton(transformedBeanName, override);
 
 		this.beanNameRegistry.put(overrideMetadata, beanName);
 		if (overrideMetadata.fieldElement() != null) {
