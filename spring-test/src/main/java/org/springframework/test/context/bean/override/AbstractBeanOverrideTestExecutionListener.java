@@ -17,7 +17,6 @@
 package org.springframework.test.context.bean.override;
 
 import java.lang.reflect.Field;
-import java.util.Optional;
 import java.util.function.BiConsumer;
 
 import org.springframework.test.context.TestContext;
@@ -27,49 +26,59 @@ import org.springframework.test.context.support.DependencyInjectionTestExecution
 import org.springframework.util.ReflectionUtils;
 
 /**
- * A {@link TestExecutionListener} to enable Bean Override support in tests.
+ * An abstract {@link TestExecutionListener} to enable Bean Override support in tests, injecting overridden
+ * beans in appropriate fields.
+ * <p>A single concrete {@link AbstractBeanOverrideTestExecutionListener} should be registered per application test,
+ * defining the {@link #getOrder() order} and optionally adding behavior to {@link #prepareTestInstance(TestContext)}
+ * and {@link #beforeTestMethod(TestContext)}.
  */
 public abstract class AbstractBeanOverrideTestExecutionListener extends AbstractTestExecutionListener {
 
-
+	/**
+	 * Defaults to calling {@link #injectFields(TestContext)}.
+	 */
 	@Override
 	public void prepareTestInstance(TestContext testContext) throws Exception {
-		initForCleanup(testContext).ifPresent(o -> testContext.setAttribute(getCleanupAttributeName(), o));;
 		injectFields(testContext);
 	}
 
+	/**
+	 * Defaults to calling {@link #reinjectFieldsIfConfigured(TestContext)}.
+	 */
 	@Override
 	public void beforeTestMethod(TestContext testContext) throws Exception {
-		if (Boolean.TRUE.equals(
-				testContext.getAttribute(DependencyInjectionTestExecutionListener.REINJECT_DEPENDENCIES_ATTRIBUTE))) {
-			initForCleanup(testContext).ifPresent(o -> testContext.setAttribute(getCleanupAttributeName(), o));
-			reinjectFields(testContext);
-		}
+		reinjectFieldsIfConfigured(testContext);
 	}
 
-	@Override
-	public void afterTestMethod(TestContext testContext) throws Exception {
-		Object cleanup = testContext.getAttribute(getCleanupAttributeName());
-		if (cleanup instanceof AutoCloseable closeable) {
-			closeable.close();
-		}
-	}
-
-	//FIXME make it more pluggable... how to have a single listener yet have eg. mock specific inits/cleanup
-	protected Optional<Object> initForCleanup(TestContext testContext) {
-		return Optional.empty();
-	}
-
-	protected String getCleanupAttributeName() {
-		return this.getClass().getSimpleName() + ".AFTER_TEST";
-	}
-
-	private void injectFields(TestContext testContext) {
+	/**
+	 * Parse Bean Override fields in the test class and inject these using a
+	 * registered {@link BeanOverrideBeanPostProcessor}.
+	 */
+	protected void injectFields(TestContext testContext) {
 		postProcessFields(testContext, (testMetadata, postProcessor) -> postProcessor.inject(
 				testMetadata.field(), testMetadata.testInstance(), testMetadata.overrideMetadata()));
 	}
 
-	private void reinjectFields(final TestContext testContext) {
+	/**
+	 * Parse Bean Override fields in the test class, null them out and re-inject them
+	 * using a registered {@link BeanOverrideBeanPostProcessor}, provided the
+	 * {@link DependencyInjectionTestExecutionListener#REINJECT_DEPENDENCIES_ATTRIBUTE}
+	 * attribute is present in the {@code testContext}
+	 * @see #reinjectFields(TestContext)
+	 */
+	protected void reinjectFieldsIfConfigured(final TestContext testContext) {
+		if (Boolean.TRUE.equals(
+				testContext.getAttribute(DependencyInjectionTestExecutionListener.REINJECT_DEPENDENCIES_ATTRIBUTE))) {
+			reinjectFields(testContext);
+		}
+	}
+
+	/**
+	 * Parse Bean Override fields in the test class, null them out and re-inject them
+	 * using a registered {@link BeanOverrideBeanPostProcessor}.
+	 * @see #reinjectFieldsIfConfigured(TestContext)
+	 */
+	protected void reinjectFields(final TestContext testContext) {
 		postProcessFields(testContext, (testMetadata, postProcessor) -> {
 			Field f = testMetadata.field();
 			ReflectionUtils.makeAccessible(f);

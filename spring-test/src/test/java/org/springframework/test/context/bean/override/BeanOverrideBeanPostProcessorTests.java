@@ -101,7 +101,7 @@ class BeanOverrideBeanPostProcessorTests {
 		BeanOverrideBeanPostProcessor.register(context);
 		context.register(OverridePrimaryBean.class);
 		context.refresh();
-		assertThat(context.getBean(OverridePrimaryBean.class).mock).as("field").isSameAs(OVERRIDE_SERVICE);
+		assertThat(context.getBean(OverridePrimaryBean.class).field).as("field").isSameAs(OVERRIDE_SERVICE);
 		assertThat(context.getBean(ExampleService.class)).as("bean by class").isSameAs(OVERRIDE_SERVICE);
 		assertThat(context.getBean("examplePrimary", ExampleService.class)).as("primary").isSameAs(OVERRIDE_SERVICE);
 		assertThat(context.getBean("exampleQualified", ExampleService.class)).as("qualified").isNotSameAs(OVERRIDE_SERVICE);
@@ -113,7 +113,7 @@ class BeanOverrideBeanPostProcessorTests {
 		BeanOverrideBeanPostProcessor.register(context);
 		context.register(OverrideQualifiedBean.class);
 		context.refresh();
-		assertThat(context.getBean(OverrideQualifiedBean.class).mock).as("field").isSameAs(OVERRIDE_SERVICE);
+		assertThat(context.getBean(OverrideQualifiedBean.class).field).as("field").isSameAs(OVERRIDE_SERVICE);
 		assertThat(context.getBean(ExampleService.class)).as("bean by class").isNotSameAs(OVERRIDE_SERVICE);
 		assertThat(context.getBean("examplePrimary", ExampleService.class)).as("primary").isNotSameAs(OVERRIDE_SERVICE);
 		assertThat(context.getBean("exampleQualified", ExampleService.class)).as("qualified").isSameAs(OVERRIDE_SERVICE);
@@ -173,7 +173,7 @@ class BeanOverrideBeanPostProcessorTests {
 
 		@TestBeanOverrideAnnotation
 		@Qualifier("test")
-		private ExampleService mock;
+		private ExampleService field;
 
 		@Bean
 		@Qualifier("test")
@@ -198,7 +198,7 @@ class BeanOverrideBeanPostProcessorTests {
 	static class OverridePrimaryBean {
 
 		@TestBeanOverrideAnnotation("useThis")
-		private ExampleService mock;
+		private ExampleService field;
 
 		@Bean
 		@Qualifier("test")
@@ -223,7 +223,7 @@ class BeanOverrideBeanPostProcessorTests {
 
 		@TestBeanOverrideAnnotation("useThis")
 		@Qualifier("test")
-		private ExampleService mock;
+		private ExampleService field;
 
 		@Bean
 		@Qualifier("test")

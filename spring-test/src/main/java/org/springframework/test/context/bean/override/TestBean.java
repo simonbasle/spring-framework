@@ -29,7 +29,7 @@ import java.lang.annotation.Target;
  * type is compatible with the annotated field and which name follows the convention:
  * <ul>
  *     <li>if the annotation's {@link #methodName()} is specified, look for that one.</li>
- *     <li>if not, look for a method named with the {@link #CONVENTION_SUFFIX} suffix and either:</li>
+ *     <li>if not, look for exactly one method named with the {@link #CONVENTION_SUFFIX} suffix and either:</li>
  *     <ul>
  *         <li>starting with the annotated field name</li>
  *         <li>starting with the bean name</li>

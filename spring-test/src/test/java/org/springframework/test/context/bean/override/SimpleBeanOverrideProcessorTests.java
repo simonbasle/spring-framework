@@ -16,40 +16,137 @@
 
 package org.springframework.test.context.bean.override;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+
 import org.junit.jupiter.api.Test;
 
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.core.ResolvableType;
+import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.test.context.bean.override.example.ExampleService;
 import org.springframework.test.context.bean.override.example.FailingExampleService;
+import org.springframework.util.ClassUtils;
 
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatException;
 
 class SimpleBeanOverrideProcessorTests {
 
-	@Configuration(proxyBeanMethods = false)
-	static class NoMatchingMethodConventionBeans {
+	@Test
+	void ensureMethodFindsFromList() {
+		Method m = SimpleBeanOverrideProcessor.ensureMethod(MethodConventionConf.class, ExampleService.class,
+				"example1", "example2", "example3");
+
+		assertThat(m.getName()).isEqualTo("example2");
+	}
+
+	@Test
+	void ensureMethodNotFound() {
+		assertThatException().isThrownBy(() -> SimpleBeanOverrideProcessor.ensureMethod(
+				MethodConventionConf.class, ExampleService.class, "example1", "example3"))
+				.withMessage("Found 0 static methods instead of exactly one, matching a name in [example1, example3] with return type " +
+						ExampleService.class.getName() + " on class " + MethodConventionConf.class.getName())
+				.isInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
+	void ensureMethodTwoFound() {
+		assertThatException().isThrownBy(() -> SimpleBeanOverrideProcessor.ensureMethod(
+				MethodConventionConf.class, ExampleService.class, "example2", "example4"))
+				.withMessage("Found 2 static methods instead of exactly one, matching a name in [example2, example4] with return type " +
+						ExampleService.class.getName() + " on class " + MethodConventionConf.class.getName())
+				.isInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
+	void ensureMethodNoNameProvided() {
+		assertThatException().isThrownBy(() -> SimpleBeanOverrideProcessor.ensureMethod(
+				MethodConventionConf.class, ExampleService.class))
+				.withMessage("At least one expectedMethodName is required")
+				.isInstanceOf(IllegalArgumentException.class);
+	}
+
+
+	@Test
+	void qualifierAnnotations() {
+		SimpleBeanOverrideProcessor processor = new SimpleBeanOverrideProcessor();
+		TestBean annotation = AnnotationUtils.synthesizeAnnotation(TestBean.class);
+		Qualifier qualifierAnnotation = AnnotationUtils.synthesizeAnnotation(Qualifier.class);
+		assertThat(processor.isQualifierAnnotation(annotation)).as("@TestBean").isFalse();
+		assertThat(processor.isQualifierAnnotation(qualifierAnnotation)).as("@Qualifier").isTrue();
+		//noinspection DataFlowIssue
+		assertThat(processor.additionalIsQualifierCheck(null)).isTrue();
+	}
+
+	@Test
+	void createMetaDataForFieldsOnly() {
+		Method m = ClassUtils.getMethod(MethodConventionConf.class, "example4");
+		SimpleBeanOverrideProcessor processor = new SimpleBeanOverrideProcessor();
+		assertThatException().isThrownBy(() -> processor.createMetadata(m, null, null, null))
+				.withMessage("SimpleBeanOverrideProcessor can only process annotated Fields, got a Method")
+				.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	void createMetaDataForUnknownExplicitMethod() throws NoSuchFieldException {
+		Field f = ExplicitMethodNameConf.class.getField("a");
+		final TestBean overrideAnnotation = AnnotationUtils.getAnnotation(f, TestBean.class);
+		SimpleBeanOverrideProcessor processor = new SimpleBeanOverrideProcessor();
+		assertThatException().isThrownBy(() -> processor.createMetadata(f, overrideAnnotation, ResolvableType.forClass(ExampleService.class), null))
+				.withMessage("Found 0 static methods instead of exactly one, matching a name in [explicit1] with return type " +
+						ExampleService.class.getName() + " on class " + ExplicitMethodNameConf.class.getName())
+				.isInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
+	void createMetaDataForKnownExplicitMethod() throws NoSuchFieldException {
+		Field f = ExplicitMethodNameConf.class.getField("b");
+		final TestBean overrideAnnotation = AnnotationUtils.getAnnotation(f, TestBean.class);
+		SimpleBeanOverrideProcessor processor = new SimpleBeanOverrideProcessor();
+		assertThat(processor.createMetadata(f, overrideAnnotation, ResolvableType.forClass(ExampleService.class), null))
+				.isInstanceOf(SimpleBeanOverrideProcessor.MethodConventionOverrideMetadata.class);
+	}
+
+	@Test
+	void createMetaDataWithDeferredEnsureMethodCheck() throws NoSuchFieldException {
+		Field f = MethodConventionConf.class.getField("field");
+		final TestBean overrideAnnotation = AnnotationUtils.getAnnotation(f, TestBean.class);
+		SimpleBeanOverrideProcessor processor = new SimpleBeanOverrideProcessor();
+		assertThat(processor.createMetadata(f, overrideAnnotation, ResolvableType.forClass(ExampleService.class), null))
+				.isInstanceOf(SimpleBeanOverrideProcessor.MethodConventionOverrideMetadata.class);
+	}
+
+	static class MethodConventionConf {
 
 		@TestBean
-		private ExampleService mock;
+		public ExampleService field;
 
 		@Bean
 		ExampleService example1() {
 			return new FailingExampleService();
 		}
+
+		static ExampleService example2() {
+			return new FailingExampleService();
+		}
+
+		public static ExampleService example4() {
+			return new FailingExampleService();
+		}
 	}
 
-	@Test
-	void byConventionLooksForBothFieldNameAndBeanName() {
-		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-		BeanOverrideBeanPostProcessor.register(context);
-		context.register(NoMatchingMethodConventionBeans.class);
-		assertThatIllegalStateException().isThrownBy(context::refresh)
-				.withMessageContaining("Expected one static method of [mockTestOverride, example1TestOverride] on class "
-						+ NoMatchingMethodConventionBeans.class.getName() + " with return type "
-						+ ExampleService.class.getName());
-	}
+	static class ExplicitMethodNameConf {
 
-	//FIXME add more tests around conventions, etc...
+		@TestBean(methodName = "explicit1")
+		public ExampleService a;
+
+		@TestBean(methodName = "explicit2")
+		public ExampleService b;
+
+		static ExampleService explicit2() {
+			return new FailingExampleService();
+		}
+	}
 }

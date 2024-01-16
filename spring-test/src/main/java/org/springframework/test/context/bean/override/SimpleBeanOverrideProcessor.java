@@ -23,18 +23,20 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.core.ResolvableType;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 
 /**
  * Simple {@link BeanOverrideProcessor} primarily made to work with the {@link TestBean} annotation
  * but can work with arbitrary override annotations provided the annotated class has
- * a static method which name follows the convention {@code <beanName> + } {@link TestBean#CONVENTION_SUFFIX}.
+ * a relevant method according to the convention documented in {@link TestBean}.
  */
 public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 
@@ -87,6 +89,25 @@ public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 		}
 	}
 
+	/**
+	 * Ensures the {@code enclosingClass} has a static, no-arguments method with the
+	 * provided {@code expectedMethodReturnType} and exactly one of the {@code expectedMethodNames}.
+	 */
+	public static Method ensureMethod(Class<?> enclosingClass, Class<?> expectedMethodReturnType, String... expectedMethodNames) {
+		Assert.isTrue(expectedMethodNames.length > 0, "At least one expectedMethodName is required");
+		Set<String> expectedNames = new LinkedHashSet<>(Arrays.asList(expectedMethodNames));
+		final List<Method> found = Arrays.stream(enclosingClass.getDeclaredMethods())
+				.filter(m -> Modifier.isStatic(m.getModifiers()))
+				.filter(m -> expectedNames.contains(m.getName()) && expectedMethodReturnType.isAssignableFrom(m.getReturnType()))
+				.toList();
+
+		Assert.state(found.size() == 1, () -> "Found " + found.size() + " static methods instead of exactly one, " +
+						"matching a name in " + expectedNames + " with return type " + expectedMethodReturnType.getName() +
+						" on class " + enclosingClass.getName());
+
+		return found.get(0);
+	}
+
 	@Override
 	public boolean isQualifierAnnotation(Annotation annotation) {
 		return !(annotation instanceof TestBean) && additionalIsQualifierCheck(annotation);
@@ -101,25 +122,16 @@ public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 		return true;
 	}
 
-	public static Method ensureMethod(Class<?> enclosingClass, Class<?> expectedMethodReturnType, String... expectedMethodNames) {
-		Set<String> expectedNames = new HashSet<>(Arrays.asList(expectedMethodNames));
-		return Arrays.stream(enclosingClass.getDeclaredMethods())
-				.filter(m -> Modifier.isStatic(m.getModifiers()))
-				.filter(m -> expectedNames.contains(m.getName()) && expectedMethodReturnType.isAssignableFrom(m.getReturnType()))
-				.findFirst().orElseThrow(() -> new IllegalStateException("Expected one static method of " + expectedNames + " on class " + enclosingClass.getName()
-				+ " with return type "+ expectedMethodReturnType.getName()));
-	}
-
 	@Override
 	public OverrideMetadata createMetadata(AnnotatedElement element, Annotation overrideAnnotation, ResolvableType typeToOverride,
 			@Nullable QualifierMetadata qualifier) {
 		if (!(element instanceof Field field)) {
-			throw new UnsupportedOperationException("SimpleBeanOverrideProcessor can only process annotated Fields, got: " + element);
+			throw new IllegalArgumentException("SimpleBeanOverrideProcessor can only process annotated Fields, got a " + element.getClass().getSimpleName());
 		}
 
 		final Class<?> enclosingClass = field.getDeclaringClass();
 
-		// if we can get an explicit method name right away, fail false if it doesn't match
+		// if we can get an explicit method name right away, fail fast if it doesn't match
 		if (overrideAnnotation instanceof TestBean testBeanAnnotation) {
 			String annotationMethodName = testBeanAnnotation.methodName();
 			if (!annotationMethodName.isBlank()) {

@@ -398,6 +398,13 @@ public class BeanOverrideBeanPostProcessor implements
 		}
 	}
 
+	@Override
+	public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName)
+			throws BeansException {
+		ReflectionUtils.doWithFields(bean.getClass(), (field) -> postProcessField(bean, field));
+		return pvs;
+	}
+
 	void inject(Field field, Object target, OverrideMetadata overrideMetadata) {
 		String beanName = this.beanNameRegistry.get(overrideMetadata);
 		Assert.state(StringUtils.hasLength(beanName), () -> "No bean found for overrideMetadata " + overrideMetadata);
@@ -511,11 +518,5 @@ public class BeanOverrideBeanPostProcessor implements
 			return StringUtils.hasLength(beanName) ? beanName : bean.getClass().getName();
 		}
 
-		@Override
-		public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName)
-				throws BeansException {
-			ReflectionUtils.doWithFields(bean.getClass(), (field) -> this.mainProcessor.postProcessField(bean, field));
-			return pvs;
-		}
 	}
 }

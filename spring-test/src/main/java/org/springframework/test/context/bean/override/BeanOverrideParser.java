@@ -60,7 +60,7 @@ class BeanOverrideParser {
 		return Collections.unmodifiableSet(this.parsedMetadata);
 	}
 
-	private record AnnotationAndProcessor(Annotation annotation, Class<? extends BeanOverrideProcessor> processor) {}
+	private record AnnotationAndProcessor(Annotation annotation, Class<? extends BeanOverrideProcessor> processorClass) {}
 
 	private void parseElement(AnnotatedElement element, Class<?> source) {
 		AtomicInteger count = new AtomicInteger();
@@ -74,7 +74,7 @@ class BeanOverrideParser {
 					return new AnnotationAndProcessor(a.synthesize(), p);
 				})
 				.forEach(pair -> {
-					final BeanOverrideProcessor processor = getProcessorInstance(pair.processor());
+					final BeanOverrideProcessor processor = getProcessorInstance(pair.processorClass());
 					if (processor == null) {
 						return;
 					}
