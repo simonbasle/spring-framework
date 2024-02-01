@@ -23,20 +23,26 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Mark a field to represent a "method" bean override of the bean of the same name and
- * inject the field with the overriding instance.
- * <p>The instance is created from a static method in the declaring class which return
- * type is compatible with the annotated field and which name follows the convention:
+ * Mark a field to represent a "method" bean override of the bean of the same
+ * name and inject the field with the overriding instance.
+ *
+ * <p>The instance is created from a static method in the declaring class which
+ * return type is compatible with the annotated field and which name follows the
+ * convention:
  * <ul>
- *     <li>if the annotation's {@link #methodName()} is specified, look for that one.</li>
- *     <li>if not, look for exactly one method named with the {@link #CONVENTION_SUFFIX} suffix and either:</li>
+ *     <li>if the annotation's {@link #methodName()} is specified,
+ *     look for that one.</li>
+ *     <li>if not, look for exactly one method named with the
+ *     {@link #CONVENTION_SUFFIX} suffix and either:</li>
  *     <ul>
  *         <li>starting with the annotated field name</li>
  *         <li>starting with the bean name</li>
  *     </ul>
  * </ul>
- * <p>The annotated field's name is interpreted to be the name of the original bean to
- * override, unless the annotation's {@link #beanName()} is specified.
+ *
+ * <p>The annotated field's name is interpreted to be the name of the original
+ * bean to override, unless the annotation's {@link #beanName()} is specified.
+ *
  * @see SimpleBeanOverrideProcessor
  * @author Simon Baslé
  * @since 6.2
@@ -49,21 +55,22 @@ public @interface TestBean {
 
 	/**
 	 * The method suffix expected as a convention in static methods which
-	 * provide an override instance.
+	 * provides an override instance.
 	 */
 	String CONVENTION_SUFFIX = "TestOverride";
 
 	/**
-	 * The name of a static method to look for in the Configuration, which will be
-	 * used to instantiate the override bean and inject the annotated field.
+	 * The name of a static method to look for in the Configuration, which will
+	 * be used to instantiate the override bean and inject the annotated field.
 	 * <p> Default is {@code ""} (the empty String), which is translated into
-	 * the annotated field's name concatenated with the {@link #CONVENTION_SUFFIX}.
+	 * the annotated field's name concatenated with the
+	 * {@link #CONVENTION_SUFFIX}.
 	 */
 	String methodName() default "";
 
 	/**
-	 * The name of the original bean to override, or {@code ""} (the empty String)
-	 * to deduce the name from the annotated field.
+	 * The name of the original bean to override, or {@code ""} (the empty
+	 * String) to deduce the name from the annotated field.
 	 */
 	String beanName() default "";
 }

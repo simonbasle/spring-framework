@@ -36,8 +36,9 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
 
 /**
- * A parser that discovers annotations meta-annotated with {@link BeanOverride} on
- * a class or fields of a class and creates {@link OverrideMetadata} accordingly.
+ * A parser that discovers annotations meta-annotated with {@link BeanOverride}
+ * on a class or fields of a class and creates {@link OverrideMetadata}
+ * accordingly.
  *
  * @author Simon Baslé
  */
@@ -82,11 +83,14 @@ class BeanOverrideParser {
 					Set<ResolvableType> typesToOverride = processor.getOrDeduceTypes(element, pair.annotation(), source);
 					QualifierMetadata qualifier = QualifierMetadata.forElement(element, processor::isQualifierAnnotation);
 
-					Assert.state(count.incrementAndGet() == 1, "Multiple bean override annotations found on annotated element <" + element + ">");
-					List<OverrideMetadata> overrideMetadataList = processor.createMetadata(element, pair.annotation(), typesToOverride, qualifier);
+					Assert.state(count.incrementAndGet() == 1, "Multiple bean override annotations" +
+							" found on annotated element <" + element + ">");
+					List<OverrideMetadata> overrideMetadataList = processor.createMetadata(element, pair.annotation(),
+							typesToOverride, qualifier);
 					for (OverrideMetadata metadata: overrideMetadataList) {
 						boolean isNewDefinition = this.parsedMetadata.add(metadata);
-						Assert.state(isNewDefinition, () -> "Duplicate " + metadata.getBeanOverrideDescription() + " overrideMetadata " + metadata);
+						Assert.state(isNewDefinition, () -> "Duplicate " + metadata.getBeanOverrideDescription() +
+								" overrideMetadata " + metadata);
 					}
 				});
 	}

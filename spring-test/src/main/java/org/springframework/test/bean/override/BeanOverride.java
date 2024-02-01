@@ -23,8 +23,9 @@ import java.lang.annotation.Target;
 
 /**
  * Mark an annotation as eligible for Bean Override parsing.
- * This meta-annotation provides a {@link BeanOverrideProcessor} class which must be
- * capable of handling the annotated annotation.
+ * This meta-annotation provides a {@link BeanOverrideProcessor} class which
+ * must be capable of handling the annotated annotation.
+ *
  * <p>Target annotation must have a {@link RetentionPolicy} of {@code RUNTIME}.
  * @see BeanOverrideBeanPostProcessor
  *
@@ -36,8 +37,9 @@ import java.lang.annotation.Target;
 public @interface BeanOverride {
 
 	/**
-	 * A {@link BeanOverrideProcessor} implementation class by which the target annotation should
-	 * be processed. Implementations must have a no-argument constructor.
+	 * A {@link BeanOverrideProcessor} implementation class by which the target
+	 * annotation should be processed. Implementations must have a no-argument
+	 * constructor.
 	 */
 	Class<? extends BeanOverrideProcessor> processor();
 

@@ -58,9 +58,10 @@ public class BeanOverrideContextCustomizerFactory implements ContextCustomizerFa
 		private final Set<OverrideMetadata> metadata;
 
 		/**
-		 * Construct a context customizer given some pre-existing override metadata.
-		 * @param metadata a set of concrete {@link OverrideMetadata} provided by
-		 * the underlying {@link BeanOverrideParser}
+		 * Construct a context customizer given some pre-existing override
+		 * metadata.
+		 * @param metadata a set of concrete {@link OverrideMetadata} provided
+		 * by the underlying {@link BeanOverrideParser}
 		 */
 		BeanOverrideContextCustomizer(Set<OverrideMetadata> metadata) {
 			this.metadata = metadata;

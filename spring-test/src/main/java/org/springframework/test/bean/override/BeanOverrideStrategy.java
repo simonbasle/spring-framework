@@ -17,7 +17,8 @@
 package org.springframework.test.bean.override;
 
 /**
- * Strategies for override instantiation, implemented in {@link BeanOverrideBeanPostProcessor}.
+ * Strategies for override instantiation, implemented in
+ * {@link BeanOverrideBeanPostProcessor}.
  *
  * @author Simon Baslé
  * @since 6.2
@@ -25,16 +26,19 @@ package org.springframework.test.bean.override;
 public enum BeanOverrideStrategy {
 
 	/**
-	 * Replace a given bean's definition, immediately preparing a singleton instance.
+	 * Replace a given bean's definition, immediately preparing a singleton
+	 * instance.
 	 */
 	REPLACE_DEFINITION,
 	/**
 	 * Intercept and wrap the actual bean instance upon creation, during
-	 * {@link org.springframework.beans.factory.config.SmartInstantiationAwareBeanPostProcessor#getEarlyBeanReference(Object, String) early bean definition}.
+	 * {@link org.springframework.beans.factory.config.SmartInstantiationAwareBeanPostProcessor#getEarlyBeanReference(Object, String)
+	 * early bean definition}.
 	 */
 	WRAP_EARLY_BEAN,
 	/**
-	 * A placeholder strategy that is ignored by {@link BeanOverrideBeanPostProcessor}.
+	 * A placeholder strategy that is ignored by
+	 * {@link BeanOverrideBeanPostProcessor}.
 	 */
 	NO_OP;
 }

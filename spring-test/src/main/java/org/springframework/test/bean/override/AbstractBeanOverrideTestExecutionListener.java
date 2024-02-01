@@ -26,10 +26,12 @@ import org.springframework.test.context.support.DependencyInjectionTestExecution
 import org.springframework.util.ReflectionUtils;
 
 /**
- * An abstract {@link TestExecutionListener} to enable Bean Override support in tests, injecting overridden
- * beans in appropriate fields.
- * <p>A single concrete {@link AbstractBeanOverrideTestExecutionListener} should be registered per application test,
- * defining the {@link #getOrder() order} and optionally adding behavior to {@link #prepareTestInstance(TestContext)}
+ * An abstract {@link TestExecutionListener} to enable Bean Override support in
+ * tests, injecting overridden beans in appropriate fields.
+ *
+ * <p>A single concrete {@link AbstractBeanOverrideTestExecutionListener} should
+ * be registered per application test, defining the {@link #getOrder() order}
+ * and optionally adding behavior to {@link #prepareTestInstance(TestContext)}
  * and {@link #beforeTestMethod(TestContext)}.
  *
  * @author Simon Baslé
@@ -63,9 +65,9 @@ public abstract class AbstractBeanOverrideTestExecutionListener extends Abstract
 	}
 
 	/**
-	 * Parse Bean Override fields in the test class, null them out and re-inject them
-	 * using a registered {@link BeanOverrideBeanPostProcessor}, provided the
-	 * {@link DependencyInjectionTestExecutionListener#REINJECT_DEPENDENCIES_ATTRIBUTE}
+	 * Parse Bean Override fields in the test class, null them out and re-inject
+	 * them* using a registered {@link BeanOverrideBeanPostProcessor}, provided
+	 * the {@link DependencyInjectionTestExecutionListener#REINJECT_DEPENDENCIES_ATTRIBUTE}
 	 * attribute is present in the {@code testContext}.
 	 * @see #reinjectFields(TestContext)
 	 */
@@ -77,8 +79,8 @@ public abstract class AbstractBeanOverrideTestExecutionListener extends Abstract
 	}
 
 	/**
-	 * Parse Bean Override fields in the test class, null them out and re-inject them
-	 * using a registered {@link BeanOverrideBeanPostProcessor}.
+	 * Parse Bean Override fields in the test class, null them out and re-inject
+	 * them* using a registered {@link BeanOverrideBeanPostProcessor}.
 	 * @see #reinjectFieldsIfConfigured(TestContext)
 	 */
 	protected void reinjectFields(final TestContext testContext) {
@@ -90,14 +92,17 @@ public abstract class AbstractBeanOverrideTestExecutionListener extends Abstract
 		});
 	}
 
-	private void postProcessFields(TestContext testContext, BiConsumer<TestContextOverrideMetadata, BeanOverrideBeanPostProcessor> consumer) {
+	private void postProcessFields(TestContext testContext, BiConsumer<TestContextOverrideMetadata,
+			BeanOverrideBeanPostProcessor> consumer) {
 		BeanOverrideParser parser = new BeanOverrideParser();
 		parser.parse(testContext.getTestClass());
 		if (!parser.getOverrideMetadata().isEmpty()) {
-			BeanOverrideBeanPostProcessor postProcessor = testContext.getApplicationContext().getBean(BeanOverrideBeanPostProcessor.class);
+			BeanOverrideBeanPostProcessor postProcessor = testContext.getApplicationContext()
+					.getBean(BeanOverrideBeanPostProcessor.class);
 			for (OverrideMetadata metadata: parser.getOverrideMetadata()) {
 				if (metadata.element() instanceof Field field) {
-					consumer.accept(new TestContextOverrideMetadata(testContext.getTestInstance(), field, metadata), postProcessor);
+					consumer.accept(new TestContextOverrideMetadata(testContext.getTestInstance(), field, metadata),
+							postProcessor);
 				}
 			}
 		}

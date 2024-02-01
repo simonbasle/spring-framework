@@ -31,11 +31,11 @@ import org.springframework.lang.Nullable;
 
 /**
  * An interface for Bean Overriding concrete processing.
- * Processors are generally linked to one or more specific
- * concrete annotations (meta-annotated with {@link BeanOverride})
- * and specify different steps in the process of parsing these
- * annotations, ultimately creating {@link OverrideMetadata}
- * which will be used to instantiate the overrides.
+ * Processors are generally linked to one or more specific concrete annotations
+ * (meta-annotated with {@link BeanOverride}) and specify different steps in the
+ * process of parsing these annotations, ultimately creating
+ * {@link OverrideMetadata} which will be used to instantiate the overrides.
+ *
  * <p>Implementations are required to have a no-argument constructor.
  *
  * @author Simon Baslé
@@ -45,13 +45,14 @@ import org.springframework.lang.Nullable;
 public interface BeanOverrideProcessor {
 
 	/**
-	 * Determine a {@link Set} of {@link ResolvableType} for each of
-	 * which an {@link OverrideMetadata} instance will be created.
-	 * Override to provide more than one type per annotated element, or to use
-	 * the annotation to determine type(s).
-	 * <p>Defaults to an empty set if the annotated element is not a {@link Field}.
-	 * For fields, defaults to a single {@link ResolvableType} that additionally tracks
-	 * the source class if the field is a {@link TypeVariable}.
+	 * Determine a {@link Set} of {@link ResolvableType} for each of which an
+	 * {@link OverrideMetadata} instance will be created. Override to provide
+	 * more than one type per annotated element, or to use the annotation to
+	 * determine type(s).
+	 * <p>Defaults to an empty set if the annotated element is not a
+	 * {@link Field}. For fields, defaults to a single {@link ResolvableType}
+	 * that additionally tracks the source class if the field is a
+	 * {@link TypeVariable}.
 	 */
 	default Set<ResolvableType> getOrDeduceTypes(AnnotatedElement element, Annotation annotation, Class<?> source) {
 		Set<ResolvableType> types = new LinkedHashSet<>();
@@ -63,23 +64,24 @@ public interface BeanOverrideProcessor {
 	}
 
 	/**
-	 * Create a list of {@link OverrideMetadata} for a given annotated element and target
-	 * {@link #getOrDeduceTypes(AnnotatedElement, Annotation, Class) type(s)}.
-	 * Specific implementations of metadata can have state to be used during override
-	 * {@link OverrideMetadata#createOverride(String, BeanDefinition, Object) instance creation}
-	 * (e.g. from further parsing the annotation or the annotated field).
+	 * Create a list of {@link OverrideMetadata} for a given annotated element
+	 * and target {@link #getOrDeduceTypes(AnnotatedElement, Annotation, Class)
+	 * type(s)}. Specific implementations of metadata can have state to be used
+	 * during override {@link OverrideMetadata#createOverride(String,
+	 * BeanDefinition, Object) instance creation} (e.g. from further parsing the
+	 * annotation or the annotated field).
 	 * @param element the annotated field, method or class
 	 * @param overrideAnnotation the element annotation
-	 * @param typesToOverride the Set of target types (there can be multiple types per
-	 * annotated element, e.g. derived from the annotation)
+	 * @param typesToOverride the Set of target types (there can be multiple
+	 * types per annotated element, e.g. derived from the annotation)
 	 * @param qualifier the optional {@link QualifierMetadata}
 	 * @return a new {@link OverrideMetadata}
 	 * @see #getOrDeduceTypes(AnnotatedElement, Annotation, Class)
 	 * @see #isQualifierAnnotation(Annotation)
 	 * @see MergedAnnotation#synthesize()
 	 */
-	List<OverrideMetadata> createMetadata(AnnotatedElement element, Annotation overrideAnnotation, Set<ResolvableType> typesToOverride,
-			@Nullable QualifierMetadata qualifier);
+	List<OverrideMetadata> createMetadata(AnnotatedElement element, Annotation overrideAnnotation,
+			Set<ResolvableType> typesToOverride, @Nullable QualifierMetadata qualifier);
 
 	/**
 	 * Define if an annotation should be considered as a qualifier annotation,

@@ -36,9 +36,10 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * Simple {@link BeanOverrideProcessor} primarily made to work with the {@link TestBean} annotation
- * but can work with arbitrary override annotations provided the annotated class has
- * a relevant method according to the convention documented in {@link TestBean}.
+ * Simple {@link BeanOverrideProcessor} primarily made to work with the
+ * {@link TestBean} annotation but can work with arbitrary override annotations
+ * provided the annotated class has a relevant method according to the
+ * convention documented in {@link TestBean}.
  *
  * @author Simon Baslé
  * @since 6.2
@@ -46,20 +47,23 @@ import org.springframework.util.Assert;
 public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 
 	/**
-	 * Ensures the {@code enclosingClass} has a static, no-arguments method with the
-	 * provided {@code expectedMethodReturnType} and exactly one of the {@code expectedMethodNames}.
+	 * Ensures the {@code enclosingClass} has a static, no-arguments method with
+	 * the provided {@code expectedMethodReturnType} and exactly one of the
+	 * {@code expectedMethodNames}.
 	 */
-	public static Method ensureMethod(Class<?> enclosingClass, Class<?> expectedMethodReturnType, String... expectedMethodNames) {
+	public static Method ensureMethod(Class<?> enclosingClass, Class<?> expectedMethodReturnType,
+			String... expectedMethodNames) {
 		Assert.isTrue(expectedMethodNames.length > 0, "At least one expectedMethodName is required");
 		Set<String> expectedNames = new LinkedHashSet<>(Arrays.asList(expectedMethodNames));
 		final List<Method> found = Arrays.stream(enclosingClass.getDeclaredMethods())
 				.filter(m -> Modifier.isStatic(m.getModifiers()))
-				.filter(m -> expectedNames.contains(m.getName()) && expectedMethodReturnType.isAssignableFrom(m.getReturnType()))
+				.filter(m -> expectedNames.contains(m.getName()) && expectedMethodReturnType
+						.isAssignableFrom(m.getReturnType()))
 				.collect(Collectors.toList());
 
-		Assert.state(found.size() == 1, () -> "Found " + found.size() + " static methods instead of exactly one, " +
-						"matching a name in " + expectedNames + " with return type " + expectedMethodReturnType.getName() +
-						" on class " + enclosingClass.getName());
+		Assert.state(found.size() == 1, () -> "Found " + found.size() + " static methods " +
+				"instead of exactly one, matching a name in " + expectedNames + " with return type " +
+				expectedMethodReturnType.getName() + " on class " + enclosingClass.getName());
 
 		return found.get(0);
 	}
@@ -70,9 +74,9 @@ public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 	}
 
 	/**
-	 * Additional check to extend which annotations are considered as qualifier annotations.
-	 * Not the {@link TestBean} annotation is never considered as a qualifier.
-	 * Defaults to considering all annotations.
+	 * Additional check to extend which annotations are considered as qualifier
+	 * annotations. Note the {@link TestBean} annotation is never considered as
+	 * a qualifier. Defaults to considering all annotations.
 	 */
 	protected boolean additionalIsQualifierCheck(Annotation annotation) {
 		return true;
@@ -82,7 +86,8 @@ public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 	public List<OverrideMetadata> createMetadata(AnnotatedElement element, Annotation overrideAnnotation,
 			Set<ResolvableType> typesToOverride, @Nullable QualifierMetadata qualifier) {
 		if (!(element instanceof Field field)) {
-			throw new IllegalArgumentException("SimpleBeanOverrideProcessor can only process annotated Fields, got a " + element.getClass().getSimpleName());
+			throw new IllegalArgumentException("SimpleBeanOverrideProcessor can only process annotated Fields, got a " +
+					element.getClass().getSimpleName());
 		}
 		List<OverrideMetadata> result = new ArrayList<>(typesToOverride.size());
 
@@ -93,14 +98,16 @@ public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 			if (!annotationMethodName.isBlank()) {
 				Method overrideMethod = ensureMethod(enclosingClass, field.getType(), annotationMethodName);
 				for (ResolvableType typeToOverride : typesToOverride) {
-					result.add(new MethodConventionOverrideMetadata(field, overrideMethod, overrideAnnotation, typeToOverride, qualifier));
+					result.add(new MethodConventionOverrideMetadata(field, overrideMethod, overrideAnnotation,
+							typeToOverride, qualifier));
 				}
 				return result;
 			}
 		}
 		// otherwise defer the resolution of the static method until OverrideMetadata#createOverride
 		for (ResolvableType typeToOverride : typesToOverride) {
-			result.add(new MethodConventionOverrideMetadata(field, null, overrideAnnotation, typeToOverride, qualifier));
+			result.add(new MethodConventionOverrideMetadata(field, null, overrideAnnotation,
+					typeToOverride, qualifier));
 		}
 		return result;
 	}
@@ -138,7 +145,8 @@ public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 			Method methodToInvoke = this.overrideMethod;
 			if (methodToInvoke == null) {
 				methodToInvoke = ensureMethod(fieldElement().getDeclaringClass(), fieldElement().getType(),
-						beanName + TestBean.CONVENTION_SUFFIX, fieldElement().getName() + TestBean.CONVENTION_SUFFIX);
+						beanName + TestBean.CONVENTION_SUFFIX,
+						fieldElement().getName() + TestBean.CONVENTION_SUFFIX);
 			}
 
 			methodToInvoke.setAccessible(true);
@@ -147,7 +155,8 @@ public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 				override = methodToInvoke.invoke(null);
 			}
 			catch (IllegalAccessException | InvocationTargetException ex) {
-				throw new RuntimeException(ex); //TODO better error handling, notably indicate that we expect a 0-param static method
+				//TODO better error handling, notably indicate that we expect a 0-param static method
+				throw new RuntimeException(ex);
 			}
 
 			return override;

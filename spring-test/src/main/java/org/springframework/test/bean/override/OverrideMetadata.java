@@ -58,32 +58,39 @@ public abstract class OverrideMetadata {
 	}
 
 	/**
-	 * Define the broad {@link BeanOverrideStrategy} for this {@link OverrideMetadata},
-	 * as a hint on how and when the override instance should be created.
+	 * Define the broad {@link BeanOverrideStrategy} for this
+	 * {@link OverrideMetadata}, as a hint on how and when the override instance
+	 * should be created.
 	 */
 	public abstract BeanOverrideStrategy getBeanOverrideStrategy();
 
 	/**
 	 * Define a short human-readable description of the kind of override this
-	 * OverrideMetadata is about. This is especially useful for {@link BeanOverrideProcessor}
-	 * that produce several subtypes of metadata (e.g. "mock" vs "spy").
+	 * OverrideMetadata is about. This is especially useful for
+	 * {@link BeanOverrideProcessor} that produce several subtypes of metadata
+	 * (e.g. "mock" vs "spy").
 	 */
 	public abstract String getBeanOverrideDescription();
 
 	/**
-	 * Provide an explicit bean name to override, if relevant. Typically, this is useful
-	 * for concrete annotations that allow the user to provide the bean name.
-	 * @return an {@link Optional} bean name, or {@link Optional#empty()} if it should be inferred
+	 * Provide an explicit bean name to override, if relevant. Typically, this
+	 * is useful for concrete annotations that allow the user to provide the
+	 * bean name.
+	 * @return an {@link Optional} bean name, or {@link Optional#empty()}
+	 * if it should be inferred
 	 */
 	protected Optional<String> getExplicitBeanName() {
 		return Optional.empty();
 	}
 
 	/**
-	 * Returns an optional tracking {@link Consumer} for objects created by this OverrideMetadata.
-	 * Defaults to the {@link #NO_TRACKING} NO-OP implementation.
-	 * @param beanFactory the bean factory in which trackers could optionally be registered
-	 * @return the tracking {@link Consumer} to use, or {@link #NO_TRACKING} if irrelevant
+	 * Returns an optional tracking {@link Consumer} for objects created by this
+	 * OverrideMetadata. Defaults to the {@link #NO_TRACKING} NO-OP
+	 * implementation.
+	 * @param beanFactory the bean factory in which trackers could optionally
+	 * be registered
+	 * @return the tracking {@link Consumer} to use, or {@link #NO_TRACKING}
+	 * if irrelevant
 	 */
 	protected Consumer<Object> getOrCreateTracker(ConfigurableListableBeanFactory beanFactory) {
 		return NO_TRACKING;
@@ -91,8 +98,8 @@ public abstract class OverrideMetadata {
 
 	/**
 	 * The element annotated with a {@link BeanOverride}-compatible annotation.
-	 * <p>Typically a {@link Field}, but implementations could also accept {@link Method}
-	 * or {@link Class}.
+	 * <p>Typically a {@link Field}, but implementations could also accept
+	 * {@link Method} or {@link Class}.
 	 * @return the annotated element
 	 * @see #fieldElement()
 	 */
@@ -101,8 +108,10 @@ public abstract class OverrideMetadata {
 	}
 
 	/**
-	 * Convenience method to get the {@link #element annotated element} as a {@link Field}.
-	 * @return the annotated element as a {@link Field}, or {@code null} if not a Field
+	 * Convenience method to get the {@link #element annotated element}
+	 * as a {@link Field}.
+	 * @return the annotated element as a {@link Field}, or {@code null}
+	 * if not a Field
 	 */
 	@Nullable
 	public Field fieldElement() {
@@ -110,8 +119,10 @@ public abstract class OverrideMetadata {
 	}
 
 	/**
-	 * Convenience method to get the {@link #element annotated element} as a {@link Method}.
-	 * @return the annotated element as a {@link Method}, or {@code null} if not a Method
+	 * Convenience method to get the {@link #element annotated element}
+	 * as a {@link Method}.
+	 * @return the annotated element as a {@link Method}, or {@code null}
+	 * if not a Method
 	 */
 	@Nullable
 	public Method methodElement() {
@@ -119,8 +130,10 @@ public abstract class OverrideMetadata {
 	}
 
 	/**
-	 * Convenience method to get the {@link #element annotated element} as a {@link Class}.
-	 * @return the annotated element as a {@link Class}, or {@code null} if not a Class
+	 * Convenience method to get the {@link #element annotated element}
+	 * as a {@link Class}.
+	 * @return the annotated element as a {@link Class}, or {@code null}
+	 * if not a Class
 	 */
 	@Nullable
 	public Class<?> classElement() {
@@ -128,7 +141,8 @@ public abstract class OverrideMetadata {
 	}
 
 	/**
-	 * The concrete override annotation, i.e. the one meta-annotated with {@link BeanOverride}.
+	 * The concrete override annotation, i.e. the one meta-annotated with
+	 * {@link BeanOverride}.
 	 */
 	public Annotation overrideAnnotation() {
 		return this.overrideAnnotation;
@@ -142,7 +156,8 @@ public abstract class OverrideMetadata {
 	}
 
 	/**
-	 * The optional {@link QualifierMetadata}. Returns {@code null} if not relevant.
+	 * The optional {@link QualifierMetadata}. Returns {@code null} if not
+	 * relevant.
 	 */
 	@Nullable
 	public QualifierMetadata qualifier() {
@@ -150,14 +165,14 @@ public abstract class OverrideMetadata {
 	}
 
 	/**
-	 * Create an override instance from this {@link OverrideMetadata}, optionally provided
-	 * with an existing {@link BeanDefinition} and/or an original instance (i.e. a singleton
-	 * or an early wrapped instance).
+	 * Create an override instance from this {@link OverrideMetadata},
+	 * optionally provided with an existing {@link BeanDefinition} and/or an
+	 * original instance (i.e. a singleton or an early wrapped instance).
 	 * @param beanName the name of the bean being overridden
-	 * @param existingBeanDefinition an existing bean definition for that bean name, or
-	 * {@code null} if not relevant
-	 * @param existingBeanInstance an existing instance for that bean name, for wrapping
-	 * purpose, or {@code null} if irrelevant
+	 * @param existingBeanDefinition an existing bean definition for that bean
+	 * name, or {@code null} if not relevant
+	 * @param existingBeanInstance an existing instance for that bean name,
+	 * for wrapping purpose, or {@code null} if irrelevant
 	 * @return the instance with which to override the bean
 	 */
 	protected abstract Object createOverride(String beanName, @Nullable BeanDefinition existingBeanDefinition,

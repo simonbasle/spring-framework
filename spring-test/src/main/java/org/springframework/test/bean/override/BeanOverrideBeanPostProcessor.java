@@ -67,20 +67,24 @@ import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * A {@link BeanFactoryPostProcessor} used to register and inject overriding bean
- * metadata with the {@link ApplicationContext}. An initial set of {@link OverrideMetadata}
- * can be passed to the processor with additional metadata being automatically created
- * from {@code @Configuration} classes that use any annotation meta-annotated with
- * {@link BeanOverride} to mark override sites.
+ * A {@link BeanFactoryPostProcessor} used to register and inject overriding
+ * bean metadata with the {@link ApplicationContext}. An initial set of
+ * {@link OverrideMetadata} can be passed to the processor with additional
+ * metadata being automatically created from {@code @Configuration} classes that
+ * use any annotation meta-annotated with {@link BeanOverride} to mark override
+ * sites.
+ *
  * <p>This processor supports two {@link BeanOverrideStrategy}:
  * <ul>
- *     <li>replacing a given bean's definition, immediately preparing a singleton instance</li>
- *     <li>intercepting the actual bean instance upon creation and wrapping it,
- *         using the early bean definition mechanism of {@link SmartInstantiationAwareBeanPostProcessor}).
- *     </li>
+ * <li>replacing a given bean's definition, immediately preparing a singleton
+ * instance</li>
+ * <li>intercepting the actual bean instance upon creation and wrapping it,
+ * using the early bean definition mechanism of
+ * {@link SmartInstantiationAwareBeanPostProcessor}).</li>
  * </ul>
- * <p>This processor also provides support for injecting the overridden bean instances into
- * their corresponding annotated {@link Field}, if any.
+ *
+ * <p>This processor also provides support for injecting the overridden bean
+ * instances into their corresponding annotated {@link Field}, if any.
  *
  * @author Simon Baslé
  * @since 6.2
@@ -109,8 +113,8 @@ public class BeanOverrideBeanPostProcessor implements
 	private final Map<Field, String> fieldRegistry = new HashMap<>();
 
 	/**
-	 * Create a new {@link BeanOverrideBeanPostProcessor} instance with the given initial
-	 * {@link OverrideMetadata} set.
+	 * Create a new {@link BeanOverrideBeanPostProcessor} instance with the
+	 * given initial {@link OverrideMetadata} set.
 	 * @param overrideMetadata the initial override metadata
 	 */
 	public BeanOverrideBeanPostProcessor(Set<OverrideMetadata> overrideMetadata) {
@@ -130,8 +134,8 @@ public class BeanOverrideBeanPostProcessor implements
 	}
 
 	/**
-	 * Return this processor's {@link OverrideMetadata} set, which includes metadata
-	 * discovered via Bean Override annotations in configuration classes.
+	 * Return this processor's {@link OverrideMetadata} set, which includes
+	 * metadata discovered via Bean Override annotations in configuration classes.
 	 */
 	protected Set<OverrideMetadata> getOverrideMetadata() {
 		return this.overrideMetadata;
@@ -140,7 +144,8 @@ public class BeanOverrideBeanPostProcessor implements
 	@Override
 	public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
 		Assert.isInstanceOf(BeanDefinitionRegistry.class, beanFactory,
-				"Bean overriding annotations can only be used on bean factories that implement BeanDefinitionRegistry");
+				"Bean overriding annotations can only be used on bean factories that implement "
+						+ "BeanDefinitionRegistry");
 		postProcessBeanFactory(beanFactory, (BeanDefinitionRegistry) beanFactory);
 	}
 
@@ -178,9 +183,9 @@ public class BeanOverrideBeanPostProcessor implements
 	}
 
 	/**
-	 * Copy the details of a {@link BeanDefinition} to the definition created by this processor
-	 * for a given {@link OverrideMetadata}. Defaults to copying the {@link BeanDefinition#isPrimary()}
-	 * attribute.
+	 * Copy the details of a {@link BeanDefinition} to the definition created by
+	 * this processor for a given {@link OverrideMetadata}. Defaults to copying
+	 * the {@link BeanDefinition#isPrimary()} attribute.
 	 */
 	protected void copyBeanDefinitionDetails(BeanDefinition from, RootBeanDefinition to) {
 		to.setPrimary(from.isPrimary());
@@ -228,12 +233,12 @@ public class BeanOverrideBeanPostProcessor implements
 	/**
 	 * Perform wrap-early preparation steps. These are:
 	 * <ul>
-	 * 	<li>Detect pre-existing bean names for the type to override</li>
-	 * 	<li>If none, create one definition</li>
-	 * 	<li>For all definitions, put the definition in the early tracking map</li>
-	 * 	<li>The map will later be checked to see if a given bean should be wrapped
-	 * 	upon creation, during the {@link WrapEarlyBeanPostProcessor#getEarlyBeanReference(Object, String)}
-	 * 	phase
+	 * <li>Detect pre-existing bean names for the type to override</li>
+	 * <li>If none, create one definition</li>
+	 * <li>For all definitions, put the definition in the early tracking map</li>
+	 * <li>The map will later be checked to see if a given bean should be wrapped
+	 * upon creation, during the {@link WrapEarlyBeanPostProcessor#getEarlyBeanReference(Object, String)}
+	 * phase
 	 * </ul>
 	 */
 	private void registerWrapEarly(ConfigurableListableBeanFactory beanFactory, BeanDefinitionRegistry registry,
@@ -264,7 +269,8 @@ public class BeanOverrideBeanPostProcessor implements
 			}
 		}
 		catch (RuntimeException ex) {
-			throw new IllegalStateException("Unable to register " + metadata.getBeanOverrideDescription() + " bean " + metadata.typeToOverride(), ex);
+			throw new IllegalStateException("Unable to register " + metadata.getBeanOverrideDescription() +
+					" bean " + metadata.typeToOverride(), ex);
 		}
 	}
 
@@ -277,10 +283,10 @@ public class BeanOverrideBeanPostProcessor implements
 	}
 
 	/**
-	 * Check early overrides records and use the {@link OverrideMetadata} to create
-	 * an override instance from the provided bean, if relevant.
-	 * <p>Called during the {@link SmartInstantiationAwareBeanPostProcessor} phases
-	 * (see {@link WrapEarlyBeanPostProcessor#getEarlyBeanReference(Object, String)}
+	 * Check early overrides records and use the {@link OverrideMetadata} to
+	 * create an override instance from the provided bean, if relevant.
+	 * <p>Called during the {@link SmartInstantiationAwareBeanPostProcessor}
+	 * phases (see {@link WrapEarlyBeanPostProcessor#getEarlyBeanReference(Object, String)}
 	 * and {@link WrapEarlyBeanPostProcessor#postProcessAfterInitialization(Object, String)}).
 	 */
 	protected final Object wrapIfNecessary(Object bean, String beanName) throws BeansException {
@@ -384,7 +390,8 @@ public class BeanOverrideBeanPostProcessor implements
 			if (beanDefinition.isPrimary()) {
 				if (primaryBeanName != null) {
 					throw new NoUniqueBeanDefinitionException(Objects.requireNonNull(type.resolve()),
-							candidateBeanNames.size(), "more than one 'primary' bean found among candidates: " + Collections.singletonList(candidateBeanNames));
+							candidateBeanNames.size(), "more than one 'primary' bean found among candidates: " +
+							Collections.singletonList(candidateBeanNames));
 				}
 				primaryBeanName = candidateBeanName;
 			}
@@ -420,8 +427,8 @@ public class BeanOverrideBeanPostProcessor implements
 			if (existingValue == bean) {
 				return;
 			}
-			Assert.state(existingValue == null, () -> "The existing value '" + existingValue + "' of field '" + field
-					+ "' is not the same as the new value '" + bean + "'");
+			Assert.state(existingValue == null, () -> "The existing value '" + existingValue +
+					"' of field '" + field + "' is not the same as the new value '" + bean + "'");
 			ReflectionUtils.setField(field, target, bean);
 		}
 		catch (Throwable ex) {
@@ -456,10 +463,13 @@ public class BeanOverrideBeanPostProcessor implements
 						new RuntimeBeanReference(INFRASTRUCTURE_BEAN_NAME)));
 
 		//main processor
-		BeanDefinition definition = getOrAddInfrastructureBeanDefinition(registry, BeanOverrideBeanPostProcessor.class, INFRASTRUCTURE_BEAN_NAME,
-				constructorArguments -> constructorArguments.addIndexedArgumentValue(0, new LinkedHashSet<OverrideMetadata>()));
-		ConstructorArgumentValues.ValueHolder constructorArg = definition.getConstructorArgumentValues().getIndexedArgumentValue(0, Set.class);
-		@SuppressWarnings("unchecked") Set<OverrideMetadata> existing = (Set<OverrideMetadata>) constructorArg.getValue();
+		BeanDefinition definition = getOrAddInfrastructureBeanDefinition(registry, BeanOverrideBeanPostProcessor.class,
+				INFRASTRUCTURE_BEAN_NAME, constructorArguments -> constructorArguments
+						.addIndexedArgumentValue(0, new LinkedHashSet<OverrideMetadata>()));
+		ConstructorArgumentValues.ValueHolder constructorArg = definition.getConstructorArgumentValues()
+				.getIndexedArgumentValue(0, Set.class);
+		@SuppressWarnings("unchecked")
+		Set<OverrideMetadata> existing = (Set<OverrideMetadata>) constructorArg.getValue();
 		if (overrideMetadata != null && existing != null) {
 			existing.addAll(overrideMetadata);
 		}
@@ -480,7 +490,8 @@ public class BeanOverrideBeanPostProcessor implements
 
 	private record EarlyMetadataAndTracker(OverrideMetadata metadata, Consumer<Object> tracker) {}
 
-	private static final class WrapEarlyBeanPostProcessor implements SmartInstantiationAwareBeanPostProcessor, PriorityOrdered {
+	private static final class WrapEarlyBeanPostProcessor implements SmartInstantiationAwareBeanPostProcessor,
+			PriorityOrdered {
 
 		private final BeanOverrideBeanPostProcessor mainProcessor;
 		private final Map<String, Object> earlyReferences;
