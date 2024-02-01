@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.test.context.bean.override;
+package org.springframework.test.bean.override;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -65,7 +66,6 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
-import static org.springframework.test.context.bean.override.BeanOverrideStrategy.WRAP_EARLY_BEAN;
 /**
  * A {@link BeanFactoryPostProcessor} used to register and inject overriding bean
  * metadata with the {@link ApplicationContext}. An initial set of {@link OverrideMetadata}
@@ -83,7 +83,7 @@ import static org.springframework.test.context.bean.override.BeanOverrideStrateg
  * their corresponding annotated {@link Field}, if any.
  *
  * @author Simon Baslé
- * @since 6.2.0
+ * @since 6.2
  */
 public class BeanOverrideBeanPostProcessor implements
 		InstantiationAwareBeanPostProcessor, BeanClassLoaderAware,
@@ -259,7 +259,9 @@ public class BeanOverrideBeanPostProcessor implements
 			Collection<String> existingBeanNames, Consumer<Object> tracker) {
 		try {
 			String beanName = determineBeanName(existingBeanNames, metadata, registry);
-			registerWrapEarlyName(metadata, beanName, tracker);
+			if (beanName != null) {
+				registerWrapEarlyName(metadata, beanName, tracker);
+			}
 		}
 		catch (RuntimeException ex) {
 			throw new IllegalStateException("Unable to register " + metadata.getBeanOverrideDescription() + " bean " + metadata.typeToOverride(), ex);
@@ -283,7 +285,7 @@ public class BeanOverrideBeanPostProcessor implements
 	 */
 	protected final Object wrapIfNecessary(Object bean, String beanName) throws BeansException {
 		EarlyMetadataAndTracker record = this.earlyOverrideMetadata.get(beanName);
-		if (record != null && record.metadata().getBeanOverrideStrategy() == WRAP_EARLY_BEAN) {
+		if (record != null && record.metadata().getBeanOverrideStrategy() == BeanOverrideStrategy.WRAP_EARLY_BEAN) {
 			bean = record.metadata().createOverride(beanName, null, bean);
 			record.tracker().accept(bean);
 		}
@@ -381,9 +383,8 @@ public class BeanOverrideBeanPostProcessor implements
 			BeanDefinition beanDefinition = registry.getBeanDefinition(candidateBeanName);
 			if (beanDefinition.isPrimary()) {
 				if (primaryBeanName != null) {
-					throw new NoUniqueBeanDefinitionException(type.resolve(), candidateBeanNames.size(),
-							"more than one 'primary' bean found among candidates: "
-									+ Collections.singletonList(candidateBeanNames));
+					throw new NoUniqueBeanDefinitionException(Objects.requireNonNull(type.resolve()),
+							candidateBeanNames.size(), "more than one 'primary' bean found among candidates: " + Collections.singletonList(candidateBeanNames));
 				}
 				primaryBeanName = candidateBeanName;
 			}

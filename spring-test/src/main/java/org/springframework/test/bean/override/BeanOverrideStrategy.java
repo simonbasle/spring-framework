@@ -14,21 +14,24 @@
  * limitations under the License.
  */
 
-package org.springframework.test.context.bean.override.example;
+package org.springframework.test.bean.override;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+/**
+ * Strategies for override instantiation, implemented in {@link BeanOverrideBeanPostProcessor}.
+ *
+ * @author Simon Baslé
+ * @since 6.2
+ */
+public enum BeanOverrideStrategy {
 
-import org.springframework.test.context.bean.override.BeanOverride;
-
-@BeanOverride(processor = TestBeanOverrideProcessor.class)
-@Target({ElementType.FIELD, ElementType.TYPE})
-@Retention(RetentionPolicy.RUNTIME)
-public @interface TestBeanOverrideAnnotation {
-
-	static final String DEFAULT_VALUE = "TEST OVERRIDE";
-
-	String value() default DEFAULT_VALUE;
+	/**
+	 * Replace a given bean's definition, immediately preparing a singleton instance.
+	 */
+	REPLACE_DEFINITION,
+	/**
+	 * Intercept and wrap the actual bean instance upon creation, during
+	 * {@link org.springframework.beans.factory.config.SmartInstantiationAwareBeanPostProcessor#getEarlyBeanReference(Object, String) early bean definition}.
+	 */
+	WRAP_EARLY_BEAN,
+	NO_OP;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,24 @@
  * limitations under the License.
  */
 
-/**
- * Support case-by-case Bean overriding in Spring tests.
- */
-@NonNullApi
-package org.springframework.test.context.bean.override;
+package org.springframework.test.bean.override.example;
 
-import org.springframework.lang.NonNullApi;
+/**
+ * Example service implementation for spy tests.
+ *
+ * @author Phillip Webb
+ */
+public class RealExampleService implements ExampleService {
+
+	private final String greeting;
+
+	public RealExampleService(String greeting) {
+		this.greeting = greeting;
+	}
+
+	@Override
+	public String greeting() {
+		return this.greeting;
+	}
+
+}

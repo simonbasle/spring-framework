@@ -14,21 +14,15 @@
  * limitations under the License.
  */
 
-package org.springframework.test.context.bean.override;
+package org.springframework.test.bean.override.example;
 
 /**
- * Strategies for override instantiation, implemented in {@link BeanOverrideBeanPostProcessor}.
+ * Example service interface for mocking tests.
+ *
+ * @author Phillip Webb
  */
-public enum BeanOverrideStrategy {
+public interface ExampleService {
 
-	/**
-	 * Replace a given bean's definition, immediately preparing a singleton instance.
-	 */
-	REPLACE_DEFINITION,
-	/**
-	 * Intercept and wrap the actual bean instance upon creation, during
-	 * {@link org.springframework.beans.factory.config.SmartInstantiationAwareBeanPostProcessor#getEarlyBeanReference(Object, String) early bean definition}.
-	 */
-	WRAP_EARLY_BEAN,
-	NO_OP;
+	String greeting();
+
 }

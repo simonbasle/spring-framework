@@ -14,14 +14,21 @@
  * limitations under the License.
  */
 
-package org.springframework.test.context.bean.override.example;
+package org.springframework.test.bean.override.example;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.springframework.test.bean.override.BeanOverride;
+
+@BeanOverride(processor = TestBeanOverrideProcessor.class)
 @Target({ElementType.FIELD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@TestBeanOverrideAnnotation("foo")
-public @interface TestBeanOverrideMetaAnnotation { }
+public @interface TestBeanOverrideAnnotation {
+
+	static final String DEFAULT_VALUE = "TEST OVERRIDE";
+
+	String value() default DEFAULT_VALUE;
+}

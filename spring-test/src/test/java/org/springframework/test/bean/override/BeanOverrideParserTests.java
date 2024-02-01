@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package org.springframework.test.context.bean.override;
+package org.springframework.test.bean.override;
 
 import org.junit.jupiter.api.Test;
 
 import org.springframework.context.annotation.Configuration;
-import org.springframework.test.context.bean.override.example.TestBeanOverrideAnnotation;
-import org.springframework.test.context.bean.override.example.TestBeanOverrideMetaAnnotation;
+import org.springframework.test.bean.override.example.TestBeanOverrideAnnotation;
+import org.springframework.test.bean.override.example.TestBeanOverrideMetaAnnotation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatRuntimeException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.springframework.test.context.bean.override.example.TestBeanOverrideProcessor.DUPLICATE_TRIGGER;
+import static org.springframework.test.bean.override.example.TestBeanOverrideProcessor.DUPLICATE_TRIGGER;
 
 class BeanOverrideParserTests {
 

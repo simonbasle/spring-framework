@@ -14,6 +14,6 @@ org.springframework.test.context.TestExecutionListener = \
 # Default ContextCustomizerFactory implementations for the Spring TestContext Framework
 #
 org.springframework.test.context.ContextCustomizerFactory = \
+	org.springframework.test.bean.override.BeanOverrideContextCustomizerFactory,\
 	org.springframework.test.context.web.socket.MockServerContainerContextCustomizerFactory,\
-	org.springframework.test.context.support.DynamicPropertiesContextCustomizerFactory,\
-	org.springframework.test.context.bean.override.BeanOverrideContextCustomizerFactory
+	org.springframework.test.context.support.DynamicPropertiesContextCustomizerFactory

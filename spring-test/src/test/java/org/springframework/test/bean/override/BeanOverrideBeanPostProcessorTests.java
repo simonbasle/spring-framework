@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.test.context.bean.override;
+package org.springframework.test.bean.override;
 
 import java.util.Map;
 
@@ -33,10 +33,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.Ordered;
 import org.springframework.core.ResolvableType;
-import org.springframework.test.context.bean.override.example.ExampleService;
-import org.springframework.test.context.bean.override.example.FailingExampleService;
-import org.springframework.test.context.bean.override.example.RealExampleService;
-import org.springframework.test.context.bean.override.example.TestBeanOverrideAnnotation;
+import org.springframework.test.bean.override.example.ExampleService;
+import org.springframework.test.bean.override.example.FailingExampleService;
+import org.springframework.test.bean.override.example.RealExampleService;
+import org.springframework.test.bean.override.example.TestBeanOverrideAnnotation;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.util.Assert;
 

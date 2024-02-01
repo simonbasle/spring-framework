@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.test.context.bean.override.example;
+package org.springframework.test.bean.override.example;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
@@ -25,11 +25,11 @@ import java.lang.reflect.Modifier;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.core.ResolvableType;
 import org.springframework.lang.Nullable;
-import org.springframework.test.context.bean.override.BeanOverrideStrategy;
-import org.springframework.test.context.bean.override.OverrideMetadata;
-import org.springframework.test.context.bean.override.QualifierMetadata;
+import org.springframework.test.bean.override.BeanOverrideStrategy;
+import org.springframework.test.bean.override.OverrideMetadata;
+import org.springframework.test.bean.override.QualifierMetadata;
 
-import static org.springframework.test.context.bean.override.example.TestBeanOverrideAnnotation.DEFAULT_VALUE;
+import static org.springframework.test.bean.override.example.TestBeanOverrideAnnotation.DEFAULT_VALUE;
 
 public class TestOverrideMetadata extends OverrideMetadata {
 

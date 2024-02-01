@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2002-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.test.context.bean.override;
+package org.springframework.test.bean.override;
 
 import java.lang.reflect.Field;
 import java.util.function.BiConsumer;
@@ -31,6 +31,9 @@ import org.springframework.util.ReflectionUtils;
  * <p>A single concrete {@link AbstractBeanOverrideTestExecutionListener} should be registered per application test,
  * defining the {@link #getOrder() order} and optionally adding behavior to {@link #prepareTestInstance(TestContext)}
  * and {@link #beforeTestMethod(TestContext)}.
+ *
+ * @author Simon Baslé
+ * @since 6.2
  */
 public abstract class AbstractBeanOverrideTestExecutionListener extends AbstractTestExecutionListener {
 

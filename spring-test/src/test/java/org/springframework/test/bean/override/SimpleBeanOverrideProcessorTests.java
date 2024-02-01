@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.test.context.bean.override;
+package org.springframework.test.bean.override;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -27,8 +27,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.test.context.bean.override.example.ExampleService;
-import org.springframework.test.context.bean.override.example.FailingExampleService;
+import org.springframework.test.bean.override.example.ExampleService;
+import org.springframework.test.bean.override.example.FailingExampleService;
 import org.springframework.util.ClassUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;

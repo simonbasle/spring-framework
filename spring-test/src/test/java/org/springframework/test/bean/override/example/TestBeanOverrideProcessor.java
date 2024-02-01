@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.test.context.bean.override.example;
+package org.springframework.test.bean.override.example;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
@@ -22,9 +22,9 @@ import java.util.List;
 import java.util.Set;
 
 import org.springframework.core.ResolvableType;
-import org.springframework.test.context.bean.override.BeanOverrideProcessor;
-import org.springframework.test.context.bean.override.OverrideMetadata;
-import org.springframework.test.context.bean.override.QualifierMetadata;
+import org.springframework.test.bean.override.BeanOverrideProcessor;
+import org.springframework.test.bean.override.OverrideMetadata;
+import org.springframework.test.bean.override.QualifierMetadata;
 
 public class TestBeanOverrideProcessor implements BeanOverrideProcessor {
 
