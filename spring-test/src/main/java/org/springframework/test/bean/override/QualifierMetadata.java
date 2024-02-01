@@ -34,8 +34,8 @@ import org.springframework.lang.Nullable;
  *
  * @author Phillip Webb
  * @author Stephane Nicoll
- * @see OverrideMetadata
  * @since 6.2
+ * @see OverrideMetadata
  */
 public final class QualifierMetadata {
 

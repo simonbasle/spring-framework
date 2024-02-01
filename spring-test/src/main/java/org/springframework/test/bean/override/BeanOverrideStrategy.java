@@ -33,5 +33,8 @@ public enum BeanOverrideStrategy {
 	 * {@link org.springframework.beans.factory.config.SmartInstantiationAwareBeanPostProcessor#getEarlyBeanReference(Object, String) early bean definition}.
 	 */
 	WRAP_EARLY_BEAN,
+	/**
+	 * A placeholder strategy that is ignored by {@link BeanOverrideBeanPostProcessor}.
+	 */
 	NO_OP;
 }

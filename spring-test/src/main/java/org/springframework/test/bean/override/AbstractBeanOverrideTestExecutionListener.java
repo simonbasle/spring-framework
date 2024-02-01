@@ -66,7 +66,7 @@ public abstract class AbstractBeanOverrideTestExecutionListener extends Abstract
 	 * Parse Bean Override fields in the test class, null them out and re-inject them
 	 * using a registered {@link BeanOverrideBeanPostProcessor}, provided the
 	 * {@link DependencyInjectionTestExecutionListener#REINJECT_DEPENDENCIES_ATTRIBUTE}
-	 * attribute is present in the {@code testContext}
+	 * attribute is present in the {@code testContext}.
 	 * @see #reinjectFields(TestContext)
 	 */
 	protected void reinjectFieldsIfConfigured(final TestContext testContext) {

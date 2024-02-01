@@ -226,7 +226,7 @@ public class BeanOverrideBeanPostProcessor implements
 	}
 
 	/**
-	 * Wrap-early preparation steps:
+	 * Perform wrap-early preparation steps. These are:
 	 * <ul>
 	 * 	<li>Detect pre-existing bean names for the type to override</li>
 	 * 	<li>If none, create one definition</li>
@@ -402,7 +402,7 @@ public class BeanOverrideBeanPostProcessor implements
 	@Override
 	public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName)
 			throws BeansException {
-		ReflectionUtils.doWithFields(bean.getClass(), (field) -> postProcessField(bean, field));
+		ReflectionUtils.doWithFields(bean.getClass(), field -> postProcessField(bean, field));
 		return pvs;
 	}
 
@@ -480,7 +480,7 @@ public class BeanOverrideBeanPostProcessor implements
 
 	private record EarlyMetadataAndTracker(OverrideMetadata metadata, Consumer<Object> tracker) {}
 
-	private final static class WrapEarlyBeanPostProcessor implements SmartInstantiationAwareBeanPostProcessor, PriorityOrdered {
+	private static final class WrapEarlyBeanPostProcessor implements SmartInstantiationAwareBeanPostProcessor, PriorityOrdered {
 
 		private final BeanOverrideBeanPostProcessor mainProcessor;
 		private final Map<String, Object> earlyReferences;

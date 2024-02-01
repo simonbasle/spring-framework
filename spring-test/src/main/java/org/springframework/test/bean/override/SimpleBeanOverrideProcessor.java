@@ -45,55 +45,6 @@ import org.springframework.util.Assert;
  */
 public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 
-	static final class MethodConventionOverrideMetadata extends OverrideMetadata {
-
-		@Nullable
-		private final Method overrideMethod;
-
-		public MethodConventionOverrideMetadata(Field field, @Nullable Method overrideMethod,
-				Annotation overrideAnnotation, ResolvableType typeToOverride, @Nullable QualifierMetadata qualifier) {
-			super(field, overrideAnnotation, typeToOverride, qualifier);
-			this.overrideMethod = overrideMethod;
-		}
-
-		@NonNull
-		@Override
-		public Field fieldElement() {
-			return (Field) super.element();
-		}
-
-		@Override
-		public BeanOverrideStrategy getBeanOverrideStrategy() {
-			return BeanOverrideStrategy.REPLACE_DEFINITION;
-		}
-
-		@Override
-		public String getBeanOverrideDescription() {
-			return "method convention";
-		}
-
-		@Override
-		protected Object createOverride(String beanName, @Nullable BeanDefinition existingBeanDefinition,
-				@Nullable Object existingBeanInstance) {
-			Method methodToInvoke = this.overrideMethod;
-			if (methodToInvoke == null) {
-				methodToInvoke = ensureMethod(fieldElement().getDeclaringClass(), fieldElement().getType(),
-						beanName + TestBean.CONVENTION_SUFFIX, fieldElement().getName() + TestBean.CONVENTION_SUFFIX);
-			}
-
-			methodToInvoke.setAccessible(true);
-			Object override;
-			try {
-				override = methodToInvoke.invoke(null);
-			}
-			catch (IllegalAccessException | InvocationTargetException e) {
-				throw new RuntimeException(e); //TODO better error handling, notably indicate that we expect a 0-param static method
-			}
-
-			return override;
-		}
-	}
-
 	/**
 	 * Ensures the {@code enclosingClass} has a static, no-arguments method with the
 	 * provided {@code expectedMethodReturnType} and exactly one of the {@code expectedMethodNames}.
@@ -153,4 +104,54 @@ public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 		}
 		return result;
 	}
+
+	static final class MethodConventionOverrideMetadata extends OverrideMetadata {
+
+		@Nullable
+		private final Method overrideMethod;
+
+		public MethodConventionOverrideMetadata(Field field, @Nullable Method overrideMethod,
+				Annotation overrideAnnotation, ResolvableType typeToOverride, @Nullable QualifierMetadata qualifier) {
+			super(field, overrideAnnotation, typeToOverride, qualifier);
+			this.overrideMethod = overrideMethod;
+		}
+
+		@NonNull
+		@Override
+		public Field fieldElement() {
+			return (Field) super.element();
+		}
+
+		@Override
+		public BeanOverrideStrategy getBeanOverrideStrategy() {
+			return BeanOverrideStrategy.REPLACE_DEFINITION;
+		}
+
+		@Override
+		public String getBeanOverrideDescription() {
+			return "method convention";
+		}
+
+		@Override
+		protected Object createOverride(String beanName, @Nullable BeanDefinition existingBeanDefinition,
+				@Nullable Object existingBeanInstance) {
+			Method methodToInvoke = this.overrideMethod;
+			if (methodToInvoke == null) {
+				methodToInvoke = ensureMethod(fieldElement().getDeclaringClass(), fieldElement().getType(),
+						beanName + TestBean.CONVENTION_SUFFIX, fieldElement().getName() + TestBean.CONVENTION_SUFFIX);
+			}
+
+			methodToInvoke.setAccessible(true);
+			Object override;
+			try {
+				override = methodToInvoke.invoke(null);
+			}
+			catch (IllegalAccessException | InvocationTargetException ex) {
+				throw new RuntimeException(ex); //TODO better error handling, notably indicate that we expect a 0-param static method
+			}
+
+			return override;
+		}
+	}
+
 }

@@ -106,7 +106,7 @@ public abstract class OverrideMetadata {
 	 */
 	@Nullable
 	public Field fieldElement() {
-		return this.element instanceof  Field f ? f : null;
+		return this.element instanceof Field f ? f : null;
 	}
 
 	/**
@@ -128,21 +128,21 @@ public abstract class OverrideMetadata {
 	}
 
 	/**
-	 * @return the concrete override annotation, i.e. the one meta-annotated with {@link BeanOverride}
+	 * The concrete override annotation, i.e. the one meta-annotated with {@link BeanOverride}.
 	 */
 	public Annotation overrideAnnotation() {
 		return this.overrideAnnotation;
 	}
 
 	/**
-	 * @return the type to override, as a {@link ResolvableType}
+	 * The type to override, as a {@link ResolvableType}.
 	 */
 	public ResolvableType typeToOverride() {
 		return this.typeToOverride;
 	}
 
 	/**
-	 * @return an optional {@link QualifierMetadata}, or {@code null} if not relevant
+	 * The optional {@link QualifierMetadata}. Returns {@code null} if not relevant.
 	 */
 	@Nullable
 	public QualifierMetadata qualifier() {

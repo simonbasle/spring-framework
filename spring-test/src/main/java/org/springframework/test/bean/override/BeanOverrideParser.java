@@ -38,6 +38,8 @@ import org.springframework.util.ReflectionUtils;
 /**
  * A parser that discovers annotations meta-annotated with {@link BeanOverride} on
  * a class or fields of a class and creates {@link OverrideMetadata} accordingly.
+ *
+ * @author Simon Baslé
  */
 class BeanOverrideParser {
 
@@ -60,8 +62,6 @@ class BeanOverrideParser {
 	Set<OverrideMetadata> getOverrideMetadata() {
 		return Collections.unmodifiableSet(this.parsedMetadata);
 	}
-
-	private record AnnotationAndProcessor(Annotation annotation, Class<? extends BeanOverrideProcessor> processorClass) {}
 
 	private void parseElement(AnnotatedElement element, Class<?> source) {
 		AtomicInteger count = new AtomicInteger();
@@ -99,10 +99,13 @@ class BeanOverrideParser {
 			try {
 				return constructor.newInstance();
 			}
-			catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-				throw new BeanDefinitionValidationException("Could not get an instance of BeanOverrideProcessor", e);
+			catch (InstantiationException | IllegalAccessException | InvocationTargetException ex) {
+				throw new BeanDefinitionValidationException("Could not get an instance of BeanOverrideProcessor", ex);
 			}
 		}
 		return null;
 	}
+
+	private record AnnotationAndProcessor(Annotation annotation, Class<? extends BeanOverrideProcessor> processorClass) {}
+
 }

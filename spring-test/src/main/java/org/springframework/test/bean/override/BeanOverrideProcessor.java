@@ -55,7 +55,7 @@ public interface BeanOverrideProcessor {
 	 */
 	default Set<ResolvableType> getOrDeduceTypes(AnnotatedElement element, Annotation annotation, Class<?> source) {
 		Set<ResolvableType> types = new LinkedHashSet<>();
-		if (element instanceof  Field field) {
+		if (element instanceof Field field) {
 			types.add((field.getGenericType() instanceof TypeVariable) ? ResolvableType.forField(field, source)
 				: ResolvableType.forField(field));
 		}

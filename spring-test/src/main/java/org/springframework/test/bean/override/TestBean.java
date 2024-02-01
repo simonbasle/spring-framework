@@ -47,6 +47,10 @@ import java.lang.annotation.Target;
 @BeanOverride(processor = SimpleBeanOverrideProcessor.class)
 public @interface TestBean {
 
+	/**
+	 * The method suffix expected as a convention in static methods which
+	 * provide an override instance.
+	 */
 	String CONVENTION_SUFFIX = "TestOverride";
 
 	/**
