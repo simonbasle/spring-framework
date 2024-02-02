@@ -73,5 +73,22 @@ public class BeanOverrideContextCustomizerFactory implements ContextCustomizerFa
 				BeanOverrideBeanPostProcessor.register(registry, this.metadata);
 			}
 		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (obj == this) {
+				return true;
+			}
+			if (obj == null || obj.getClass() != getClass()) {
+				return false;
+			}
+			BeanOverrideContextCustomizer other = (BeanOverrideContextCustomizer) obj;
+			return this.metadata.equals(other.metadata);
+		}
+
+		@Override
+		public int hashCode() {
+			return this.metadata.hashCode();
+		}
 	}
 }
