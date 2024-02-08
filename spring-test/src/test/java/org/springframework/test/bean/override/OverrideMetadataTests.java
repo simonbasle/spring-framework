@@ -89,8 +89,8 @@ class OverrideMetadataTests {
 				ResolvableType.forClass(String.class), null);
 
 		assertThat(metadata.methodElement()).as("methodElement").isSameAs(annotated).isSameAs(metadata.element());
-		assertThat(metadata.fieldElement()).as("fieldElement").isNull();;
-		assertThat(metadata.classElement()).as("classElement").isNull();;
+		assertThat(metadata.fieldElement()).as("fieldElement").isNull();
+		assertThat(metadata.classElement()).as("classElement").isNull();
 	}
 
 	@Test
@@ -99,9 +99,9 @@ class OverrideMetadataTests {
 		final ConcreteOverrideMetadata metadata = new ConcreteOverrideMetadata(annotated, annotated.getAnnotation(NonNull.class),
 				ResolvableType.forClass(String.class), null);
 
-		assertThat(metadata.methodElement()).as("methodElement").isNull();;
+		assertThat(metadata.methodElement()).as("methodElement").isNull();
 		assertThat(metadata.fieldElement()).as("fieldElement").isSameAs(annotated).isSameAs(metadata.element());
-		assertThat(metadata.classElement()).as("classElement").isNull();;
+		assertThat(metadata.classElement()).as("classElement").isNull();
 	}
 
 	@Test
@@ -110,8 +110,8 @@ class OverrideMetadataTests {
 		final ConcreteOverrideMetadata metadata = new ConcreteOverrideMetadata(annotated, annotated.getAnnotation(NonNull.class),
 				ResolvableType.forClass(String.class), null);
 
-		assertThat(metadata.methodElement()).as("methodElement").isNull();;
-		assertThat(metadata.fieldElement()).as("fieldElement").isNull();;
+		assertThat(metadata.methodElement()).as("methodElement").isNull();
+		assertThat(metadata.fieldElement()).as("fieldElement").isNull();
 		assertThat(metadata.classElement()).as("classElement").isSameAs(annotated).isSameAs(metadata.element());
 	}
 

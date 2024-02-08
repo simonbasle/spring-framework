@@ -24,7 +24,6 @@ import org.springframework.test.bean.override.example.TestBeanOverrideMetaAnnota
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatRuntimeException;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.bean.override.example.TestBeanOverrideProcessor.DUPLICATE_TRIGGER;
 
 class BeanOverrideParserTests {

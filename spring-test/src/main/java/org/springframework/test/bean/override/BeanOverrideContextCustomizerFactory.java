@@ -40,6 +40,9 @@ public class BeanOverrideContextCustomizerFactory implements ContextCustomizerFa
 			List<ContextConfigurationAttributes> configAttributes) {
 		BeanOverrideParser parser = new BeanOverrideParser();
 		parseDefinitions(testClass, parser);
+		if (parser.getOverrideMetadata().isEmpty()) {
+			return null;
+		}
 		return new BeanOverrideContextCustomizer(parser.getOverrideMetadata());
 	}
 
