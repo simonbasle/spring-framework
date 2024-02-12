@@ -25,7 +25,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.springframework.beans.factory.support.BeanDefinitionValidationException;
 import org.springframework.core.ResolvableType;
@@ -65,7 +65,7 @@ class BeanOverrideParser {
 	}
 
 	private void parseElement(AnnotatedElement element, Class<?> source) {
-		AtomicInteger count = new AtomicInteger();
+		AtomicBoolean overrideAnnotationFound = new AtomicBoolean();
 
 		MergedAnnotations.from(element, MergedAnnotations.SearchStrategy.DIRECT)
 				.stream(BeanOverride.class)
@@ -83,8 +83,8 @@ class BeanOverrideParser {
 					Set<ResolvableType> typesToOverride = processor.getOrDeduceTypes(element, pair.annotation(), source);
 					QualifierMetadata qualifier = QualifierMetadata.forElement(element, processor::isQualifierAnnotation);
 
-					Assert.state(count.incrementAndGet() == 1, "Multiple bean override annotations" +
-							" found on annotated element <" + element + ">");
+					Assert.state(overrideAnnotationFound.compareAndSet(false, true),
+							"Multiple bean override annotations found on annotated element <" + element + ">");
 					List<OverrideMetadata> overrideMetadataList = processor.createMetadata(element, pair.annotation(),
 							typesToOverride, qualifier);
 					for (OverrideMetadata metadata: overrideMetadataList) {

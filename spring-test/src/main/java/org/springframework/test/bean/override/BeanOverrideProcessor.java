@@ -36,7 +36,8 @@ import org.springframework.lang.Nullable;
  * process of parsing these annotations, ultimately creating
  * {@link OverrideMetadata} which will be used to instantiate the overrides.
  *
- * <p>Implementations are required to have a no-argument constructor.
+ * <p>Implementations are required to have a no-argument constructor and be
+ * stateless.
  *
  * @author Simon Baslé
  * @since 6.2
