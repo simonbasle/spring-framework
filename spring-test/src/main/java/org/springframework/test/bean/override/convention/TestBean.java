@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package org.springframework.test.bean.override;
+package org.springframework.test.bean.override.convention;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
+import org.springframework.test.bean.override.BeanOverride;
 
 /**
  * Mark a field to represent a "method" bean override of the bean of the same
@@ -43,14 +45,14 @@ import java.lang.annotation.Target;
  * <p>The annotated field's name is interpreted to be the name of the original
  * bean to override, unless the annotation's {@link #beanName()} is specified.
  *
- * @see SimpleBeanOverrideProcessor
+ * @see TestBeanOverrideProcessor
  * @author Simon Baslé
  * @since 6.2
  */
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@BeanOverride(processor = SimpleBeanOverrideProcessor.class)
+@BeanOverride(processor = TestBeanOverrideProcessor.class)
 public @interface TestBean {
 
 	/**

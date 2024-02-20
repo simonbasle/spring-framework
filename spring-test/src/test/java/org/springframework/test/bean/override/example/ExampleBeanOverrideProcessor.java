@@ -17,32 +17,22 @@
 package org.springframework.test.bean.override.example;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.AnnotatedElement;
-import java.util.List;
-import java.util.Set;
+import java.lang.reflect.Field;
 
 import org.springframework.core.ResolvableType;
+import org.springframework.lang.Nullable;
 import org.springframework.test.bean.override.BeanOverrideProcessor;
 import org.springframework.test.bean.override.OverrideMetadata;
 import org.springframework.test.bean.override.QualifierMetadata;
 
-public class TestBeanOverrideProcessor implements BeanOverrideProcessor {
+public class ExampleBeanOverrideProcessor implements BeanOverrideProcessor {
 
-	public TestBeanOverrideProcessor() {
+	public ExampleBeanOverrideProcessor() {
 	}
 
 	@Override
 	public boolean isQualifierAnnotation(Annotation annotation) {
-		return !(annotation instanceof TestBeanOverrideAnnotation);
-	}
-
-	@Override
-	public Set<ResolvableType> getOrDeduceTypes(AnnotatedElement element, Annotation annotation, Class<?> source) {
-		var superSet = BeanOverrideProcessor.super.getOrDeduceTypes(element, annotation, source);
-		if (superSet.isEmpty() && element instanceof Class c) {
-			superSet.add(ResolvableType.forClass(c));
-		}
-		return superSet;
+		return !(annotation instanceof ExampleBeanOverrideAnnotation);
 	}
 
 	private static final TestOverrideMetadata CONSTANT = new TestOverrideMetadata() {
@@ -54,14 +44,14 @@ public class TestBeanOverrideProcessor implements BeanOverrideProcessor {
 	public static final String DUPLICATE_TRIGGER = "CONSTANT";
 
 	@Override
-	public List<OverrideMetadata> createMetadata(AnnotatedElement element, Annotation overrideAnnotation,
-			Set<ResolvableType> typesToOverride, QualifierMetadata qualifier) {
-		if (!(overrideAnnotation instanceof TestBeanOverrideAnnotation annotation) || typesToOverride.size() != 1) {
-			throw new IllegalStateException("unexpected annotation or typesToOverride size");
+	public OverrideMetadata createMetadata(Field field, Annotation overrideAnnotation,
+			ResolvableType typeToOverride, @Nullable QualifierMetadata qualifier) {
+		if (!(overrideAnnotation instanceof ExampleBeanOverrideAnnotation annotation)) {
+			throw new IllegalStateException("unexpected annotation");
 		}
 		if (annotation.value().equals(DUPLICATE_TRIGGER)) {
-			return List.of(CONSTANT);
+			return CONSTANT;
 		}
-		return List.of(new TestOverrideMetadata(element, annotation, typesToOverride.iterator().next(), qualifier));
+		return new TestOverrideMetadata(field, annotation, typeToOverride, qualifier);
 	}
 }

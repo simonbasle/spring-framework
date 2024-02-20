@@ -19,52 +19,61 @@ package org.springframework.test.bean.override;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.context.annotation.Configuration;
-import org.springframework.test.bean.override.example.TestBeanOverrideAnnotation;
+import org.springframework.test.bean.override.example.ExampleBeanOverrideAnnotation;
 import org.springframework.test.bean.override.example.TestBeanOverrideMetaAnnotation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatRuntimeException;
-import static org.springframework.test.bean.override.example.TestBeanOverrideProcessor.DUPLICATE_TRIGGER;
+import static org.springframework.test.bean.override.example.ExampleBeanOverrideProcessor.DUPLICATE_TRIGGER;
 
 class BeanOverrideParserTests {
+
+	@Test
+	void findsOnField() {
+		BeanOverrideParser parser = new BeanOverrideParser();
+		parser.parse(OnFieldConf.class);
+
+		assertThat(parser.getOverrideMetadata()).hasSize(1)
+				.first()
+				.extracting(om -> ((ExampleBeanOverrideAnnotation) om.overrideAnnotation()).value())
+				.isEqualTo("onField");
+	}
+
+	@Test
+	void allowMultipleProcessorsOnDifferentElements() {
+		BeanOverrideParser parser = new BeanOverrideParser();
+		parser.parse(MultipleFieldsWithOnFieldConf.class);
+
+		assertThat(parser.getOverrideMetadata())
+				.hasSize(2)
+				.map(om -> ((ExampleBeanOverrideAnnotation) om.overrideAnnotation()).value())
+				.containsOnly("onField1", "onField2");
+	}
+
+	@Test
+	void rejectsMultipleAnnotationsOnSameElement() {
+		BeanOverrideParser parser = new BeanOverrideParser();
+		assertThatRuntimeException().isThrownBy(() -> parser.parse(MultipleOnFieldConf.class))
+				.withMessage("Multiple bean override annotations found on annotated field <" +
+						String.class.getName() + " " + MultipleOnFieldConf.class.getName() + ".message>");
+	}
+
+	@Test
+	void detectsDuplicateMetadata() {
+		BeanOverrideParser parser = new BeanOverrideParser();
+		assertThatRuntimeException().isThrownBy(() -> parser.parse(DuplicateConf.class))
+				.withMessage("Duplicate test overrideMetadata {DUPLICATE_TRIGGER}");
+	}
+
 
 	@Configuration
 	static class OnFieldConf {
 
-		@TestBeanOverrideAnnotation("onField")
+		@ExampleBeanOverrideAnnotation("onField")
 		String message;
 
 		static String onField() {
 			return "OK";
-		}
-
-	}
-
-	@Configuration
-	@TestBeanOverrideAnnotation("onClass")
-	static class OnClassConf {
-
-		String message;
-
-		static String onClass() {
-			return "OK";
-		}
-
-	}
-
-	@Configuration
-	@TestBeanOverrideAnnotation("onClass")
-	static class OnFieldAndClassConf {
-
-		@TestBeanOverrideAnnotation("onField")
-		String message;
-
-		static String onField() {
-			return "foo";
-		}
-
-		static OnFieldAndClassConf onClass() {
-			return new OnFieldAndClassConf();
 		}
 
 	}
@@ -72,7 +81,7 @@ class BeanOverrideParserTests {
 	@Configuration
 	static class MultipleOnFieldConf {
 
-		@TestBeanOverrideAnnotation("foo")
+		@ExampleBeanOverrideAnnotation("foo")
 		@TestBeanOverrideMetaAnnotation
 		String message;
 
@@ -83,62 +92,31 @@ class BeanOverrideParserTests {
 	}
 
 	@Configuration
+	static class MultipleFieldsWithOnFieldConf {
+		@ExampleBeanOverrideAnnotation("onField1")
+		String message;
+
+		@ExampleBeanOverrideAnnotation("onField2")
+		String messageOther;
+
+		static String onField1() {
+			return "OK1";
+		}
+
+		static String onField2() {
+			return "OK2";
+		}
+	}
+
+	@Configuration
 	static class DuplicateConf {
 
-		@TestBeanOverrideAnnotation(DUPLICATE_TRIGGER)
+		@ExampleBeanOverrideAnnotation(DUPLICATE_TRIGGER)
 		String message1;
 
-		@TestBeanOverrideAnnotation(DUPLICATE_TRIGGER)
+		@ExampleBeanOverrideAnnotation(DUPLICATE_TRIGGER)
 		String message2;
 
-	}
-
-	@Test
-	void findsOnField() {
-		BeanOverrideParser parser = new BeanOverrideParser();
-		parser.parse(OnFieldConf.class);
-
-		assertThat(parser.getOverrideMetadata()).hasSize(1)
-				.first()
-				.extracting(om -> ((TestBeanOverrideAnnotation) om.overrideAnnotation()).value())
-				.isEqualTo("onField");
-	}
-
-	@Test
-	void findsOnClass() {
-		BeanOverrideParser parser = new BeanOverrideParser();
-		parser.parse(OnClassConf.class);
-
-		assertThat(parser.getOverrideMetadata()).hasSize(1)
-				.first()
-				.extracting(om -> ((TestBeanOverrideAnnotation) om.overrideAnnotation()).value())
-				.isEqualTo("onClass");
-	}
-
-	@Test
-	void allowMultipleProcessorsOnDifferentElements() {
-		BeanOverrideParser parser = new BeanOverrideParser();
-		parser.parse(OnFieldAndClassConf.class);
-
-		assertThat(parser.getOverrideMetadata())
-				.hasSize(2)
-				.map(om -> ((TestBeanOverrideAnnotation) om.overrideAnnotation()).value())
-				.containsOnly("onClass", "onField");
-	}
-
-	@Test
-	void rejectsMultipleAnnotationsOnSameElement() {
-		BeanOverrideParser parser = new BeanOverrideParser();
-		assertThatRuntimeException().isThrownBy(() -> parser.parse(MultipleOnFieldConf.class))
-				.withMessage("Multiple bean override annotations found on annotated element <" +
-						String.class.getName() + " " + MultipleOnFieldConf.class.getName() + ".message>");
-	}
-
-	@Test
-	void detectsDuplicateMetadata() {
-		BeanOverrideParser parser = new BeanOverrideParser();
-		assertThatRuntimeException().isThrownBy(() -> parser.parse(DuplicateConf.class))
-				.withMessage("Duplicate test overrideMetadata {DUPLICATE_TRIGGER}");
 	}
 
 }

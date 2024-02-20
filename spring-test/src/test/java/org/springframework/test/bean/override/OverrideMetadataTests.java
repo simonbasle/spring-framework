@@ -17,9 +17,7 @@
 package org.springframework.test.bean.override;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.Objects;
 
 import org.junit.jupiter.api.Test;
@@ -28,7 +26,6 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.core.ResolvableType;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
-import org.springframework.util.ClassUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,13 +33,9 @@ class OverrideMetadataTests {
 
 	static class ConcreteOverrideMetadata extends OverrideMetadata {
 
-		ConcreteOverrideMetadata(AnnotatedElement element, Annotation overrideAnnotation, ResolvableType typeToOverride, @Nullable QualifierMetadata qualifier) {
-			super(element, overrideAnnotation, typeToOverride, qualifier);
-		}
-
-		@Override
-		public BeanOverrideStrategy getBeanOverrideStrategy() {
-			return BeanOverrideStrategy.REPLACE_DEFINITION;
+		ConcreteOverrideMetadata(Field field, Annotation overrideAnnotation, ResolvableType typeToOverride,
+				BeanOverrideStrategy strategy, @Nullable QualifierMetadata qualifier) {
+			super(field, overrideAnnotation, typeToOverride, strategy, qualifier);
 		}
 
 		@Override
@@ -64,55 +57,16 @@ class OverrideMetadataTests {
 	@NonNull
 	public String annotated = "exampleField";
 
-	@FunctionalInterface
-	public interface Annotated {
-		String exampleClass();
-	}
-
-	static OverrideMetadata exampleOverride() {
-		final Method annotated = ClassUtils.getStaticMethod(OverrideMetadataTests.class, "annotated");
+	static OverrideMetadata exampleOverride() throws NoSuchFieldException {
+		final Field annotated = OverrideMetadataTests.class.getField("annotated");
 		return new ConcreteOverrideMetadata(Objects.requireNonNull(annotated), annotated.getAnnotation(NonNull.class),
-				ResolvableType.forClass(String.class), null);
+				ResolvableType.forClass(String.class), BeanOverrideStrategy.REPLACE_DEFINITION, null);
 	}
 
 	@Test
-	void implicitConfigurations() {
+	void implicitConfigurations() throws NoSuchFieldException {
 		final OverrideMetadata metadata = exampleOverride();
 		assertThat(metadata.getExplicitBeanName()).as("explicitBeanName").isEmpty();
-		assertThat(metadata.getOrCreateTracker(null)).as("no tracking").isSameAs(OverrideMetadata.NO_TRACKING);
-	}
-
-	@Test
-	void methodElement() {
-		final Method annotated = ClassUtils.getStaticMethod(OverrideMetadataTests.class, "annotated");
-		final ConcreteOverrideMetadata metadata = new ConcreteOverrideMetadata(Objects.requireNonNull(annotated), annotated.getAnnotation(NonNull.class),
-				ResolvableType.forClass(String.class), null);
-
-		assertThat(metadata.methodElement()).as("methodElement").isSameAs(annotated).isSameAs(metadata.element());
-		assertThat(metadata.fieldElement()).as("fieldElement").isNull();
-		assertThat(metadata.classElement()).as("classElement").isNull();
-	}
-
-	@Test
-	void fieldElement() throws NoSuchFieldException {
-		final Field annotated = Objects.requireNonNull(OverrideMetadataTests.class.getField("annotated"));
-		final ConcreteOverrideMetadata metadata = new ConcreteOverrideMetadata(annotated, annotated.getAnnotation(NonNull.class),
-				ResolvableType.forClass(String.class), null);
-
-		assertThat(metadata.methodElement()).as("methodElement").isNull();
-		assertThat(metadata.fieldElement()).as("fieldElement").isSameAs(annotated).isSameAs(metadata.element());
-		assertThat(metadata.classElement()).as("classElement").isNull();
-	}
-
-	@Test
-	void classElement() {
-		final Class<?> annotated = OverrideMetadataTests.Annotated.class;
-		final ConcreteOverrideMetadata metadata = new ConcreteOverrideMetadata(annotated, annotated.getAnnotation(NonNull.class),
-				ResolvableType.forClass(String.class), null);
-
-		assertThat(metadata.methodElement()).as("methodElement").isNull();
-		assertThat(metadata.fieldElement()).as("fieldElement").isNull();
-		assertThat(metadata.classElement()).as("classElement").isSameAs(annotated).isSameAs(metadata.element());
 	}
 
 }

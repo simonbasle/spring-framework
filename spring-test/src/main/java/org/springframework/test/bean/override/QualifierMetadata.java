@@ -17,7 +17,6 @@
 package org.springframework.test.bean.override;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.Set;
@@ -80,12 +79,10 @@ public final class QualifierMetadata {
 	}
 
 	@Nullable
-	public static QualifierMetadata forElement(@Nullable AnnotatedElement element, Predicate<? super Annotation> isQualifierPredicate) {
-		if (element instanceof Field field) {
-			Set<Annotation> annotations = getQualifierAnnotations(field, isQualifierPredicate);
-			if (!annotations.isEmpty()) {
-				return new QualifierMetadata(field, annotations);
-			}
+	public static QualifierMetadata forField(Field field, Predicate<? super Annotation> isQualifierPredicate) {
+		Set<Annotation> annotations = getQualifierAnnotations(field, isQualifierPredicate);
+		if (!annotations.isEmpty()) {
+			return new QualifierMetadata(field, annotations);
 		}
 		return null;
 	}

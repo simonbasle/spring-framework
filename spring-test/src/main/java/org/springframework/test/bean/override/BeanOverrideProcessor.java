@@ -17,12 +17,8 @@
 package org.springframework.test.bean.override;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
 import java.lang.reflect.TypeVariable;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
 
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.core.ResolvableType;
@@ -46,43 +42,35 @@ import org.springframework.lang.Nullable;
 public interface BeanOverrideProcessor {
 
 	/**
-	 * Determine a {@link Set} of {@link ResolvableType} for each of which an
-	 * {@link OverrideMetadata} instance will be created. Override to provide
-	 * more than one type per annotated element, or to use the annotation to
-	 * determine type(s).
-	 * <p>Defaults to an empty set if the annotated element is not a
-	 * {@link Field}. For fields, defaults to a single {@link ResolvableType}
-	 * that additionally tracks the source class if the field is a
-	 * {@link TypeVariable}.
+	 * Determine a {@link ResolvableType} for which an {@link OverrideMetadata}
+	 * instance will be created, e.g. by using the annotation to determine the
+	 * type.
+	 * <p>Defaults to the field corresponding {@link ResolvableType},
+	 * additionally tracking the source class if the field is a {@link TypeVariable}.
 	 */
-	default Set<ResolvableType> getOrDeduceTypes(AnnotatedElement element, Annotation annotation, Class<?> source) {
-		Set<ResolvableType> types = new LinkedHashSet<>();
-		if (element instanceof Field field) {
-			types.add((field.getGenericType() instanceof TypeVariable) ? ResolvableType.forField(field, source)
-				: ResolvableType.forField(field));
-		}
-		return types;
+	default ResolvableType getOrDeduceType(Field field, Annotation annotation, Class<?> source) {
+		return (field.getGenericType() instanceof TypeVariable) ? ResolvableType.forField(field, source)
+				: ResolvableType.forField(field);
 	}
 
 	/**
-	 * Create a list of {@link OverrideMetadata} for a given annotated element
-	 * and target {@link #getOrDeduceTypes(AnnotatedElement, Annotation, Class)
-	 * type(s)}. Specific implementations of metadata can have state to be used
-	 * during override {@link OverrideMetadata#createOverride(String,
-	 * BeanDefinition, Object) instance creation} (e.g. from further parsing the
-	 * annotation or the annotated field).
-	 * @param element the annotated field, method or class
-	 * @param overrideAnnotation the element annotation
-	 * @param typesToOverride the Set of target types (there can be multiple
-	 * types per annotated element, e.g. derived from the annotation)
+	 * Create an {@link OverrideMetadata} for a given annotated field and target
+	 * {@link #getOrDeduceType(Field, Annotation, Class) type}.
+	 * Specific implementations of metadata can have state to be used during
+	 * override {@link OverrideMetadata#createOverride(String, BeanDefinition,
+	 * Object) instance creation} (e.g. from further parsing the annotation or
+	 * the annotated field).
+	 * @param field the annotated field
+	 * @param overrideAnnotation the field annotation
+	 * @param typeToOverride the target type
 	 * @param qualifier the optional {@link QualifierMetadata}
 	 * @return a new {@link OverrideMetadata}
-	 * @see #getOrDeduceTypes(AnnotatedElement, Annotation, Class)
+	 * @see #getOrDeduceType(Field, Annotation, Class)
 	 * @see #isQualifierAnnotation(Annotation)
 	 * @see MergedAnnotation#synthesize()
 	 */
-	List<OverrideMetadata> createMetadata(AnnotatedElement element, Annotation overrideAnnotation,
-			Set<ResolvableType> typesToOverride, @Nullable QualifierMetadata qualifier);
+	OverrideMetadata createMetadata(Field field, Annotation overrideAnnotation,
+			ResolvableType typeToOverride, @Nullable QualifierMetadata qualifier);
 
 	/**
 	 * Define if an annotation should be considered as a qualifier annotation,

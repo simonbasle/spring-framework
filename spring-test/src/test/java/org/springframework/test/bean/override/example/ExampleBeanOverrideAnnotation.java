@@ -23,10 +23,10 @@ import java.lang.annotation.Target;
 
 import org.springframework.test.bean.override.BeanOverride;
 
-@BeanOverride(processor = TestBeanOverrideProcessor.class)
-@Target({ElementType.FIELD, ElementType.TYPE})
+@BeanOverride(processor = ExampleBeanOverrideProcessor.class)
+@Target({ElementType.FIELD, ElementType.ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface TestBeanOverrideAnnotation {
+public @interface ExampleBeanOverrideAnnotation {
 
 	static final String DEFAULT_VALUE = "TEST OVERRIDE";
 

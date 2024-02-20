@@ -26,7 +26,8 @@ import java.lang.annotation.Target;
  * This meta-annotation provides a {@link BeanOverrideProcessor} class which
  * must be capable of handling the annotated annotation.
  *
- * <p>Target annotation must have a {@link RetentionPolicy} of {@code RUNTIME}.
+ * <p>Target annotation must have a {@link RetentionPolicy} of {@code RUNTIME}
+ * and be applicable to {@link java.lang.reflect.Field Fields} only.
  * @see BeanOverrideBeanPostProcessor
  *
  * @author Simon Baslé
@@ -42,5 +43,4 @@ public @interface BeanOverride {
 	 * constructor.
 	 */
 	Class<? extends BeanOverrideProcessor> processor();
-
 }

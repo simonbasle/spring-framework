@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package org.springframework.test.bean.override;
+package org.springframework.test.bean.override.convention;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -31,8 +29,11 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.core.ResolvableType;
-import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
+import org.springframework.test.bean.override.BeanOverrideProcessor;
+import org.springframework.test.bean.override.BeanOverrideStrategy;
+import org.springframework.test.bean.override.OverrideMetadata;
+import org.springframework.test.bean.override.QualifierMetadata;
 import org.springframework.util.Assert;
 
 /**
@@ -44,7 +45,7 @@ import org.springframework.util.Assert;
  * @author Simon Baslé
  * @since 6.2
  */
-public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
+public class TestBeanOverrideProcessor implements BeanOverrideProcessor {
 
 	/**
 	 * Ensures the {@code enclosingClass} has a static, no-arguments method with
@@ -83,33 +84,22 @@ public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 	}
 
 	@Override
-	public List<OverrideMetadata> createMetadata(AnnotatedElement element, Annotation overrideAnnotation,
-			Set<ResolvableType> typesToOverride, @Nullable QualifierMetadata qualifier) {
-		if (!(element instanceof Field field)) {
-			throw new IllegalArgumentException("SimpleBeanOverrideProcessor can only process annotated Fields, got a " +
-					element.getClass().getSimpleName());
-		}
-		List<OverrideMetadata> result = new ArrayList<>(typesToOverride.size());
-
+	public OverrideMetadata createMetadata(Field field, Annotation overrideAnnotation,
+			ResolvableType typeToOverride,
+			@Nullable QualifierMetadata qualifier) {
 		final Class<?> enclosingClass = field.getDeclaringClass();
 		// if we can get an explicit method name right away, fail fast if it doesn't match
 		if (overrideAnnotation instanceof TestBean testBeanAnnotation) {
 			String annotationMethodName = testBeanAnnotation.methodName();
 			if (!annotationMethodName.isBlank()) {
 				Method overrideMethod = ensureMethod(enclosingClass, field.getType(), annotationMethodName);
-				for (ResolvableType typeToOverride : typesToOverride) {
-					result.add(new MethodConventionOverrideMetadata(field, overrideMethod, overrideAnnotation,
-							typeToOverride, qualifier));
-				}
-				return result;
+				return new MethodConventionOverrideMetadata(field, overrideMethod, overrideAnnotation,
+							typeToOverride, qualifier);
 			}
 		}
 		// otherwise defer the resolution of the static method until OverrideMetadata#createOverride
-		for (ResolvableType typeToOverride : typesToOverride) {
-			result.add(new MethodConventionOverrideMetadata(field, null, overrideAnnotation,
-					typeToOverride, qualifier));
-		}
-		return result;
+		return new MethodConventionOverrideMetadata(field, null, overrideAnnotation,
+					typeToOverride, qualifier);
 	}
 
 	static final class MethodConventionOverrideMetadata extends OverrideMetadata {
@@ -119,19 +109,8 @@ public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 
 		public MethodConventionOverrideMetadata(Field field, @Nullable Method overrideMethod,
 				Annotation overrideAnnotation, ResolvableType typeToOverride, @Nullable QualifierMetadata qualifier) {
-			super(field, overrideAnnotation, typeToOverride, qualifier);
+			super(field, overrideAnnotation, typeToOverride, BeanOverrideStrategy.REPLACE_DEFINITION, qualifier);
 			this.overrideMethod = overrideMethod;
-		}
-
-		@NonNull
-		@Override
-		public Field fieldElement() {
-			return (Field) super.element();
-		}
-
-		@Override
-		public BeanOverrideStrategy getBeanOverrideStrategy() {
-			return BeanOverrideStrategy.REPLACE_DEFINITION;
 		}
 
 		@Override
@@ -144,9 +123,9 @@ public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 				@Nullable Object existingBeanInstance) {
 			Method methodToInvoke = this.overrideMethod;
 			if (methodToInvoke == null) {
-				methodToInvoke = ensureMethod(fieldElement().getDeclaringClass(), fieldElement().getType(),
+				methodToInvoke = ensureMethod(field().getDeclaringClass(), field().getType(),
 						beanName + TestBean.CONVENTION_SUFFIX,
-						fieldElement().getName() + TestBean.CONVENTION_SUFFIX);
+						field().getName() + TestBean.CONVENTION_SUFFIX);
 			}
 
 			methodToInvoke.setAccessible(true);
@@ -155,8 +134,8 @@ public class SimpleBeanOverrideProcessor implements BeanOverrideProcessor {
 				override = methodToInvoke.invoke(null);
 			}
 			catch (IllegalAccessException | InvocationTargetException ex) {
-				//TODO better error handling, notably indicate that we expect a 0-param static method
-				throw new RuntimeException(ex);
+				throw new IllegalArgumentException("Could not invoke bean overriding method " + methodToInvoke.getName() +
+						", a static method with no input parameters is expected", ex);
 			}
 
 			return override;

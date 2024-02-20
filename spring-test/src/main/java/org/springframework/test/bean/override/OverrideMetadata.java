@@ -17,15 +17,12 @@
 package org.springframework.test.bean.override;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.beans.factory.config.SingletonBeanRegistry;
 import org.springframework.core.ResolvableType;
 import org.springframework.lang.Nullable;
 
@@ -37,32 +34,22 @@ import org.springframework.lang.Nullable;
  */
 public abstract class OverrideMetadata {
 
-	/**
-	 * Default tracking {@link Consumer}, which is NO-OP.
-	 * @see #getOrCreateTracker(ConfigurableListableBeanFactory)
-	 */
-	public static final Consumer<Object> NO_TRACKING = o -> {};
-
-	private final AnnotatedElement element;
+	private final Field field;
 	private final Annotation overrideAnnotation;
 	private final ResolvableType typeToOverride;
+	private final BeanOverrideStrategy strategy;
 	@Nullable
 	private final QualifierMetadata qualifier;
 
-	public OverrideMetadata(AnnotatedElement element, Annotation overrideAnnotation,
-			ResolvableType typeToOverride, @Nullable QualifierMetadata qualifier) {
-		this.element = element;
+	public OverrideMetadata(Field field, Annotation overrideAnnotation,
+			ResolvableType typeToOverride, BeanOverrideStrategy strategy,
+			@Nullable QualifierMetadata qualifier) {
+		this.field = field;
 		this.overrideAnnotation = overrideAnnotation;
 		this.typeToOverride = typeToOverride;
+		this.strategy = strategy;
 		this.qualifier = qualifier;
 	}
-
-	/**
-	 * Define the broad {@link BeanOverrideStrategy} for this
-	 * {@link OverrideMetadata}, as a hint on how and when the override instance
-	 * should be created.
-	 */
-	public abstract BeanOverrideStrategy getBeanOverrideStrategy();
 
 	/**
 	 * Define a short human-readable description of the kind of override this
@@ -84,60 +71,11 @@ public abstract class OverrideMetadata {
 	}
 
 	/**
-	 * Returns an optional tracking {@link Consumer} for objects created by this
-	 * OverrideMetadata. Defaults to the {@link #NO_TRACKING} NO-OP
-	 * implementation.
-	 * @param beanFactory the bean factory in which trackers could optionally
-	 * be registered
-	 * @return the tracking {@link Consumer} to use, or {@link #NO_TRACKING}
-	 * if irrelevant
+	 * The field annotated with a {@link BeanOverride}-compatible annotation.
+	 * @return the annotated field
 	 */
-	protected Consumer<Object> getOrCreateTracker(ConfigurableListableBeanFactory beanFactory) {
-		return NO_TRACKING;
-	}
-
-	/**
-	 * The element annotated with a {@link BeanOverride}-compatible annotation.
-	 * <p>Typically a {@link Field}, but implementations could also accept
-	 * {@link Method} or {@link Class}.
-	 * @return the annotated element
-	 * @see #fieldElement()
-	 */
-	public AnnotatedElement element() {
-		return this.element;
-	}
-
-	/**
-	 * Convenience method to get the {@link #element annotated element}
-	 * as a {@link Field}.
-	 * @return the annotated element as a {@link Field}, or {@code null}
-	 * if not a Field
-	 */
-	@Nullable
-	public Field fieldElement() {
-		return this.element instanceof Field f ? f : null;
-	}
-
-	/**
-	 * Convenience method to get the {@link #element annotated element}
-	 * as a {@link Method}.
-	 * @return the annotated element as a {@link Method}, or {@code null}
-	 * if not a Method
-	 */
-	@Nullable
-	public Method methodElement() {
-		return this.element instanceof Method m ? m : null;
-	}
-
-	/**
-	 * Convenience method to get the {@link #element annotated element}
-	 * as a {@link Class}.
-	 * @return the annotated element as a {@link Class}, or {@code null}
-	 * if not a Class
-	 */
-	@Nullable
-	public Class<?> classElement() {
-		return this.element instanceof Class<?> c ? c : null;
+	public Field field() {
+		return this.field;
 	}
 
 	/**
@@ -153,6 +91,15 @@ public abstract class OverrideMetadata {
 	 */
 	public ResolvableType typeToOverride() {
 		return this.typeToOverride;
+	}
+
+	/**
+	 * Define the broad {@link BeanOverrideStrategy} for this
+	 * {@link OverrideMetadata}, as a hint on how and when the override instance
+	 * should be created.
+	 */
+	public final BeanOverrideStrategy getBeanOverrideStrategy() {
+		return this.strategy;
 	}
 
 	/**
@@ -178,6 +125,17 @@ public abstract class OverrideMetadata {
 	protected abstract Object createOverride(String beanName, @Nullable BeanDefinition existingBeanDefinition,
 			@Nullable Object existingBeanInstance);
 
+	/**
+	 * Optionally track objects created by this {@link OverrideMetadata}
+	 * (default is no tracking).
+	 * @param override the bean override instance to track
+	 * @param trackingBeanRegistry the registry in which trackers could
+	 * optionally be registered
+	 */
+	protected void track(Object override, SingletonBeanRegistry trackingBeanRegistry) {
+		//NO-OP
+	}
+
 	@Override
 	public boolean equals(Object obj) {
 		if (obj == this) {
@@ -187,23 +145,25 @@ public abstract class OverrideMetadata {
 			return false;
 		}
 		var that = (OverrideMetadata) obj;
-		return Objects.equals(this.element, that.element) &&
+		return Objects.equals(this.field, that.field) &&
 				Objects.equals(this.overrideAnnotation, that.overrideAnnotation) &&
+				Objects.equals(this.strategy, that.strategy) &&
 				Objects.equals(this.typeToOverride, that.typeToOverride) &&
 				Objects.equals(this.qualifier, that.qualifier);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.element, this.overrideAnnotation, this.typeToOverride, this.qualifier);
+		return Objects.hash(this.field, this.overrideAnnotation, this.strategy, this.typeToOverride, this.qualifier);
 	}
 
 	@Override
 	public String toString() {
 		return "OverrideMetadata[" +
 				"category=" + this.getBeanOverrideDescription() + ", " +
-				"element=" + this.element + ", " +
+				"field=" + this.field + ", " +
 				"overrideAnnotation=" + this.overrideAnnotation + ", " +
+				"strategy=" + this.strategy + ", " +
 				"typeToOverride=" + this.typeToOverride + ", " +
 				"qualifier=" + this.qualifier + ']';
 	}

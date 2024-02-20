@@ -18,6 +18,7 @@ package org.springframework.test.bean.override;
 
 import java.util.Map;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.BeanWrapper;
@@ -33,10 +34,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.Ordered;
 import org.springframework.core.ResolvableType;
+import org.springframework.test.bean.override.example.ExampleBeanOverrideAnnotation;
 import org.springframework.test.bean.override.example.ExampleService;
 import org.springframework.test.bean.override.example.FailingExampleService;
 import org.springframework.test.bean.override.example.RealExampleService;
-import org.springframework.test.bean.override.example.TestBeanOverrideAnnotation;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.util.Assert;
 
@@ -50,10 +51,18 @@ import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
  */
 class BeanOverrideBeanPostProcessorTests {
 
+	BeanOverrideParser parser;
+
+	@BeforeEach
+	void initParser() {
+		this.parser = new BeanOverrideParser();
+	}
+
 	@Test
 	void cannotOverrideMultipleBeans() {
+		this.parser.parse(MultipleBeans.class);
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-		BeanOverrideBeanPostProcessor.register(context);
+		BeanOverrideBeanPostProcessor.register(context, this.parser.getOverrideMetadata());
 		context.register(MultipleBeans.class);
 		assertThatIllegalStateException().isThrownBy(context::refresh)
 			.withMessageContaining("Unable to register test bean " + ExampleService.class.getName()
@@ -62,8 +71,9 @@ class BeanOverrideBeanPostProcessorTests {
 
 	@Test
 	void cannotOverrideMultipleQualifiedBeans() {
+		this.parser.parse(MultipleQualifiedBeans.class);
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-		BeanOverrideBeanPostProcessor.register(context);
+		BeanOverrideBeanPostProcessor.register(context, this.parser.getOverrideMetadata());
 		context.register(MultipleQualifiedBeans.class);
 		assertThatIllegalStateException().isThrownBy(context::refresh)
 			.withMessageContaining("Unable to register test bean " + ExampleService.class.getName()
@@ -72,8 +82,9 @@ class BeanOverrideBeanPostProcessorTests {
 
 	@Test
 	void canOverrideBeanProducedByFactoryBeanWithClassObjectTypeAttribute() {
+		this.parser.parse(OverriddenFactoryBean.class);
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-		BeanOverrideBeanPostProcessor.register(context);
+	BeanOverrideBeanPostProcessor.register(context, parser.getOverrideMetadata());
 		RootBeanDefinition factoryBeanDefinition = new RootBeanDefinition(TestFactoryBean.class);
 		factoryBeanDefinition.setAttribute(FactoryBean.OBJECT_TYPE_ATTRIBUTE, SomeInterface.class);
 		context.registerBeanDefinition("beanToBeOverridden", factoryBeanDefinition);
@@ -84,8 +95,9 @@ class BeanOverrideBeanPostProcessorTests {
 
 	@Test
 	void canOverrideBeanProducedByFactoryBeanWithResolvableTypeObjectTypeAttribute() {
+		this.parser.parse(OverriddenFactoryBean.class);
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-		BeanOverrideBeanPostProcessor.register(context);
+		BeanOverrideBeanPostProcessor.register(context, parser.getOverrideMetadata());
 		RootBeanDefinition factoryBeanDefinition = new RootBeanDefinition(TestFactoryBean.class);
 		ResolvableType objectType = ResolvableType.forClass(SomeInterface.class);
 		factoryBeanDefinition.setAttribute(FactoryBean.OBJECT_TYPE_ATTRIBUTE, objectType);
@@ -97,8 +109,9 @@ class BeanOverrideBeanPostProcessorTests {
 
 	@Test
 	void canOverridePrimaryBean() {
+		this.parser.parse(OverridePrimaryBean.class);
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-		BeanOverrideBeanPostProcessor.register(context);
+		BeanOverrideBeanPostProcessor.register(context, parser.getOverrideMetadata());
 		context.register(OverridePrimaryBean.class);
 		context.refresh();
 		assertThat(context.getBean(OverridePrimaryBean.class).field).as("field").isSameAs(OVERRIDE_SERVICE);
@@ -109,8 +122,9 @@ class BeanOverrideBeanPostProcessorTests {
 
 	@Test
 	void canOverrideQualifiedBeanWithPrimaryBeanPresent() {
+	this.parser.parse(OverrideQualifiedBean.class);
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-		BeanOverrideBeanPostProcessor.register(context);
+		BeanOverrideBeanPostProcessor.register(context, parser.getOverrideMetadata());
 		context.register(OverrideQualifiedBean.class);
 		context.refresh();
 		assertThat(context.getBean(OverrideQualifiedBean.class).field).as("field").isSameAs(OVERRIDE_SERVICE);
@@ -121,9 +135,10 @@ class BeanOverrideBeanPostProcessorTests {
 
 	@Test
 	void postProcessorShouldNotTriggerEarlyInitialization() {
+		this.parser.parse(EagerInitBean.class);
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
 		context.register(FactoryBeanRegisteringPostProcessor.class);
-		BeanOverrideBeanPostProcessor.register(context);
+		BeanOverrideBeanPostProcessor.register(context, parser.getOverrideMetadata());
 		context.register(TestBeanFactoryPostProcessor.class);
 		context.register(EagerInitBean.class);
 		context.refresh();
@@ -136,7 +151,7 @@ class BeanOverrideBeanPostProcessorTests {
 	@Configuration(proxyBeanMethods = false)
 	static class OverriddenFactoryBean {
 
-		@TestBeanOverrideAnnotation("fOverride")
+		@ExampleBeanOverrideAnnotation("fOverride")
 		SomeInterface f;
 
 		static SomeInterface fOverride() {
@@ -153,7 +168,7 @@ class BeanOverrideBeanPostProcessorTests {
 	@Configuration(proxyBeanMethods = false)
 	static class MultipleBeans {
 
-		@TestBeanOverrideAnnotation
+		@ExampleBeanOverrideAnnotation
 		ExampleService service;
 
 		@Bean
@@ -171,7 +186,7 @@ class BeanOverrideBeanPostProcessorTests {
 	@Configuration(proxyBeanMethods = false)
 	static class MultipleQualifiedBeans {
 
-		@TestBeanOverrideAnnotation
+		@ExampleBeanOverrideAnnotation
 		@Qualifier("test")
 		private ExampleService field;
 
@@ -197,7 +212,7 @@ class BeanOverrideBeanPostProcessorTests {
 	@Configuration(proxyBeanMethods = false)
 	static class OverridePrimaryBean {
 
-		@TestBeanOverrideAnnotation("useThis")
+		@ExampleBeanOverrideAnnotation("useThis")
 		private ExampleService field;
 
 		@Bean
@@ -221,7 +236,7 @@ class BeanOverrideBeanPostProcessorTests {
 	@Configuration(proxyBeanMethods = false)
 	static class OverrideQualifiedBean {
 
-		@TestBeanOverrideAnnotation("useThis")
+		@ExampleBeanOverrideAnnotation("useThis")
 		@Qualifier("test")
 		private ExampleService field;
 
@@ -243,10 +258,9 @@ class BeanOverrideBeanPostProcessorTests {
 
 	}
 
-	@Configuration(proxyBeanMethods = false)
 	static class EagerInitBean {
 
-		@TestBeanOverrideAnnotation("useThis")
+		@ExampleBeanOverrideAnnotation("useThis")
 		private ExampleService service;
 
 		static ExampleService useThis() {

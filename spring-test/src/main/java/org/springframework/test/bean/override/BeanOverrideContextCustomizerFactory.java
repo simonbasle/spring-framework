@@ -19,6 +19,7 @@ package org.springframework.test.bean.override;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.aot.hint.annotation.Reflective;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.test.context.ContextConfigurationAttributes;
@@ -39,23 +40,25 @@ public class BeanOverrideContextCustomizerFactory implements ContextCustomizerFa
 	public ContextCustomizer createContextCustomizer(Class<?> testClass,
 			List<ContextConfigurationAttributes> configAttributes) {
 		BeanOverrideParser parser = new BeanOverrideParser();
-		parseDefinitions(testClass, parser);
+		parseMetadata(testClass, parser);
 		if (parser.getOverrideMetadata().isEmpty()) {
 			return null;
 		}
+
 		return new BeanOverrideContextCustomizer(parser.getOverrideMetadata());
 	}
 
-	private void parseDefinitions(Class<?> testClass, BeanOverrideParser parser) {
+	private void parseMetadata(Class<?> testClass, BeanOverrideParser parser) {
 		parser.parse(testClass);
 		if (TestContextAnnotationUtils.searchEnclosingClass(testClass)) {
-			parseDefinitions(testClass.getEnclosingClass(), parser);
+			parseMetadata(testClass.getEnclosingClass(), parser);
 		}
 	}
 
 	/**
 	 * A {@link ContextCustomizer} for Bean Overriding in tests.
 	 */
+	@Reflective
 	static final class BeanOverrideContextCustomizer implements ContextCustomizer {
 
 		private final Set<OverrideMetadata> metadata;

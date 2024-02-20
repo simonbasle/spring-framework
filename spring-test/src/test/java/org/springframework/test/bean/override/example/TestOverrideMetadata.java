@@ -29,7 +29,7 @@ import org.springframework.test.bean.override.BeanOverrideStrategy;
 import org.springframework.test.bean.override.OverrideMetadata;
 import org.springframework.test.bean.override.QualifierMetadata;
 
-import static org.springframework.test.bean.override.example.TestBeanOverrideAnnotation.DEFAULT_VALUE;
+import static org.springframework.test.bean.override.example.ExampleBeanOverrideAnnotation.DEFAULT_VALUE;
 
 public class TestOverrideMetadata extends OverrideMetadata {
 
@@ -72,21 +72,16 @@ public class TestOverrideMetadata extends OverrideMetadata {
 		throw new IllegalStateException("Expected the annotated element to be a Field, Method or Class");
 	}
 
-	public TestOverrideMetadata(AnnotatedElement element, TestBeanOverrideAnnotation overrideAnnotation,
+	public TestOverrideMetadata(Field field, ExampleBeanOverrideAnnotation overrideAnnotation,
 			ResolvableType typeToOverride, @Nullable QualifierMetadata qualifier) {
-		super(element, overrideAnnotation, typeToOverride, qualifier);
-		this.method = findMethod(element, overrideAnnotation.value());
+		super(field, overrideAnnotation, typeToOverride, BeanOverrideStrategy.REPLACE_DEFINITION, qualifier);
+		this.method = findMethod(field, overrideAnnotation.value());
 	}
 
 	//Used to trigger duplicate detection in parser test
 	TestOverrideMetadata() {
-		super(null, null, null, null);
+		super(null, null, null, null, null);
 		this.method = null;
-	}
-
-	@Override
-	public BeanOverrideStrategy getBeanOverrideStrategy() {
-		return BeanOverrideStrategy.REPLACE_DEFINITION;
 	}
 
 	@Override

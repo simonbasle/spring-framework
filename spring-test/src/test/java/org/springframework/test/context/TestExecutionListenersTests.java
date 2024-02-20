@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.AliasFor;
 import org.springframework.core.annotation.AnnotationConfigurationException;
+import org.springframework.test.bean.override.BeanOverrideTestExecutionListener;
 import org.springframework.test.context.event.ApplicationEventsTestExecutionListener;
 import org.springframework.test.context.event.EventPublishingTestExecutionListener;
 import org.springframework.test.context.jdbc.SqlScriptsTestExecutionListener;
@@ -70,7 +71,8 @@ class TestExecutionListenersTests {
 				DirtiesContextTestExecutionListener.class,//
 				TransactionalTestExecutionListener.class,//
 				SqlScriptsTestExecutionListener.class,//
-				EventPublishingTestExecutionListener.class
+				EventPublishingTestExecutionListener.class,//
+				BeanOverrideTestExecutionListener.class
 			);
 		assertRegisteredListeners(DefaultListenersTestCase.class, expected);
 	}
@@ -89,7 +91,8 @@ class TestExecutionListenersTests {
 				DirtiesContextTestExecutionListener.class,//
 				TransactionalTestExecutionListener.class,//
 				SqlScriptsTestExecutionListener.class,//
-				EventPublishingTestExecutionListener.class
+				EventPublishingTestExecutionListener.class,//
+				BeanOverrideTestExecutionListener.class
 			);
 		assertRegisteredListeners(MergedDefaultListenersWithCustomListenerPrependedTestCase.class, expected);
 	}
@@ -108,7 +111,8 @@ class TestExecutionListenersTests {
 				TransactionalTestExecutionListener.class,
 				SqlScriptsTestExecutionListener.class,//
 				EventPublishingTestExecutionListener.class,//
-				BazTestExecutionListener.class
+				BazTestExecutionListener.class,//
+				BeanOverrideTestExecutionListener.class
 			);
 		assertRegisteredListeners(MergedDefaultListenersWithCustomListenerAppendedTestCase.class, expected);
 	}
@@ -127,7 +131,8 @@ class TestExecutionListenersTests {
 				DirtiesContextTestExecutionListener.class,//
 				TransactionalTestExecutionListener.class,//
 				SqlScriptsTestExecutionListener.class,//
-				EventPublishingTestExecutionListener.class
+				EventPublishingTestExecutionListener.class,//
+				BeanOverrideTestExecutionListener.class
 			);
 		assertRegisteredListeners(MergedDefaultListenersWithCustomListenerInsertedTestCase.class, expected);
 	}

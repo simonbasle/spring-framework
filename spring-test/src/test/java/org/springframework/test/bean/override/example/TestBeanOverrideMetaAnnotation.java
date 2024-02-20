@@ -23,5 +23,5 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.FIELD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@TestBeanOverrideAnnotation("foo")
+@ExampleBeanOverrideAnnotation("foo")
 public @interface TestBeanOverrideMetaAnnotation { }
