@@ -23,7 +23,6 @@ import java.lang.reflect.TypeVariable;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.annotation.MergedAnnotation;
-import org.springframework.lang.Nullable;
 
 /**
  * An interface for Bean Overriding concrete processing.
@@ -63,21 +62,9 @@ public interface BeanOverrideProcessor {
 	 * @param field the annotated field
 	 * @param overrideAnnotation the field annotation
 	 * @param typeToOverride the target type
-	 * @param qualifier the optional {@link QualifierMetadata}
 	 * @return a new {@link OverrideMetadata}
 	 * @see #getOrDeduceType(Field, Annotation, Class)
-	 * @see #isQualifierAnnotation(Annotation)
 	 * @see MergedAnnotation#synthesize()
 	 */
-	OverrideMetadata createMetadata(Field field, Annotation overrideAnnotation,
-			ResolvableType typeToOverride, @Nullable QualifierMetadata qualifier);
-
-	/**
-	 * Define if an annotation should be considered as a qualifier annotation,
-	 * in which case it will be used in the bean definition when creating the
-	 * override.
-	 */
-	default boolean isQualifierAnnotation(Annotation annotation) {
-		return false;
-	}
+	OverrideMetadata createMetadata(Field field, Annotation overrideAnnotation, ResolvableType typeToOverride);
 }

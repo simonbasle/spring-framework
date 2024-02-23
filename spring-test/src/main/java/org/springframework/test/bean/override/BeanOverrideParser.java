@@ -111,12 +111,10 @@ class BeanOverrideParser {
 						return;
 					}
 					ResolvableType typeToOverride = processor.getOrDeduceType(field, pair.annotation(), source);
-					QualifierMetadata qualifier = QualifierMetadata.forField(field, processor::isQualifierAnnotation);
 
 					Assert.state(overrideAnnotationFound.compareAndSet(false, true),
 							"Multiple bean override annotations found on annotated field <" + field + ">");
-					OverrideMetadata metadata = processor.createMetadata(field, pair.annotation(),
-							typeToOverride, qualifier);
+					OverrideMetadata metadata = processor.createMetadata(field, pair.annotation(), typeToOverride);
 					boolean isNewDefinition = this.parsedMetadata.add(metadata);
 					Assert.state(isNewDefinition, () -> "Duplicate " + metadata.getBeanOverrideDescription() +
 								" overrideMetadata " + metadata);

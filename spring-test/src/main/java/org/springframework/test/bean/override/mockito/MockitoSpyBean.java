@@ -34,7 +34,7 @@ import org.springframework.test.bean.override.BeanOverride;
 @BeanOverride(processor = MockitoBeanOverrideProcessor.class)
 public @interface MockitoSpyBean {
 
-	String name();
+	String name() default "";
 	boolean proxyTargetAware() default true;
 	MockReset reset() default MockReset.AFTER;
 }

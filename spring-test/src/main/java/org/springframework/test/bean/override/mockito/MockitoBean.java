@@ -35,9 +35,9 @@ import org.springframework.test.bean.override.BeanOverride;
 @Retention(RetentionPolicy.RUNTIME)
 @BeanOverride(processor = MockitoBeanOverrideProcessor.class)
 public @interface MockitoBean {
-	String name();
+	String name() default "";
 	boolean serializable() default false;
 	MockReset reset() default MockReset.AFTER;
 	Class<?>[] extraInterfaces() default {};
-	Answers answers();
+	Answers answers() default Answers.RETURNS_DEFAULTS;
 }

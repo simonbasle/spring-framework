@@ -32,7 +32,6 @@ import org.springframework.core.ResolvableType;
 import org.springframework.core.style.ToStringCreator;
 import org.springframework.lang.Nullable;
 import org.springframework.test.bean.override.BeanOverrideStrategy;
-import org.springframework.test.bean.override.QualifierMetadata;
 import org.springframework.test.util.AopTestUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
@@ -47,14 +46,14 @@ import static org.mockito.Mockito.mock;
  */
 class SpyDefinition extends Definition {
 
-	SpyDefinition(MockitoSpyBean spyAnnotation, Field field, ResolvableType typeToSpy, @Nullable QualifierMetadata qualifier) {
+	SpyDefinition(MockitoSpyBean spyAnnotation, Field field, ResolvableType typeToSpy) {
 		this(spyAnnotation.name(), spyAnnotation.reset(), spyAnnotation.proxyTargetAware(), field,
-				spyAnnotation, typeToSpy, qualifier);
+				spyAnnotation, typeToSpy);
 	}
 
 	SpyDefinition(String name, MockReset reset, boolean proxyTargetAware, Field field, Annotation annotation,
-			ResolvableType typeToSpy, @Nullable QualifierMetadata qualifier) {
-		super(name, reset, proxyTargetAware, field, annotation, typeToSpy, BeanOverrideStrategy.WRAP_EARLY_BEAN, qualifier);
+			ResolvableType typeToSpy) {
+		super(name, reset, proxyTargetAware, field, annotation, typeToSpy, BeanOverrideStrategy.WRAP_EARLY_BEAN);
 		Assert.notNull(typeToSpy, "typeToSpy must not be null");
 	}
 

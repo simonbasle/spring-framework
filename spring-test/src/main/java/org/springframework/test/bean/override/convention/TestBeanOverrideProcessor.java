@@ -33,8 +33,8 @@ import org.springframework.lang.Nullable;
 import org.springframework.test.bean.override.BeanOverrideProcessor;
 import org.springframework.test.bean.override.BeanOverrideStrategy;
 import org.springframework.test.bean.override.OverrideMetadata;
-import org.springframework.test.bean.override.QualifierMetadata;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * Simple {@link BeanOverrideProcessor} primarily made to work with the
@@ -70,36 +70,24 @@ public class TestBeanOverrideProcessor implements BeanOverrideProcessor {
 	}
 
 	@Override
-	public boolean isQualifierAnnotation(Annotation annotation) {
-		return !(annotation instanceof TestBean) && additionalIsQualifierCheck(annotation);
-	}
-
-	/**
-	 * Additional check to extend which annotations are considered as qualifier
-	 * annotations. Note the {@link TestBean} annotation is never considered as
-	 * a qualifier. Defaults to considering all annotations.
-	 */
-	protected boolean additionalIsQualifierCheck(Annotation annotation) {
-		return true;
-	}
-
-	@Override
-	public OverrideMetadata createMetadata(Field field, Annotation overrideAnnotation,
-			ResolvableType typeToOverride,
-			@Nullable QualifierMetadata qualifier) {
+	public OverrideMetadata createMetadata(Field field, Annotation overrideAnnotation, ResolvableType typeToOverride) {
 		final Class<?> enclosingClass = field.getDeclaringClass();
 		// if we can get an explicit method name right away, fail fast if it doesn't match
 		if (overrideAnnotation instanceof TestBean testBeanAnnotation) {
-			String annotationMethodName = testBeanAnnotation.methodName();
-			if (!annotationMethodName.isBlank()) {
-				Method overrideMethod = ensureMethod(enclosingClass, field.getType(), annotationMethodName);
-				return new MethodConventionOverrideMetadata(field, overrideMethod, overrideAnnotation,
-							typeToOverride, qualifier);
+			Method overrideMethod = null;
+			String beanName = null;
+			if (!testBeanAnnotation.methodName().isBlank()) {
+				overrideMethod = ensureMethod(enclosingClass, field.getType(), testBeanAnnotation.methodName());
 			}
+			if (!testBeanAnnotation.name().isBlank()) {
+				beanName = testBeanAnnotation.name();
+			}
+			return new MethodConventionOverrideMetadata(field, overrideMethod, beanName,
+					overrideAnnotation, typeToOverride);
 		}
 		// otherwise defer the resolution of the static method until OverrideMetadata#createOverride
-		return new MethodConventionOverrideMetadata(field, null, overrideAnnotation,
-					typeToOverride, qualifier);
+		return new MethodConventionOverrideMetadata(field, null, null, overrideAnnotation,
+					typeToOverride);
 	}
 
 	static final class MethodConventionOverrideMetadata extends OverrideMetadata {
@@ -107,10 +95,22 @@ public class TestBeanOverrideProcessor implements BeanOverrideProcessor {
 		@Nullable
 		private final Method overrideMethod;
 
-		public MethodConventionOverrideMetadata(Field field, @Nullable Method overrideMethod,
-				Annotation overrideAnnotation, ResolvableType typeToOverride, @Nullable QualifierMetadata qualifier) {
-			super(field, overrideAnnotation, typeToOverride, BeanOverrideStrategy.REPLACE_DEFINITION, qualifier);
+		@Nullable
+		private final String beanName;
+
+		public MethodConventionOverrideMetadata(Field field, @Nullable Method overrideMethod, @Nullable String beanName,
+				Annotation overrideAnnotation, ResolvableType typeToOverride) {
+			super(field, overrideAnnotation, typeToOverride, BeanOverrideStrategy.REPLACE_DEFINITION);
 			this.overrideMethod = overrideMethod;
+			this.beanName = beanName;
+		}
+
+		@Override
+		protected String getExpectedBeanName() {
+			if (StringUtils.hasText(this.beanName)) {
+				return this.beanName;
+			}
+			return super.getExpectedBeanName();
 		}
 
 		@Override

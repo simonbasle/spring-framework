@@ -18,15 +18,10 @@ package org.springframework.test.bean.override;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
@@ -38,7 +33,6 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.BeanFactoryUtils;
 import org.springframework.beans.factory.FactoryBean;
-import org.springframework.beans.factory.NoUniqueBeanDefinitionException;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
@@ -47,8 +41,6 @@ import org.springframework.beans.factory.config.InstantiationAwareBeanPostProces
 import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.beans.factory.config.SmartInstantiationAwareBeanPostProcessor;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
-import org.springframework.beans.factory.support.BeanNameGenerator;
-import org.springframework.beans.factory.support.DefaultBeanNameGenerator;
 import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.Ordered;
@@ -56,7 +48,6 @@ import org.springframework.core.PriorityOrdered;
 import org.springframework.core.ResolvableType;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
-import org.springframework.util.ObjectUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -88,8 +79,6 @@ public class BeanOverrideBeanPostProcessor implements InstantiationAwareBeanPost
 
 	private static final String INFRASTRUCTURE_BEAN_NAME = BeanOverrideBeanPostProcessor.class.getName();
 	private static final String EARLY_INFRASTRUCTURE_BEAN_NAME = BeanOverrideBeanPostProcessor.WrapEarlyBeanPostProcessor.class.getName();
-
-	private static final BeanNameGenerator beanNameGenerator = new DefaultBeanNameGenerator();
 
 	private final Set<OverrideMetadata> overrideMetadata;
 	private final Map<String, OverrideMetadata> earlyOverrideMetadata = new HashMap<>();
@@ -157,82 +146,58 @@ public class BeanOverrideBeanPostProcessor implements InstantiationAwareBeanPost
 
 	private void registerBeanOverride(BeanDefinitionRegistry registry, OverrideMetadata overrideMetadata) {
 		switch (overrideMetadata.getBeanOverrideStrategy()) {
-			case REPLACE_DEFINITION -> registerReplaceDefinition(registry, overrideMetadata);
-			case WRAP_EARLY_BEAN -> registerWrapEarly(registry, overrideMetadata);
+			case REPLACE_DEFINITION -> registerReplaceDefinition(registry, overrideMetadata, true);
+			case REPLACE_OR_CREATE_DEFINITION -> registerReplaceDefinition(registry, overrideMetadata, false);
+			case WRAP_EARLY_BEAN -> registerWrapEarly(overrideMetadata);
 		}
 	}
 
-	private void registerReplaceDefinition(BeanDefinitionRegistry registry, OverrideMetadata overrideMetadata) {
+	private void registerReplaceDefinition(BeanDefinitionRegistry registry, OverrideMetadata overrideMetadata,
+			boolean enforceExistingDefinition) {
 		RootBeanDefinition beanDefinition = createBeanDefinition(overrideMetadata);
-		String beanName = getBeanName(registry, overrideMetadata, beanDefinition);
-		String transformedBeanName = BeanFactoryUtils.transformedBeanName(beanName);
+		String beanName = overrideMetadata.getExpectedBeanName();
 
 		BeanDefinition existingBeanDefinition = null;
-		if (registry.containsBeanDefinition(transformedBeanName)) {
-			existingBeanDefinition = registry.getBeanDefinition(transformedBeanName);
+		if (registry.containsBeanDefinition(beanName)) {
+			existingBeanDefinition = registry.getBeanDefinition(beanName);
 			copyBeanDefinitionDetails(existingBeanDefinition, beanDefinition);
-			registry.removeBeanDefinition(transformedBeanName);
+			registry.removeBeanDefinition(beanName);
 		}
-		registry.registerBeanDefinition(transformedBeanName, beanDefinition);
+		else if (enforceExistingDefinition) {
+			throw new IllegalStateException("Unable to override " + overrideMetadata.getBeanOverrideDescription() +
+					" bean, expected a bean definition to replace with name '" + beanName + "'");
+		}
+		registry.registerBeanDefinition(beanName, beanDefinition);
 
-		Object originalSingleton = this.beanFactory.getSingleton(transformedBeanName);
+		Object originalSingleton = this.beanFactory.getSingleton(beanName);
 		//TODO a pre-existing singleton should probably be removed from the factory.
 		Object override = overrideMetadata.createOverride(beanName, existingBeanDefinition, originalSingleton);
 		overrideMetadata.track(override, this.beanFactory);
 
 		//TODO is this notion of registering a singleton bean valid in all potential cases?
-		this.beanFactory.registerSingleton(transformedBeanName, override);
+		this.beanFactory.registerSingleton(beanName, override);
 
 		this.beanNameRegistry.put(overrideMetadata, beanName);
 		this.fieldRegistry.put(overrideMetadata.field(), beanName);
 	}
 
 	/**
-	 * Perform wrap-early preparation steps. These are:
-	 * <ul>
-	 * <li>Detect pre-existing bean names for the type to override</li>
-	 * <li>If none, create one definition</li>
-	 * <li>For all definitions, put the definition in the early tracking map</li>
-	 * <li>The map will later be checked to see if a given bean should be wrapped
+	 * Check that the expected bean name is registered and matches the type to override.
+	 * If so, put the override metadata in the early tracking map.
+	 * The map will later be checked to see if a given bean should be wrapped
 	 * upon creation, during the {@link WrapEarlyBeanPostProcessor#getEarlyBeanReference(Object, String)}
 	 * phase
-	 * </ul>
 	 */
-	private void registerWrapEarly(BeanDefinitionRegistry registry, OverrideMetadata metadata) {
-		Set<String> existingBeanNames = getExistingBeanNames(metadata.typeToOverride(), metadata.qualifier());
-		if (ObjectUtils.isEmpty(existingBeanNames)) {
-			createWrapEarlyBeanDefinition(registry, metadata);
+	private void registerWrapEarly(OverrideMetadata metadata) {
+		Set<String> existingBeanNames = getExistingBeanNames(metadata.typeToOverride());
+		String beanName = metadata.getExpectedBeanName();
+		if (!existingBeanNames.contains(beanName)) {
+			throw new IllegalStateException("Unable to override wrap-early bean named '" + beanName + "', not found among " +
+					existingBeanNames);
 		}
-		else {
-			wrapEarlyBeanDefinitions(registry, metadata, existingBeanNames);
-		}
-	}
-
-	private void createWrapEarlyBeanDefinition(BeanDefinitionRegistry registry, OverrideMetadata metadata) {
-		RootBeanDefinition beanDefinition = new RootBeanDefinition(metadata.typeToOverride().resolve());
-		String beanName = beanNameGenerator.generateBeanName(beanDefinition, registry);
-		registry.registerBeanDefinition(beanName, beanDefinition);
-		registerWrapEarlyName(metadata, beanName);
-	}
-
-	private void wrapEarlyBeanDefinitions(BeanDefinitionRegistry registry, OverrideMetadata metadata,
-			Collection<String> existingBeanNames) {
-		try {
-			String beanName = determineBeanName(existingBeanNames, metadata, registry);
-			if (beanName != null) {
-				registerWrapEarlyName(metadata, beanName);
-			}
-		}
-		catch (RuntimeException ex) {
-			throw new IllegalStateException("Unable to register " + metadata.getBeanOverrideDescription() +
-					" bean " + metadata.typeToOverride(), ex);
-		}
-	}
-
-	private void registerWrapEarlyName(OverrideMetadata definition, String beanName) {
-		this.earlyOverrideMetadata.put(beanName, definition);
-		this.beanNameRegistry.put(definition, beanName);
-		this.fieldRegistry.put(definition.field(), beanName);
+		this.earlyOverrideMetadata.put(beanName, metadata);
+		this.beanNameRegistry.put(metadata, beanName);
+		this.fieldRegistry.put(metadata.field(), beanName);
 	}
 
 	/**
@@ -251,48 +216,10 @@ public class BeanOverrideBeanPostProcessor implements InstantiationAwareBeanPost
 		return bean;
 	}
 
-	private RootBeanDefinition createBeanDefinition(OverrideMetadata overrideOverrideMetadata) {
-		RootBeanDefinition definition = new RootBeanDefinition(overrideOverrideMetadata.typeToOverride().resolve());
-		definition.setTargetType(overrideOverrideMetadata.typeToOverride());
-		final QualifierMetadata qualifier = overrideOverrideMetadata.qualifier();
-		if (qualifier != null) {
-			qualifier.applyTo(definition);
-		}
+	private RootBeanDefinition createBeanDefinition(OverrideMetadata metadata) {
+		RootBeanDefinition definition = new RootBeanDefinition(metadata.typeToOverride().resolve());
+		definition.setTargetType(metadata.typeToOverride());
 		return definition;
-	}
-
-	private String getBeanName(BeanDefinitionRegistry registry, OverrideMetadata overrideMetadata,
-			RootBeanDefinition beanDefinition) {
-		Optional<String> explicitBeanName = overrideMetadata.getExplicitBeanName();
-		if (explicitBeanName.isPresent()) {
-			return explicitBeanName.get();
-		}
-		Set<String> existingBeans = getExistingBeanNames(overrideMetadata.typeToOverride(),
-				overrideMetadata.qualifier());
-		if (existingBeans.isEmpty()) {
-			return BeanOverrideBeanPostProcessor.beanNameGenerator.generateBeanName(beanDefinition, registry);
-		}
-		if (existingBeans.size() == 1) {
-			return existingBeans.iterator().next();
-		}
-		String primaryCandidate = determinePrimaryCandidate(registry, existingBeans, overrideMetadata.typeToOverride());
-		if (primaryCandidate != null) {
-			return primaryCandidate;
-		}
-		throw new IllegalStateException("Unable to register " + overrideMetadata.getBeanOverrideDescription()
-				+ " bean " + overrideMetadata.typeToOverride()
-				+ " expected a single matching bean to replace but found " + existingBeans);
-	}
-
-
-	private Set<String> getExistingBeanNames(ResolvableType type, @Nullable QualifierMetadata qualifier) {
-		Set<String> candidates = new TreeSet<>();
-		for (String candidate : getExistingBeanNames(type)) {
-			if (qualifier == null || qualifier.matches(this.beanFactory, candidate)) {
-				candidates.add(candidate);
-			}
-		}
-		return candidates;
 	}
 
 	private Set<String> getExistingBeanNames(ResolvableType resolvableType) {
@@ -318,37 +245,6 @@ public class BeanOverrideBeanPostProcessor implements InstantiationAwareBeanPost
 		catch (Throwable ex) {
 			return false;
 		}
-	}
-
-	@Nullable
-	private String determineBeanName(Collection<String> existingBeans, OverrideMetadata metadata,
-			BeanDefinitionRegistry registry) {
-		final Optional<String> explicitBeanName = metadata.getExplicitBeanName();
-		if (explicitBeanName.isPresent()) {
-			return explicitBeanName.get();
-		}
-		if (existingBeans.size() == 1) {
-			return existingBeans.iterator().next();
-		}
-		return determinePrimaryCandidate(registry, existingBeans, metadata.typeToOverride());
-	}
-
-	@Nullable
-	private String determinePrimaryCandidate(BeanDefinitionRegistry registry, Collection<String> candidateBeanNames,
-			ResolvableType type) {
-		String primaryBeanName = null;
-		for (String candidateBeanName : candidateBeanNames) {
-			BeanDefinition beanDefinition = registry.getBeanDefinition(candidateBeanName);
-			if (beanDefinition.isPrimary()) {
-				if (primaryBeanName != null) {
-					throw new NoUniqueBeanDefinitionException(Objects.requireNonNull(type.resolve()),
-							candidateBeanNames.size(), "more than one 'primary' bean found among candidates: " +
-							Collections.singletonList(candidateBeanNames));
-				}
-				primaryBeanName = candidateBeanName;
-			}
-		}
-		return primaryBeanName;
 	}
 
 	private void postProcessField(Object bean, Field field) {
@@ -384,7 +280,7 @@ public class BeanOverrideBeanPostProcessor implements InstantiationAwareBeanPost
 			ReflectionUtils.setField(field, target, bean);
 		}
 		catch (Throwable ex) {
-			throw new BeanCreationException("Could not inject field: " + field, ex);
+			throw new BeanCreationException("Could not inject field '" + field + "'", ex);
 		}
 	}
 

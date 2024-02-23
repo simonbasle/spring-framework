@@ -18,7 +18,6 @@ package org.springframework.test.bean.override.mockito;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.util.Optional;
 
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.config.SingletonBeanRegistry;
@@ -26,7 +25,6 @@ import org.springframework.core.ResolvableType;
 import org.springframework.lang.Nullable;
 import org.springframework.test.bean.override.BeanOverrideStrategy;
 import org.springframework.test.bean.override.OverrideMetadata;
-import org.springframework.test.bean.override.QualifierMetadata;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
@@ -45,21 +43,20 @@ abstract class Definition extends OverrideMetadata {
 
 	private final boolean proxyTargetAware;
 
-	Definition(String name, MockReset reset, boolean proxyTargetAware, Field field,
-			Annotation annotation, ResolvableType typeToOverride,
-			BeanOverrideStrategy strategy, @Nullable QualifierMetadata qualifier) {
-		super(field, annotation, typeToOverride, strategy, qualifier);
+	Definition(String name, @Nullable MockReset reset, boolean proxyTargetAware, Field field,
+			Annotation annotation, ResolvableType typeToOverride, BeanOverrideStrategy strategy) {
+		super(field, annotation, typeToOverride, strategy);
 		this.name = name;
 		this.reset = (reset != null) ? reset : MockReset.AFTER;
 		this.proxyTargetAware = proxyTargetAware;
 	}
 
 	@Override
-	protected Optional<String> getExplicitBeanName() {
+	protected String getExpectedBeanName() {
 		if (StringUtils.hasText(this.name)) {
-			return Optional.of(this.name);
+			return this.name;
 		}
-		return Optional.empty();
+		return super.getExpectedBeanName();
 	}
 
 	@Override
@@ -106,7 +103,6 @@ abstract class Definition extends OverrideMetadata {
 		boolean result = ObjectUtils.nullSafeEquals(this.name, other.name);
 		result = result && ObjectUtils.nullSafeEquals(this.reset, other.reset);
 		result = result && ObjectUtils.nullSafeEquals(this.proxyTargetAware, other.proxyTargetAware);
-		result = result && ObjectUtils.nullSafeEquals(this.qualifier(), other.qualifier());
 		return result;
 	}
 
@@ -116,7 +112,6 @@ abstract class Definition extends OverrideMetadata {
 		result = MULTIPLIER * result + ObjectUtils.nullSafeHashCode(this.name);
 		result = MULTIPLIER * result + ObjectUtils.nullSafeHashCode(this.reset);
 		result = MULTIPLIER * result + ObjectUtils.nullSafeHashCode(this.proxyTargetAware);
-		result = MULTIPLIER * result + ObjectUtils.nullSafeHashCode(this.qualifier());
 		return result;
 	}
 

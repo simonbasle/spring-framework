@@ -19,7 +19,6 @@ package org.springframework.test.bean.override;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.Objects;
-import java.util.Optional;
 
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.SingletonBeanRegistry;
@@ -38,17 +37,13 @@ public abstract class OverrideMetadata {
 	private final Annotation overrideAnnotation;
 	private final ResolvableType typeToOverride;
 	private final BeanOverrideStrategy strategy;
-	@Nullable
-	private final QualifierMetadata qualifier;
 
 	public OverrideMetadata(Field field, Annotation overrideAnnotation,
-			ResolvableType typeToOverride, BeanOverrideStrategy strategy,
-			@Nullable QualifierMetadata qualifier) {
+			ResolvableType typeToOverride, BeanOverrideStrategy strategy) {
 		this.field = field;
 		this.overrideAnnotation = overrideAnnotation;
 		this.typeToOverride = typeToOverride;
 		this.strategy = strategy;
-		this.qualifier = qualifier;
 	}
 
 	/**
@@ -60,14 +55,13 @@ public abstract class OverrideMetadata {
 	public abstract String getBeanOverrideDescription();
 
 	/**
-	 * Provide an explicit bean name to override, if relevant. Typically, this
-	 * is useful for concrete annotations that allow the user to provide the
-	 * bean name.
-	 * @return an {@link Optional} bean name, or {@link Optional#empty()}
-	 * if it should be inferred
+	 * Provide the expected bean name to override. Typically, this is either
+	 * explicitly set in the concrete annotations or defined by the annotated
+	 * field's name.
+	 * @return the expected bean name, not null
 	 */
-	protected Optional<String> getExplicitBeanName() {
-		return Optional.empty();
+	protected String getExpectedBeanName() {
+		return this.field.getName();
 	}
 
 	/**
@@ -100,15 +94,6 @@ public abstract class OverrideMetadata {
 	 */
 	public final BeanOverrideStrategy getBeanOverrideStrategy() {
 		return this.strategy;
-	}
-
-	/**
-	 * The optional {@link QualifierMetadata}. Returns {@code null} if not
-	 * relevant.
-	 */
-	@Nullable
-	public QualifierMetadata qualifier() {
-		return this.qualifier;
 	}
 
 	/**
@@ -148,13 +133,12 @@ public abstract class OverrideMetadata {
 		return Objects.equals(this.field, that.field) &&
 				Objects.equals(this.overrideAnnotation, that.overrideAnnotation) &&
 				Objects.equals(this.strategy, that.strategy) &&
-				Objects.equals(this.typeToOverride, that.typeToOverride) &&
-				Objects.equals(this.qualifier, that.qualifier);
+				Objects.equals(this.typeToOverride, that.typeToOverride);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.field, this.overrideAnnotation, this.strategy, this.typeToOverride, this.qualifier);
+		return Objects.hash(this.field, this.overrideAnnotation, this.strategy, this.typeToOverride);
 	}
 
 	@Override
@@ -164,7 +148,6 @@ public abstract class OverrideMetadata {
 				"field=" + this.field + ", " +
 				"overrideAnnotation=" + this.overrideAnnotation + ", " +
 				"strategy=" + this.strategy + ", " +
-				"typeToOverride=" + this.typeToOverride + ", " +
-				"qualifier=" + this.qualifier + ']';
+				"typeToOverride=" + this.typeToOverride + ']';
 	}
 }

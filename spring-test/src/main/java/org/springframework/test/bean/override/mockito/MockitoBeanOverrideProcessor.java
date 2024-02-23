@@ -22,23 +22,17 @@ import java.lang.reflect.Field;
 import org.springframework.core.ResolvableType;
 import org.springframework.test.bean.override.BeanOverrideProcessor;
 import org.springframework.test.bean.override.OverrideMetadata;
-import org.springframework.test.bean.override.QualifierMetadata;
 
 public class MockitoBeanOverrideProcessor implements BeanOverrideProcessor {
-	@Override
-	public OverrideMetadata createMetadata(Field field, Annotation overrideAnnotation, ResolvableType typeToMock, QualifierMetadata qualifier) {
+
+	public OverrideMetadata createMetadata(Field field, Annotation overrideAnnotation, ResolvableType typeToMock) {
 		if (overrideAnnotation instanceof MockitoBean mockBean) {
-			return new MockDefinition(mockBean, field, typeToMock, qualifier);
+			return new MockDefinition(mockBean, field, typeToMock);
 		}
 		else if (overrideAnnotation instanceof MockitoSpyBean spyBean) {
-			return new SpyDefinition(spyBean, field, typeToMock, qualifier);
+			return new SpyDefinition(spyBean, field, typeToMock);
 		}
 		throw new IllegalArgumentException("Invalid annotation for MockitoBeanOverrideProcessor: " + overrideAnnotation.getClass().getName());
 	}
 
-	@Override
-	public boolean isQualifierAnnotation(Annotation annotation) {
-		return !annotation.getClass().getPackageName()
-				.startsWith(MockitoBeanOverrideProcessor.class.getPackageName());
-	}
 }

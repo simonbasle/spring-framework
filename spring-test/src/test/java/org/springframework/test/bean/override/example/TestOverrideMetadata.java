@@ -27,7 +27,7 @@ import org.springframework.core.ResolvableType;
 import org.springframework.lang.Nullable;
 import org.springframework.test.bean.override.BeanOverrideStrategy;
 import org.springframework.test.bean.override.OverrideMetadata;
-import org.springframework.test.bean.override.QualifierMetadata;
+import org.springframework.util.StringUtils;
 
 import static org.springframework.test.bean.override.example.ExampleBeanOverrideAnnotation.DEFAULT_VALUE;
 
@@ -35,6 +35,9 @@ public class TestOverrideMetadata extends OverrideMetadata {
 
 	@Nullable
 	private final Method method;
+
+	@Nullable
+	private final String beanName;
 
 	@Nullable
 	private static Method findMethod(AnnotatedElement element, String methodName) {
@@ -72,16 +75,26 @@ public class TestOverrideMetadata extends OverrideMetadata {
 		throw new IllegalStateException("Expected the annotated element to be a Field, Method or Class");
 	}
 
-	public TestOverrideMetadata(Field field, ExampleBeanOverrideAnnotation overrideAnnotation,
-			ResolvableType typeToOverride, @Nullable QualifierMetadata qualifier) {
-		super(field, overrideAnnotation, typeToOverride, BeanOverrideStrategy.REPLACE_DEFINITION, qualifier);
+	public TestOverrideMetadata(Field field, ExampleBeanOverrideAnnotation overrideAnnotation, ResolvableType typeToOverride) {
+		super(field, overrideAnnotation, typeToOverride, overrideAnnotation.createIfMissing() ?
+				BeanOverrideStrategy.REPLACE_OR_CREATE_DEFINITION: BeanOverrideStrategy.REPLACE_DEFINITION);
 		this.method = findMethod(field, overrideAnnotation.value());
+		this.beanName = overrideAnnotation.beanName();
 	}
 
 	//Used to trigger duplicate detection in parser test
 	TestOverrideMetadata() {
-		super(null, null, null, null, null);
+		super(null, null, null, null);
 		this.method = null;
+		this.beanName = null;
+	}
+
+	@Override
+	protected String getExpectedBeanName() {
+		if (StringUtils.hasText(this.beanName)) {
+			return this.beanName;
+		}
+		return super.getExpectedBeanName();
 	}
 
 	@Override

@@ -43,7 +43,7 @@ import org.springframework.test.bean.override.BeanOverride;
  * </ul>
  *
  * <p>The annotated field's name is interpreted to be the name of the original
- * bean to override, unless the annotation's {@link #beanName()} is specified.
+ * bean to override, unless the annotation's {@link #name()} is specified.
  *
  * @see TestBeanOverrideProcessor
  * @author Simon Baslé
@@ -74,5 +74,5 @@ public @interface TestBean {
 	 * The name of the original bean to override, or {@code ""} (the empty
 	 * String) to deduce the name from the annotated field.
 	 */
-	String beanName() default "";
+	String name() default "";
 }

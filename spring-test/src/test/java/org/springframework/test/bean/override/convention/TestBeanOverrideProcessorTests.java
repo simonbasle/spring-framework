@@ -22,7 +22,6 @@ import java.util.Objects;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -68,25 +67,12 @@ class TestBeanOverrideProcessorTests {
 				.isInstanceOf(IllegalArgumentException.class);
 	}
 
-
-	@Test
-	void qualifierAnnotations() {
-		TestBeanOverrideProcessor processor = new TestBeanOverrideProcessor();
-		TestBean annotation = AnnotationUtils.synthesizeAnnotation(TestBean.class);
-		Qualifier qualifierAnnotation = AnnotationUtils.synthesizeAnnotation(Qualifier.class);
-		assertThat(processor.isQualifierAnnotation(annotation)).as("@TestBean").isFalse();
-		assertThat(processor.isQualifierAnnotation(qualifierAnnotation)).as("@Qualifier").isTrue();
-		//noinspection DataFlowIssue
-		assertThat(processor.additionalIsQualifierCheck(null)).isTrue();
-	}
-
 	@Test
 	void createMetaDataForUnknownExplicitMethod() throws NoSuchFieldException {
 		Field f = ExplicitMethodNameConf.class.getField("a");
 		final TestBean overrideAnnotation = Objects.requireNonNull(AnnotationUtils.getAnnotation(f, TestBean.class));
 		TestBeanOverrideProcessor processor = new TestBeanOverrideProcessor();
-		assertThatException().isThrownBy(() -> processor.createMetadata(f, overrideAnnotation, ResolvableType.forClass(ExampleService.class),
-						null))
+		assertThatException().isThrownBy(() -> processor.createMetadata(f, overrideAnnotation, ResolvableType.forClass(ExampleService.class)))
 				.withMessage("Found 0 static methods instead of exactly one, matching a name in [explicit1] with return type " +
 						ExampleService.class.getName() + " on class " + ExplicitMethodNameConf.class.getName())
 				.isInstanceOf(IllegalStateException.class);
@@ -97,8 +83,7 @@ class TestBeanOverrideProcessorTests {
 		Field f = ExplicitMethodNameConf.class.getField("b");
 		final TestBean overrideAnnotation = Objects.requireNonNull(AnnotationUtils.getAnnotation(f, TestBean.class));
 		TestBeanOverrideProcessor processor = new TestBeanOverrideProcessor();
-		assertThat(processor.createMetadata(f, overrideAnnotation, ResolvableType.forClass(ExampleService.class),
-				null))
+		assertThat(processor.createMetadata(f, overrideAnnotation, ResolvableType.forClass(ExampleService.class)))
 				.isInstanceOf(TestBeanOverrideProcessor.MethodConventionOverrideMetadata.class);
 	}
 
@@ -107,8 +92,7 @@ class TestBeanOverrideProcessorTests {
 		Field f = MethodConventionConf.class.getField("field");
 		final TestBean overrideAnnotation = Objects.requireNonNull(AnnotationUtils.getAnnotation(f, TestBean.class));
 		TestBeanOverrideProcessor processor = new TestBeanOverrideProcessor();
-		assertThat(processor.createMetadata(f, overrideAnnotation, ResolvableType.forClass(ExampleService.class),
-				null))
+		assertThat(processor.createMetadata(f, overrideAnnotation, ResolvableType.forClass(ExampleService.class)))
 				.isInstanceOf(TestBeanOverrideProcessor.MethodConventionOverrideMetadata.class);
 	}
 

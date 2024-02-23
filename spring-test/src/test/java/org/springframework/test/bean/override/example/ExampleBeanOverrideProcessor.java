@@ -20,19 +20,12 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 
 import org.springframework.core.ResolvableType;
-import org.springframework.lang.Nullable;
 import org.springframework.test.bean.override.BeanOverrideProcessor;
 import org.springframework.test.bean.override.OverrideMetadata;
-import org.springframework.test.bean.override.QualifierMetadata;
 
 public class ExampleBeanOverrideProcessor implements BeanOverrideProcessor {
 
 	public ExampleBeanOverrideProcessor() {
-	}
-
-	@Override
-	public boolean isQualifierAnnotation(Annotation annotation) {
-		return !(annotation instanceof ExampleBeanOverrideAnnotation);
 	}
 
 	private static final TestOverrideMetadata CONSTANT = new TestOverrideMetadata() {
@@ -44,14 +37,13 @@ public class ExampleBeanOverrideProcessor implements BeanOverrideProcessor {
 	public static final String DUPLICATE_TRIGGER = "CONSTANT";
 
 	@Override
-	public OverrideMetadata createMetadata(Field field, Annotation overrideAnnotation,
-			ResolvableType typeToOverride, @Nullable QualifierMetadata qualifier) {
+	public OverrideMetadata createMetadata(Field field, Annotation overrideAnnotation, ResolvableType typeToOverride) {
 		if (!(overrideAnnotation instanceof ExampleBeanOverrideAnnotation annotation)) {
 			throw new IllegalStateException("unexpected annotation");
 		}
 		if (annotation.value().equals(DUPLICATE_TRIGGER)) {
 			return CONSTANT;
 		}
-		return new TestOverrideMetadata(field, annotation, typeToOverride, qualifier);
+		return new TestOverrideMetadata(field, annotation, typeToOverride);
 	}
 }

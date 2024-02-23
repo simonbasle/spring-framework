@@ -34,8 +34,8 @@ class OverrideMetadataTests {
 	static class ConcreteOverrideMetadata extends OverrideMetadata {
 
 		ConcreteOverrideMetadata(Field field, Annotation overrideAnnotation, ResolvableType typeToOverride,
-				BeanOverrideStrategy strategy, @Nullable QualifierMetadata qualifier) {
-			super(field, overrideAnnotation, typeToOverride, strategy, qualifier);
+				BeanOverrideStrategy strategy) {
+			super(field, overrideAnnotation, typeToOverride, strategy);
 		}
 
 		@Override
@@ -50,23 +50,19 @@ class OverrideMetadataTests {
 	}
 
 	@NonNull
-	public static String annotated() {
-		return "exampleMethod";
-	}
-
-	@NonNull
 	public String annotated = "exampleField";
 
 	static OverrideMetadata exampleOverride() throws NoSuchFieldException {
 		final Field annotated = OverrideMetadataTests.class.getField("annotated");
 		return new ConcreteOverrideMetadata(Objects.requireNonNull(annotated), annotated.getAnnotation(NonNull.class),
-				ResolvableType.forClass(String.class), BeanOverrideStrategy.REPLACE_DEFINITION, null);
+				ResolvableType.forClass(String.class), BeanOverrideStrategy.REPLACE_DEFINITION);
 	}
 
 	@Test
 	void implicitConfigurations() throws NoSuchFieldException {
 		final OverrideMetadata metadata = exampleOverride();
-		assertThat(metadata.getExplicitBeanName()).as("explicitBeanName").isEmpty();
+		assertThat(metadata.getExpectedBeanName()).as("expectedBeanName")
+				.isEqualTo(metadata.field().getName());
 	}
 
 }

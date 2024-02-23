@@ -31,7 +31,6 @@ import org.springframework.core.ResolvableType;
 import org.springframework.core.style.ToStringCreator;
 import org.springframework.lang.Nullable;
 import org.springframework.test.bean.override.BeanOverrideStrategy;
-import org.springframework.test.bean.override.QualifierMetadata;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ObjectUtils;
@@ -54,16 +53,14 @@ class MockDefinition extends Definition {
 
 	private final boolean serializable;
 
-	MockDefinition(MockitoBean annotation, Field field, ResolvableType typeToMock, QualifierMetadata qualifier) {
-		this(annotation.name(), annotation.reset(), field, annotation, typeToMock, qualifier,
+	MockDefinition(MockitoBean annotation, Field field, ResolvableType typeToMock) {
+		this(annotation.name(), annotation.reset(), field, annotation, typeToMock,
 				annotation.extraInterfaces(), annotation.answers(), annotation.serializable());
 	}
 
 	MockDefinition(String name, MockReset reset, Field field, Annotation annotation, ResolvableType typeToMock,
-			@Nullable QualifierMetadata qualifier, Class<?>[] extraInterfaces, @Nullable Answers answer,
-			boolean serializable) {
-		super(name, reset, false, field, annotation, typeToMock, BeanOverrideStrategy.REPLACE_DEFINITION,
-				qualifier);
+			Class<?>[] extraInterfaces, @Nullable Answers answer, boolean serializable) {
+		super(name, reset, false, field, annotation, typeToMock, BeanOverrideStrategy.REPLACE_OR_CREATE_DEFINITION);
 		Assert.notNull(typeToMock, "TypeToMock must not be null");
 		this.extraInterfaces = asClassSet(extraInterfaces);
 		this.answer = (answer != null) ? answer : Answers.RETURNS_DEFAULTS;

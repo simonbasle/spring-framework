@@ -31,4 +31,8 @@ public @interface ExampleBeanOverrideAnnotation {
 	static final String DEFAULT_VALUE = "TEST OVERRIDE";
 
 	String value() default DEFAULT_VALUE;
+
+	boolean createIfMissing() default false;
+
+	String beanName() default "";
 }

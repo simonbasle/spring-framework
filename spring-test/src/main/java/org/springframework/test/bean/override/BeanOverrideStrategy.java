@@ -27,9 +27,15 @@ public enum BeanOverrideStrategy {
 
 	/**
 	 * Replace a given bean's definition, immediately preparing a singleton
-	 * instance.
+	 * instance. Enforces the original bean definition to exist.
 	 */
 	REPLACE_DEFINITION,
+	/**
+	 * Replace a given bean's definition, immediately preparing a singleton
+	 * instance. If the original bean definition does not exist, create the
+	 * override definition instead of failing.
+	 */
+	REPLACE_OR_CREATE_DEFINITION,
 	/**
 	 * Intercept and wrap the actual bean instance upon creation, during
 	 * {@link org.springframework.beans.factory.config.SmartInstantiationAwareBeanPostProcessor#getEarlyBeanReference(Object, String)
