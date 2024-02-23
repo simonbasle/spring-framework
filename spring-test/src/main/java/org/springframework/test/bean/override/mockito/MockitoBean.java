@@ -16,28 +16,71 @@
 
 package org.springframework.test.bean.override.mockito;
 
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 import org.mockito.Answers;
+import org.mockito.MockSettings;
 
 import org.springframework.test.bean.override.BeanOverride;
 
 /**
- * Mark a field to trigger the override of the bean of the same name with a
- * Mockito mock. In order to ensure mocks are set up and reset correctly,
- * the test class must itself be annotated with
+ * Mark a field to trigger a bean override using a Mockito mock. If no explicit
+ * {@link #name()} is specified, the annotated field's name is interpreted to
+ * be the target of the override. In either case, if no existing bean is defined
+ * a new one will be added to the context. In order to ensure mocks are set up
+ * and reset correctly, the test class must itself be annotated with
  * {@link MockitoBeanOverrideTestListeners}.
+ *
+ * <p>Dependencies that are known to the application context but are not beans
+ * (such as those {@link org.springframework.beans.factory.config.ConfigurableListableBeanFactory#registerResolvableDependency(Class, Object)
+ * registered directly}) will not be found and a mocked bean will be added to
+ * the context alongside the existing dependency.
  *
  * @author Simon Baslé
  * @since 6.2
  */
+@Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
+@Documented
 @BeanOverride(processor = MockitoBeanOverrideProcessor.class)
 public @interface MockitoBean {
+
+	/**
+	 * The name of the bean to register or replace. If not specified, it will be
+	 * the name of the annotated field.
+	 * @return the name of the bean
+	 */
 	String name() default "";
-	boolean serializable() default false;
-	MockReset reset() default MockReset.AFTER;
+
+	/**
+	 * Any extra interfaces that should also be declared on the mock. See
+	 * {@link MockSettings#extraInterfaces(Class...)} for details.
+	 * @return any extra interfaces
+	 */
 	Class<?>[] extraInterfaces() default {};
+
+	/**
+	 * The {@link Answers} type to use on the mock.
+	 * @return the answer type
+	 */
 	Answers answers() default Answers.RETURNS_DEFAULTS;
+
+	/**
+	 * If the generated mock is serializable. See {@link MockSettings#serializable()} for
+	 * details.
+	 * @return if the mock is serializable
+	 */
+	boolean serializable() default false;
+
+	/**
+	 * The reset mode to apply to the mock bean. The default is {@link MockReset#AFTER}
+	 * meaning that mocks are automatically reset after each test method is invoked.
+	 * @return the reset mode
+	 */
+	MockReset reset() default MockReset.AFTER;
+
 }

@@ -16,7 +16,6 @@
 
 package org.springframework.test.bean.override.mockito;
 
-import org.springframework.test.bean.override.BeanOverrideTestExecutionListener;
 import org.springframework.test.context.TestExecutionListeners;
 
 /**
@@ -28,7 +27,8 @@ import org.springframework.test.context.TestExecutionListeners;
  * @see org.springframework.test.bean.override.BeanOverride
  * @see TestExecutionListeners
  */
-@TestExecutionListeners(value = { BeanOverrideTestExecutionListener.class, MockitoTestExecutionListener.class },
+@TestExecutionListeners(value = { MockitoTestExecutionListener.class,
+		ResetMocksTestExecutionListener.class },
 		mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 public @interface MockitoBeanOverrideTestListeners {
 }
