@@ -34,7 +34,6 @@ import org.springframework.core.Ordered;
 import org.springframework.test.context.TestContext;
 import org.springframework.test.context.TestExecutionListener;
 import org.springframework.test.context.support.AbstractTestExecutionListener;
-import org.springframework.util.ClassUtils;
 
 /**
  * {@link TestExecutionListener} to reset any mock beans that have been marked with a
@@ -44,11 +43,11 @@ import org.springframework.util.ClassUtils;
  * @since 6.2
  * @see MockitoTestExecutionListener
  */
-public class ResetMocksTestExecutionListener extends AbstractTestExecutionListener {
+public class MockitoResetTestExecutionListener extends AbstractTestExecutionListener {
 
-	private static final boolean MOCKITO_IS_PRESENT = ClassUtils.isPresent("org.mockito.MockSettings",
-			ResetMocksTestExecutionListener.class.getClassLoader());
-
+	/**
+	 * Executes before {@link org.springframework.test.bean.override.BeanOverrideTestExecutionListener}.
+	 */
 	@Override
 	public int getOrder() {
 		return Ordered.LOWEST_PRECEDENCE - 100;
@@ -56,14 +55,14 @@ public class ResetMocksTestExecutionListener extends AbstractTestExecutionListen
 
 	@Override
 	public void beforeTestMethod(TestContext testContext) throws Exception {
-		if (MOCKITO_IS_PRESENT && !NativeDetector.inNativeImage()) {
+		if (MockitoTestExecutionListener.mockitoPresent && !NativeDetector.inNativeImage()) {
 			resetMocks(testContext.getApplicationContext(), MockReset.BEFORE);
 		}
 	}
 
 	@Override
 	public void afterTestMethod(TestContext testContext) throws Exception {
-		if (MOCKITO_IS_PRESENT && !NativeDetector.inNativeImage()) {
+		if (MockitoTestExecutionListener.mockitoPresent && !NativeDetector.inNativeImage()) {
 			resetMocks(testContext.getApplicationContext(), MockReset.AFTER);
 		}
 	}

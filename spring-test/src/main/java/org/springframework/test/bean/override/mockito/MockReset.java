@@ -34,7 +34,7 @@ import org.springframework.util.Assert;
  *
  * @author Phillip Webb
  * @since 1.4.0
- * @see ResetMocksTestExecutionListener
+ * @see MockitoResetTestExecutionListener
  */
 public enum MockReset {
 

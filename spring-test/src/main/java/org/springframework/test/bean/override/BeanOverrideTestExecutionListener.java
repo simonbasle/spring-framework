@@ -37,6 +37,14 @@ import org.springframework.util.ReflectionUtils;
  */
 public class BeanOverrideTestExecutionListener extends AbstractTestExecutionListener {
 
+	/**
+	 * Executes almost last ({@code LOWEST_PRECEDENCE - 50}).
+	 */
+	@Override
+	public int getOrder() {
+		return LOWEST_PRECEDENCE - 50;
+	}
+
 	@Override
 	public void prepareTestInstance(TestContext testContext) throws Exception {
 		injectFields(testContext);

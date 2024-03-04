@@ -28,6 +28,7 @@ import org.springframework.test.context.TestContext;
 import org.springframework.test.context.TestExecutionListener;
 import org.springframework.test.context.support.AbstractTestExecutionListener;
 import org.springframework.test.context.support.DependencyInjectionTestExecutionListener;
+import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.ReflectionUtils.FieldCallback;
 
@@ -37,19 +38,26 @@ import org.springframework.util.ReflectionUtils.FieldCallback;
  * {@link MockitoAnnotations#openMocks(Object)} when any Mockito annotations used,
  * primarily to allow {@link Captor @Captor} annotations.
  * <p>
- * To use the automatic reset support of {@code @MockBean} and {@code @SpyBean}, configure
- * {@link ResetMocksTestExecutionListener} as well.
+ * The automatic reset support of {@code @MockBean} and {@code @SpyBean} is
+ * handled by sibling {@link MockitoResetTestExecutionListener}.
  *
+ * @author Simon Baslé
  * @author Phillip Webb
  * @author Andy Wilkinson
  * @author Moritz Halbritter
  * @since 1.4.2
- * @see ResetMocksTestExecutionListener
+ * @see MockitoResetTestExecutionListener
  */
 public class MockitoTestExecutionListener extends AbstractTestExecutionListener {
 
+	static final boolean mockitoPresent = ClassUtils.isPresent("org.mockito.MockSettings",
+			MockitoTestExecutionListener.class.getClassLoader());
+
 	private static final String MOCKS_ATTRIBUTE_NAME = MockitoTestExecutionListener.class.getName() + ".mocks";
 
+	/**
+	 * Executes before {@link DependencyInjectionTestExecutionListener}.
+	 */
 	@Override
 	public final int getOrder() {
 		return 1950;
@@ -57,13 +65,15 @@ public class MockitoTestExecutionListener extends AbstractTestExecutionListener 
 
 	@Override
 	public void prepareTestInstance(TestContext testContext) throws Exception {
-		closeMocks(testContext);
-		initMocks(testContext);
+		if (mockitoPresent) {
+			closeMocks(testContext);
+			initMocks(testContext);
+		}
 	}
 
 	@Override
 	public void beforeTestMethod(TestContext testContext) throws Exception {
-		if (Boolean.TRUE.equals(
+		if (mockitoPresent && Boolean.TRUE.equals(
 				testContext.getAttribute(DependencyInjectionTestExecutionListener.REINJECT_DEPENDENCIES_ATTRIBUTE))) {
 			closeMocks(testContext);
 			initMocks(testContext);
@@ -72,17 +82,22 @@ public class MockitoTestExecutionListener extends AbstractTestExecutionListener 
 
 	@Override
 	public void afterTestMethod(TestContext testContext) throws Exception {
-		closeMocks(testContext);
+		if (mockitoPresent) {
+			closeMocks(testContext);
+		}
 	}
 
 	@Override
 	public void afterTestClass(TestContext testContext) throws Exception {
-		closeMocks(testContext);
+		if (mockitoPresent) {
+			closeMocks(testContext);
+		}
 	}
 
 	private void initMocks(TestContext testContext) {
 		if (hasMockitoAnnotations(testContext)) {
-			testContext.setAttribute(MOCKS_ATTRIBUTE_NAME, MockitoAnnotations.openMocks(testContext.getTestInstance()));
+			Object testInstance = testContext.getTestInstance();
+			testContext.setAttribute(MOCKS_ATTRIBUTE_NAME, MockitoAnnotations.openMocks(testInstance));
 		}
 	}
 
