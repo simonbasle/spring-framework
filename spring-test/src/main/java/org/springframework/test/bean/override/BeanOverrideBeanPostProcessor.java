@@ -157,7 +157,6 @@ public class BeanOverrideBeanPostProcessor implements InstantiationAwareBeanPost
 			boolean enforceExistingDefinition) {
 		RootBeanDefinition beanDefinition = createBeanDefinition(overrideMetadata);
 		String beanName = overrideMetadata.getExpectedBeanName();
-		boolean isSingleton = this.beanFactory.isSingleton(beanName);
 
 		BeanDefinition existingBeanDefinition = null;
 		if (registry.containsBeanDefinition(beanName)) {
@@ -172,7 +171,7 @@ public class BeanOverrideBeanPostProcessor implements InstantiationAwareBeanPost
 		registry.registerBeanDefinition(beanName, beanDefinition);
 
 		Object override = overrideMetadata.createOverride(beanName, existingBeanDefinition, null);
-		if (isSingleton) {
+		if (this.beanFactory.isSingleton(beanName)) {
 			// Now we have an instance (the override) that we can register.
 			// At this stage we don't expect a singleton instance to be present,
 			// and this call will throw if there is such an instance already.
