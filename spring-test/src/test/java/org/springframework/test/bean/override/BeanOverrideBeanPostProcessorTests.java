@@ -17,12 +17,14 @@
 package org.springframework.test.bean.override;
 
 import java.util.Map;
+import java.util.function.Predicate;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.factory.FactoryBean;
+import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
@@ -30,6 +32,7 @@ import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.support.SimpleThreadScope;
 import org.springframework.core.Ordered;
 import org.springframework.core.ResolvableType;
 import org.springframework.test.bean.override.example.ExampleBeanOverrideAnnotation;
@@ -153,8 +156,41 @@ class BeanOverrideBeanPostProcessorTests {
 		assertThatNoException().isThrownBy(context::refresh);
 	}
 
-	static final SomeInterface OVERRIDE = new SomeImplementation();
-	static final ExampleService OVERRIDE_SERVICE = new FailingExampleService();
+	@Test
+	void allowReplaceDefinitionWhenSingletonDefinitionPresent() {
+		this.parser.parse(SingletonBean.class);
+		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+		RootBeanDefinition definition = new RootBeanDefinition(String.class, () -> "ORIGINAL");
+		definition.setScope(BeanDefinition.SCOPE_SINGLETON);
+		context.registerBeanDefinition("singleton", definition);
+		BeanOverrideBeanPostProcessor.register(context, this.parser.getOverrideMetadata());
+		context.register(SingletonBean.class);
+
+		assertThatNoException().isThrownBy(context::refresh);
+		assertThat(context.isSingleton("singleton")).as("isSingleton").isTrue();
+		assertThat(context.getBean("singleton")).as("overridden").isEqualTo("USED THIS");
+	}
+
+	@Test
+	void copyDefinitionPrimaryAndScope() {
+		this.parser.parse(SingletonBean.class);
+		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+		context.getBeanFactory().registerScope("customScope", new SimpleThreadScope());
+		RootBeanDefinition definition = new RootBeanDefinition(String.class, () -> "ORIGINAL");
+		definition.setScope("customScope");
+		definition.setPrimary(true);
+		context.registerBeanDefinition("singleton", definition);
+		BeanOverrideBeanPostProcessor.register(context, this.parser.getOverrideMetadata());
+		context.register(SingletonBean.class);
+
+		assertThatNoException().isThrownBy(context::refresh);
+		assertThat(context.getBeanDefinition("singleton"))
+				.isNotSameAs(definition)
+				.matches(BeanDefinition::isPrimary, "isPrimary")
+				.satisfies(d -> assertThat(d.getScope()).isEqualTo("customScope"))
+				.matches(Predicate.not(BeanDefinition::isSingleton), "!isSingleton")
+				.matches(Predicate.not(BeanDefinition::isPrototype), "!isPrototype");
+	}
 
 	/*
 		Classes to parse and register with the bean post processor
@@ -164,6 +200,9 @@ class BeanOverrideBeanPostProcessorTests {
 		should not be in configuration classes but rather in test case classes
 		(where a TestExecutionListener automatically discovers and parses them).
 	 */
+
+	static final SomeInterface OVERRIDE = new SomeImplementation();
+	static final ExampleService OVERRIDE_SERVICE = new FailingExampleService();
 
 	static class ReplaceBeans {
 
@@ -216,6 +255,18 @@ class BeanOverrideBeanPostProcessorTests {
 
 		static ExampleService useThis() {
 			return OVERRIDE_SERVICE;
+		}
+
+	}
+
+	static class SingletonBean {
+
+		@ExampleBeanOverrideAnnotation(beanName = "singleton",
+				value = "useThis", createIfMissing = false)
+		private String value;
+
+		static String useThis() {
+			return "USED THIS";
 		}
 
 	}

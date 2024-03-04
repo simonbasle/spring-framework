@@ -138,10 +138,11 @@ public class BeanOverrideBeanPostProcessor implements InstantiationAwareBeanPost
 	/**
 	 * Copy the details of a {@link BeanDefinition} to the definition created by
 	 * this processor for a given {@link OverrideMetadata}. Defaults to copying
-	 * the {@link BeanDefinition#isPrimary()} attribute.
+	 * the {@link BeanDefinition#isPrimary()} attribute and scope.
 	 */
 	protected void copyBeanDefinitionDetails(BeanDefinition from, RootBeanDefinition to) {
 		to.setPrimary(from.isPrimary());
+		to.setScope(from.getScope());
 	}
 
 	private void registerBeanOverride(BeanDefinitionRegistry registry, OverrideMetadata overrideMetadata) {
@@ -156,6 +157,7 @@ public class BeanOverrideBeanPostProcessor implements InstantiationAwareBeanPost
 			boolean enforceExistingDefinition) {
 		RootBeanDefinition beanDefinition = createBeanDefinition(overrideMetadata);
 		String beanName = overrideMetadata.getExpectedBeanName();
+		boolean isSingleton = this.beanFactory.isSingleton(beanName);
 
 		BeanDefinition existingBeanDefinition = null;
 		if (registry.containsBeanDefinition(beanName)) {
@@ -169,14 +171,15 @@ public class BeanOverrideBeanPostProcessor implements InstantiationAwareBeanPost
 		}
 		registry.registerBeanDefinition(beanName, beanDefinition);
 
-		Object originalSingleton = this.beanFactory.getSingleton(beanName);
-		//TODO a pre-existing singleton should probably be removed from the factory.
-		Object override = overrideMetadata.createOverride(beanName, existingBeanDefinition, originalSingleton);
+		Object override = overrideMetadata.createOverride(beanName, existingBeanDefinition, null);
+		if (isSingleton) {
+			// Now we have an instance (the override) that we can register.
+			// At this stage we don't expect a singleton instance to be present,
+			// and this call will throw if there is such an instance already.
+			this.beanFactory.registerSingleton(beanName, override);
+		}
+
 		overrideMetadata.track(override, this.beanFactory);
-
-		//TODO is this notion of registering a singleton bean valid in all potential cases?
-		this.beanFactory.registerSingleton(beanName, override);
-
 		this.beanNameRegistry.put(overrideMetadata, beanName);
 		this.fieldRegistry.put(overrideMetadata.field(), beanName);
 	}
