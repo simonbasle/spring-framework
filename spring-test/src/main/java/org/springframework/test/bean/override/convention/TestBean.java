@@ -52,7 +52,7 @@ import org.springframework.test.bean.override.BeanOverride;
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@BeanOverride(processor = TestBeanOverrideProcessor.class)
+@BeanOverride(TestBeanOverrideProcessor.class)
 public @interface TestBean {
 
 	/**

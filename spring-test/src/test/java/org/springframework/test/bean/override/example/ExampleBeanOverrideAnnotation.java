@@ -23,7 +23,7 @@ import java.lang.annotation.Target;
 
 import org.springframework.test.bean.override.BeanOverride;
 
-@BeanOverride(processor = ExampleBeanOverrideProcessor.class)
+@BeanOverride(ExampleBeanOverrideProcessor.class)
 @Target({ElementType.FIELD, ElementType.ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ExampleBeanOverrideAnnotation {

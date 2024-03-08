@@ -53,7 +53,7 @@ import org.springframework.test.bean.override.BeanOverride;
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@BeanOverride(processor = MockitoBeanOverrideProcessor.class)
+@BeanOverride(MockitoBeanOverrideProcessor.class)
 public @interface MockitoSpyBean {
 
 	/**

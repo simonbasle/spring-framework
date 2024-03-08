@@ -42,5 +42,5 @@ public @interface BeanOverride {
 	 * annotation should be processed. Implementations must have a no-argument
 	 * constructor.
 	 */
-	Class<? extends BeanOverrideProcessor> processor();
+	Class<? extends BeanOverrideProcessor> value();
 }
