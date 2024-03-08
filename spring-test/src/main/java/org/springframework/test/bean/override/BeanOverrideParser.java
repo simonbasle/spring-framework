@@ -106,7 +106,7 @@ class BeanOverrideParser {
 				})
 				.forEach(pair -> {
 					var metaAnnotation = pair.metaAnnotation().synthesize();
-					final BeanOverrideProcessor processor = getProcessorInstance(metaAnnotation.processor());
+					final BeanOverrideProcessor processor = getProcessorInstance(metaAnnotation.value());
 					if (processor == null) {
 						return;
 					}
@@ -121,7 +121,7 @@ class BeanOverrideParser {
 				});
 	}
 
-	@Nullable //TODO implement caching ? have a processor attribute to determine if stateful ?
+	@Nullable
 	private BeanOverrideProcessor getProcessorInstance(Class<? extends BeanOverrideProcessor> processorClass) {
 		final Constructor<? extends BeanOverrideProcessor> constructor = ClassUtils.getConstructorIfAvailable(processorClass);
 		if (constructor != null) {
