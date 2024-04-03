@@ -36,6 +36,7 @@ import kotlin.reflect.full.KClasses;
 import kotlin.reflect.jvm.KCallablesJvm;
 import kotlin.reflect.jvm.ReflectJvmMapping;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
 
 import org.springframework.core.CoroutinesUtils;
 import org.springframework.core.DefaultParameterNameDiscoverer;
@@ -84,6 +85,9 @@ public class InvocableHandlerMethod extends HandlerMethod {
 	private MethodValidator methodValidator;
 
 	private Class<?>[] validationGroups = EMPTY_GROUPS;
+
+	@Nullable
+	private Scheduler invocationScheduler;
 
 
 	/**
@@ -153,6 +157,13 @@ public class InvocableHandlerMethod extends HandlerMethod {
 				methodValidator.determineValidationGroups(getBean(), getBridgedMethod()) : EMPTY_GROUPS);
 	}
 
+	/**
+	 * Set the {@link Scheduler} on which to perform the method invocation.
+	 * @since 6.1.6
+	 */
+	public void setInvocationScheduler(@Nullable Scheduler invocationScheduler) {
+		this.invocationScheduler = invocationScheduler;
+	}
 
 	/**
 	 * Invoke the method for the given exchange.
@@ -222,7 +233,12 @@ public class InvocableHandlerMethod extends HandlerMethod {
 
 		MethodParameter[] parameters = getMethodParameters();
 		if (ObjectUtils.isEmpty(parameters)) {
-			return EMPTY_ARGS;
+			if (this.invocationScheduler == null) {
+				return EMPTY_ARGS;
+			}
+			else {
+				return EMPTY_ARGS.publishOn(this.invocationScheduler);
+			}
 		}
 
 		List<Mono<Object>> argMonos = new ArrayList<>(parameters.length);
@@ -247,8 +263,12 @@ public class InvocableHandlerMethod extends HandlerMethod {
 				argMonos.add(Mono.error(ex));
 			}
 		}
-		return Mono.zip(argMonos, values ->
-				Stream.of(values).map(value -> value != NO_ARG_VALUE ? value : null).toArray());
+		final Mono<Object[]> zippedArguments = Mono.zip(argMonos, values ->
+						Stream.of(values).map(value -> value != NO_ARG_VALUE ? value : null).toArray());
+		if (this.invocationScheduler != null) {
+			return zippedArguments.publishOn(this.invocationScheduler);
+		}
+		return zippedArguments;
 	}
 
 	private void logArgumentErrorIfNecessary(ServerWebExchange exchange, MethodParameter parameter, Throwable ex) {

@@ -28,6 +28,7 @@ import java.util.function.Predicate;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import reactor.core.scheduler.Scheduler;
 
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.ApplicationContext;
@@ -121,11 +122,19 @@ class ControllerMethodResolver {
 
 	private final Map<Class<?>, SessionAttributesHandler> sessionAttributesHandlerCache = new ConcurrentHashMap<>(64);
 
+	@Nullable
+	private final Scheduler invocationScheduler;
+
+	@Nullable
+	private final Predicate<? super HandlerMethod> blockingMethodPredicate;
+
 
 	ControllerMethodResolver(
 			ArgumentResolverConfigurer customResolvers, ReactiveAdapterRegistry adapterRegistry,
 			ConfigurableApplicationContext context, List<HttpMessageReader<?>> readers,
-			@Nullable WebBindingInitializer webBindingInitializer) {
+			@Nullable WebBindingInitializer webBindingInitializer,
+			@Nullable Scheduler invocationScheduler,
+			@Nullable Predicate<? super HandlerMethod> blockingMethodPredicate) {
 
 		Assert.notNull(customResolvers, "ArgumentResolverConfigurer is required");
 		Assert.notNull(adapterRegistry, "ReactiveAdapterRegistry is required");
@@ -137,6 +146,8 @@ class ControllerMethodResolver {
 		this.requestMappingResolvers = requestMappingResolvers(customResolvers, adapterRegistry, context, readers);
 		this.exceptionHandlerResolvers = exceptionHandlerResolvers(customResolvers, adapterRegistry, context);
 		this.reactiveAdapterRegistry = adapterRegistry;
+		this.invocationScheduler = invocationScheduler;
+		this.blockingMethodPredicate = blockingMethodPredicate;
 
 		if (BEAN_VALIDATION_PRESENT) {
 			this.methodValidator = HandlerMethodValidator.from(webBindingInitializer, null,
@@ -297,6 +308,14 @@ class ControllerMethodResolver {
 		invocable.setArgumentResolvers(this.requestMappingResolvers);
 		invocable.setReactiveAdapterRegistry(this.reactiveAdapterRegistry);
 		invocable.setMethodValidator(this.methodValidator);
+
+		if (this.invocationScheduler != null) {
+			Assert.state(this.blockingMethodPredicate != null, "Expected HandlerMethod Predicate");
+			if (this.blockingMethodPredicate.test(handlerMethod)) {
+				invocable.setInvocationScheduler(this.invocationScheduler);
+			}
+		}
+
 		return invocable;
 	}
 
