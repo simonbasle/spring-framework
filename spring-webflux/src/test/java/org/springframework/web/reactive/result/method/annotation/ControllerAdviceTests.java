@@ -283,11 +283,6 @@ class ControllerAdviceTests {
 		public String handleException(IllegalStateException ex) {
 			return "OneControllerAdvice: " + ClassUtils.getShortName(ex.getClass());
 		}
-//
-//		@ExceptionHandler
-//		public String handleExceptionDecoding(IllegalArgumentException ex) {
-//			return "OneControllerAdvice: " + ClassUtils.getShortName(ex.getClass()) + " on thread " + Thread.currentThread().getName();
-//		}
 
 		@ExceptionHandler(ArrayIndexOutOfBoundsException.class)
 		public String handleWithHandlerMethod(HandlerMethod handlerMethod) {

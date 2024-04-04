@@ -232,43 +232,40 @@ public class InvocableHandlerMethod extends HandlerMethod {
 			ServerWebExchange exchange, BindingContext bindingContext, Object... providedArgs) {
 
 		MethodParameter[] parameters = getMethodParameters();
+		final Mono<Object[]> resultMono;
 		if (ObjectUtils.isEmpty(parameters)) {
-			if (this.invocationScheduler == null) {
-				return EMPTY_ARGS;
-			}
-			else {
-				return EMPTY_ARGS.publishOn(this.invocationScheduler);
-			}
+			resultMono = EMPTY_ARGS;
 		}
-
-		List<Mono<Object>> argMonos = new ArrayList<>(parameters.length);
-		for (MethodParameter parameter : parameters) {
-			parameter.initParameterNameDiscovery(this.parameterNameDiscoverer);
-			Object providedArg = findProvidedArgument(parameter, providedArgs);
-			if (providedArg != null) {
-				argMonos.add(Mono.just(providedArg));
-				continue;
+		else {
+			List<Mono<Object>> argMonos = new ArrayList<>(parameters.length);
+			for (MethodParameter parameter : parameters) {
+				parameter.initParameterNameDiscovery(this.parameterNameDiscoverer);
+				Object providedArg = findProvidedArgument(parameter, providedArgs);
+				if (providedArg != null) {
+					argMonos.add(Mono.just(providedArg));
+					continue;
+				}
+				if (!this.resolvers.supportsParameter(parameter)) {
+					return Mono.error(new IllegalStateException(
+							formatArgumentError(parameter, "No suitable resolver")));
+				}
+				try {
+					argMonos.add(this.resolvers.resolveArgument(parameter, bindingContext, exchange)
+							.defaultIfEmpty(NO_ARG_VALUE)
+							.doOnError(ex -> logArgumentErrorIfNecessary(exchange, parameter, ex)));
+				}
+				catch (Exception ex) {
+					logArgumentErrorIfNecessary(exchange, parameter, ex);
+					argMonos.add(Mono.error(ex));
+				}
 			}
-			if (!this.resolvers.supportsParameter(parameter)) {
-				return Mono.error(new IllegalStateException(
-						formatArgumentError(parameter, "No suitable resolver")));
-			}
-			try {
-				argMonos.add(this.resolvers.resolveArgument(parameter, bindingContext, exchange)
-						.defaultIfEmpty(NO_ARG_VALUE)
-						.doOnError(ex -> logArgumentErrorIfNecessary(exchange, parameter, ex)));
-			}
-			catch (Exception ex) {
-				logArgumentErrorIfNecessary(exchange, parameter, ex);
-				argMonos.add(Mono.error(ex));
-			}
+			resultMono = Mono.zip(argMonos, values ->
+					Stream.of(values).map(value -> value != NO_ARG_VALUE ? value : null).toArray());
 		}
-		final Mono<Object[]> zippedArguments = Mono.zip(argMonos, values ->
-						Stream.of(values).map(value -> value != NO_ARG_VALUE ? value : null).toArray());
 		if (this.invocationScheduler != null) {
-			return zippedArguments.publishOn(this.invocationScheduler);
+			return resultMono.publishOn(this.invocationScheduler);
 		}
-		return zippedArguments;
+		return resultMono;
 	}
 
 	private void logArgumentErrorIfNecessary(ServerWebExchange exchange, MethodParameter parameter, Throwable ex) {
