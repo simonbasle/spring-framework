@@ -111,7 +111,7 @@ class ControllerAdviceTests {
 
 		TestController controller = context.getBean(TestController.class);
 
-		Object actual = handle(adapter, controller, this.postExchange, Duration.ofMillis(10),
+		Object actual = handle(adapter, controller, this.postExchange, Duration.ofMillis(100),
 				"threadWithArg", String.class).getReturnValue();
 		assertThat(actual).isEqualTo("request body from good thread");
 	}
@@ -123,20 +123,15 @@ class ControllerAdviceTests {
 
 		TestController controller = context.getBean(TestController.class);
 
-		Object actual = handle(adapter, controller, this.postExchange, Duration.ofMillis(10), "thread")
+		Object actual = handle(adapter, controller, this.postExchange, Duration.ofMillis(100), "thread")
 				.getReturnValue();
 		assertThat(actual).isEqualTo("hello from good thread");
 	}
 
-	private void testException(Throwable exception, String expected) throws Exception {
-		ApplicationContext context = new AnnotationConfigApplicationContext(TestConfig.class);
-		RequestMappingHandlerAdapter adapter = createAdapter(context);
-
-		TestController controller = context.getBean(TestController.class);
-		controller.setException(exception);
-
-		Object actual = handle(adapter, controller, "handle").getReturnValue();
-		assertThat(actual).isEqualTo(expected);
+	@Test
+	void resolveExceptionOnAnotherThread() throws Exception {
+		testException(new IllegalArgumentException(), "good thread",
+				"OneControllerAdvice: IllegalArgumentException on thread good thread");
 	}
 
 	@Test
@@ -168,11 +163,34 @@ class ControllerAdviceTests {
 	}
 
 
+	private void testException(Throwable exception, String expected) throws Exception {
+		ApplicationContext context = new AnnotationConfigApplicationContext(TestConfig.class);
+		RequestMappingHandlerAdapter adapter = createAdapter(context);
+
+		TestController controller = context.getBean(TestController.class);
+		controller.setException(exception);
+
+		Object actual = handle(adapter, controller, "handle").getReturnValue();
+		assertThat(actual).isEqualTo(expected);
+	}
+
 	private RequestMappingHandlerAdapter createAdapter(ApplicationContext context) throws Exception {
 		RequestMappingHandlerAdapter adapter = new RequestMappingHandlerAdapter();
 		adapter.setApplicationContext(context);
 		adapter.afterPropertiesSet();
 		return adapter;
+	}
+
+	private void testException(Throwable exception, String threadName, String expected) throws Exception {
+		ApplicationContext context = new AnnotationConfigApplicationContext(TestConfig.class);
+		RequestMappingHandlerAdapter adapter = createAdapterWithExecutor(context, threadName);
+
+		TestController controller = context.getBean(TestController.class);
+		controller.setException(exception);
+
+		Object actual = handle(adapter, controller, this.postExchange, Duration.ofMillis(100)
+				, "threadWithArg", String.class).getReturnValue();
+		assertThat(actual).isEqualTo(expected);
 	}
 
 	private RequestMappingHandlerAdapter createAdapterWithExecutor(ApplicationContext context, String threadName) throws Exception {
@@ -259,12 +277,14 @@ class ControllerAdviceTests {
 		}
 
 		@PostMapping
-		public String threadWithArg(@RequestBody String body) {
+		public String threadWithArg(@RequestBody String body) throws Throwable {
+			handle();
 			return body + " from " + Thread.currentThread().getName();
 		}
 
 		@GetMapping
-		public String thread() {
+		public String thread() throws Throwable {
+			handle();
 			return "hello from " + Thread.currentThread().getName();
 		}
 	}
@@ -287,6 +307,12 @@ class ControllerAdviceTests {
 		@ExceptionHandler(ArrayIndexOutOfBoundsException.class)
 		public String handleWithHandlerMethod(HandlerMethod handlerMethod) {
 			return "HandlerMethod: " + handlerMethod.getMethod().getName();
+		}
+
+		@ExceptionHandler(IllegalArgumentException.class)
+		public String handleOnThread(IllegalArgumentException ex) {
+			return "OneControllerAdvice: " + ClassUtils.getShortName(ex.getClass()) +
+					" on thread " + Thread.currentThread().getName();
 		}
 
 		@ExceptionHandler(AssertionError.class)

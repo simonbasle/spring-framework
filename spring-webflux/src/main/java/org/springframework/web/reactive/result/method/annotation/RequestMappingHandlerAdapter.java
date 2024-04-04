@@ -261,6 +261,11 @@ public class RequestMappingHandlerAdapter
 				.doOnNext(result -> result.setExceptionHandler(exceptionHandler))
 				.onErrorResume(ex -> exceptionHandler.handleError(exchange, ex));
 
+		Scheduler optionalScheduler = this.methodResolver.getSchedulerFor(handlerMethod);
+		if (optionalScheduler != null) {
+			return resultMono.subscribeOn(optionalScheduler);
+		}
+
 		return resultMono;
 	}
 
