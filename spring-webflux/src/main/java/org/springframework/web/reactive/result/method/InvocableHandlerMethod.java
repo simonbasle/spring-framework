@@ -60,6 +60,12 @@ import org.springframework.web.server.ServerWebExchange;
  * Extension of {@link HandlerMethod} that invokes the underlying method with
  * argument values resolved from the current HTTP request through a list of
  * {@link HandlerMethodArgumentResolver}.
+ * <p>By default, the method invocation happens on the thread from which the
+ * {@code Mono} was subscribed to, or in some cases the thread that emitted one
+ * of the resolved arguments (e.g. when the request body needs to be decoded).
+ * To ensure a predictable thread for the underlying method's invocation,
+ * a {@link Scheduler} can optionally be provided via
+ * {@link #setInvocationScheduler(Scheduler)}.
  *
  * @author Rossen Stoyanchev
  * @author Juergen Hoeller
@@ -176,7 +182,7 @@ public class InvocableHandlerMethod extends HandlerMethod {
 	public Mono<HandlerResult> invoke(
 			ServerWebExchange exchange, BindingContext bindingContext, Object... providedArgs) {
 
-		return getMethodArgumentValues(exchange, bindingContext, providedArgs).flatMap(args -> {
+		return getMethodArgumentValuesOnScheduler(exchange, bindingContext, providedArgs).flatMap(args -> {
 			if (shouldValidateArguments() && this.methodValidator != null) {
 				this.methodValidator.applyArgumentValidation(
 						getBean(), getBridgedMethod(), getMethodParameters(), args, this.validationGroups);
@@ -228,44 +234,43 @@ public class InvocableHandlerMethod extends HandlerMethod {
 		});
 	}
 
+	private Mono<Object[]> getMethodArgumentValuesOnScheduler(
+			ServerWebExchange exchange, BindingContext bindingContext, Object... providedArgs) {
+		Mono<Object[]> argumentValuesMono = getMethodArgumentValues(exchange, bindingContext, providedArgs);
+		return this.invocationScheduler != null ? argumentValuesMono.publishOn(this.invocationScheduler) : argumentValuesMono;
+	}
+
 	private Mono<Object[]> getMethodArgumentValues(
 			ServerWebExchange exchange, BindingContext bindingContext, Object... providedArgs) {
 
 		MethodParameter[] parameters = getMethodParameters();
-		final Mono<Object[]> resultMono;
 		if (ObjectUtils.isEmpty(parameters)) {
-			resultMono = EMPTY_ARGS;
+			return EMPTY_ARGS;
 		}
-		else {
-			List<Mono<Object>> argMonos = new ArrayList<>(parameters.length);
-			for (MethodParameter parameter : parameters) {
-				parameter.initParameterNameDiscovery(this.parameterNameDiscoverer);
-				Object providedArg = findProvidedArgument(parameter, providedArgs);
-				if (providedArg != null) {
-					argMonos.add(Mono.just(providedArg));
-					continue;
-				}
-				if (!this.resolvers.supportsParameter(parameter)) {
-					return Mono.error(new IllegalStateException(
-							formatArgumentError(parameter, "No suitable resolver")));
-				}
-				try {
-					argMonos.add(this.resolvers.resolveArgument(parameter, bindingContext, exchange)
-							.defaultIfEmpty(NO_ARG_VALUE)
-							.doOnError(ex -> logArgumentErrorIfNecessary(exchange, parameter, ex)));
-				}
-				catch (Exception ex) {
-					logArgumentErrorIfNecessary(exchange, parameter, ex);
-					argMonos.add(Mono.error(ex));
-				}
+		List<Mono<Object>> argMonos = new ArrayList<>(parameters.length);
+		for (MethodParameter parameter : parameters) {
+			parameter.initParameterNameDiscovery(this.parameterNameDiscoverer);
+			Object providedArg = findProvidedArgument(parameter, providedArgs);
+			if (providedArg != null) {
+				argMonos.add(Mono.just(providedArg));
+				continue;
 			}
-			resultMono = Mono.zip(argMonos, values ->
-					Stream.of(values).map(value -> value != NO_ARG_VALUE ? value : null).toArray());
+			if (!this.resolvers.supportsParameter(parameter)) {
+				return Mono.error(new IllegalStateException(
+						formatArgumentError(parameter, "No suitable resolver")));
+			}
+			try {
+				argMonos.add(this.resolvers.resolveArgument(parameter, bindingContext, exchange)
+						.defaultIfEmpty(NO_ARG_VALUE)
+						.doOnError(ex -> logArgumentErrorIfNecessary(exchange, parameter, ex)));
+			}
+			catch (Exception ex) {
+				logArgumentErrorIfNecessary(exchange, parameter, ex);
+				argMonos.add(Mono.error(ex));
+			}
 		}
-		if (this.invocationScheduler != null) {
-			return resultMono.publishOn(this.invocationScheduler);
-		}
-		return resultMono;
+		return Mono.zip(argMonos, values ->
+				Stream.of(values).map(value -> value != NO_ARG_VALUE ? value : null).toArray());
 	}
 
 	private void logArgumentErrorIfNecessary(ServerWebExchange exchange, MethodParameter parameter, Throwable ex) {

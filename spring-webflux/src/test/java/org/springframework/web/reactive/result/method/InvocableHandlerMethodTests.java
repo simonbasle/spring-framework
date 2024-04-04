@@ -78,20 +78,12 @@ class InvocableHandlerMethodTests {
 	}
 
 	@Test
-	void resolveOnAnotherThread() {
+	void resolveArgOnSchedulerThread() {
 		this.resolvers.add(stubResolver(Mono.<Object>just("success").publishOn(Schedulers.newSingle("wrong"))));
 		Method method = ResolvableMethod.on(TestController.class).mockCall(o -> o.singleArgThread(null)).method();
 		Mono<HandlerResult> mono = invokeOnScheduler(Schedulers.newSingle("good"), new TestController(), method);
 
 		assertHandlerResultValue(mono, "success on thread: good-", false);
-	}
-
-	@Test
-	void resolveNoArgsOnAnotherThread() {
-		Method method = ResolvableMethod.on(TestController.class).mockCall(o -> o.noArgsThread()).method();
-		Mono<HandlerResult> mono = invokeOnScheduler(Schedulers.newSingle("good"), new TestController(), method);
-
-		assertHandlerResultValue(mono, "on thread: good-", false);
 	}
 
 	@Test
@@ -109,6 +101,14 @@ class InvocableHandlerMethodTests {
 		Mono<HandlerResult> mono = invoke(new TestController(), method);
 
 		assertHandlerResultValue(mono, "success");
+	}
+
+	@Test
+	void resolveNoArgsOnSchedulerThread() {
+		Method method = ResolvableMethod.on(TestController.class).mockCall(o -> o.noArgsThread()).method();
+		Mono<HandlerResult> mono = invokeOnScheduler(Schedulers.newSingle("good"), new TestController(), method);
+
+		assertHandlerResultValue(mono, "on thread: good-", false);
 	}
 
 	@Test
