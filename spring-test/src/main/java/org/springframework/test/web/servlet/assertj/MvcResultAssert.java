@@ -218,6 +218,127 @@ public class MvcResultAssert extends AbstractMockHttpServletResponseAssert<MvcRe
 		}
 	}
 
+	public MvcResultAssert bodyStringIsEqualTo(String expected) {
+		body().asString().as("body as string").isEqualTo(expected);
+		return this.myself;
+	}
+
+	public MvcResultAssert bodyStringContains(CharSequence... values) {
+		body().asString().as("body as string").contains(values);
+		return this.myself;
+	}
+
+	public MvcResultAssert bodyStringDoesNotContain(CharSequence... values) {
+		body().asString().as("body as string").doesNotContain(values);
+		return this.myself;
+	}
+
+	public MvcResultAssert bodyJsonHasPath(String expectedPath) {
+		body().jsonPath().hasPath(expectedPath);
+		return this.myself;
+	}
+
+	public MvcResultAssert bodyJsonDoesNotHavePath(String unexpectedPath) {
+		body().jsonPath().doesNotHavePath(unexpectedPath);
+		return this.myself;
+	}
+
+	public MvcResultAssert bodyJsonIsLenientlyEqualTo(String expectedLenientRepresentation) {
+		body().json().isLenientlyEqualTo(expectedLenientRepresentation);
+		return this.myself;
+	}
+
+	public MvcResultAssert bodyJsonIsEqualTo(String expectedStrictRepresentation) {
+		body().json().isStrictlyEqualTo(expectedStrictRepresentation);
+		return this.myself;
+	}
+
+	public MvcResultAssert headersContain(String... expectedHeaders) {
+		headers().containsHeaders(expectedHeaders);
+		return this.myself;
+	}
+
+	public MvcResultAssert headersDoNotContain(String... unexpectedHeaders) {
+		headers().doesNotContainsHeaders(unexpectedHeaders);
+		return this.myself;
+	}
+
+	public MvcResultAssert headerHasValue(String expectedHeader, String expectedPrimaryValue) {
+		headers().hasValue(expectedHeader, expectedPrimaryValue);
+		return this.myself;
+	}
+
+	public MvcResultAssert contentTypeIs(String expected) {
+		contentType().isEqualTo(expected);
+		return this.myself;
+	}
+
+	public MvcResultAssert contentTypeIs(MediaType expected) {
+		contentType().isEqualTo(expected);
+		return this.myself;
+	}
+
+	//FIXME appears to work, but that's because a String never equals a MediaType... missing assertion in MediaTypeAssert
+	public MvcResultAssert contentTypeIsNot(String unexpected) {
+		contentType().isNotEqualTo(unexpected);
+		return this.myself;
+	}
+
+	public MvcResultAssert contentTypeIsNot(MediaType unexpected) {
+		contentType().isNotEqualTo(unexpected);
+		return this.myself;
+	}
+
+	public MvcResultAssert contentTypeIsCompatibleWith(String expected) {
+		contentType().isCompatibleWith(expected);
+		return this.myself;
+	}
+
+	public MvcResultAssert contentTypeIsCompatibleWith(MediaType expected) {
+		contentType().isCompatibleWith(expected);
+		return this.myself;
+	}
+
+
+
+
+	//TODO offer directly in `.body().json()`?
+	public MvcResultAssert headerDoesNotHaveValue(String expectedHeader, String unexpectedValue) {
+		headers().containsKey(expectedHeader);
+		Assertions.assertThat(this.actual.getResponse().getHeader(expectedHeader))
+				.as("check primary value for HTTP header '%s'", expectedHeader)
+				.isNotEqualTo(unexpectedValue);
+		return this.myself;
+	}
+
+	//TODO do we want assertions around multi-value headers? (containsExactly, contains, doesNotContain...)
+	public MvcResultAssert headerContainsExactly(String expectedHeader, String... expectedValues) {
+		headers().containsKey(expectedHeader);
+		Assertions.assertThat(this.actual.getResponse().getHeaders(expectedHeader))
+				.as("check values for HTTP header '%s'", expectedHeader)
+				.containsExactly(expectedValues);
+		return this.myself;
+	}
+
+	public MvcResultAssert headerContainsValues(String expectedHeader, String... expectedValues) {
+		headers().containsKey(expectedHeader);
+		Assertions.assertThat(this.actual.getResponse().getHeaders(expectedHeader))
+				.as("check values for HTTP header '%s'", expectedHeader)
+				.contains(expectedValues);
+		return this.myself;
+	}
+
+	public MvcResultAssert headerDoesNotContainValues(String expectedHeader, String... unexpectedValues) {
+		headers().containsKey(expectedHeader);
+		Assertions.assertThat(this.actual.getResponse().getHeaders(expectedHeader))
+				.as("check values for HTTP header '%s'", expectedHeader)
+				.doesNotContain(unexpectedValues);
+		return this.myself;
+	}
+
+
+
+
 	private static final class MockHttpRequestAssert extends AbstractMockHttpServletRequestAssert<MockHttpRequestAssert> {
 
 		private MockHttpRequestAssert(MockHttpServletRequest request) {

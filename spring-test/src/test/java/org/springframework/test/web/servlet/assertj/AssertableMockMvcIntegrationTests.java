@@ -85,6 +85,92 @@ public class AssertableMockMvcIntegrationTests {
 	}
 
 	@Nested
+	class TopLevelAssertionsTests {
+
+		@Test
+		void bodyString() {
+			var actual = perform(get("/greet"));
+
+			assertThat(actual).bodyStringIsEqualTo("hello");
+			assertThat(actual).bodyStringContains("ll");
+			assertThat(actual).bodyStringDoesNotContain("what");
+		}
+
+		@Test
+		void bodyStringErrorMessages() {
+			var actual = perform(get("/greet"));
+
+			assertThatExceptionOfType(AssertionError.class).isThrownBy(() -> actual.assertThat()
+							.bodyStringIsEqualTo("help"))
+					.withMessage("""
+						[body as string]\s
+						expected: "help"
+						 but was: "hello\"""");
+			assertThatExceptionOfType(AssertionError.class).isThrownBy(() -> actual.assertThat()
+							.bodyStringContains("lp"))
+					.withMessage("""
+						[body as string]\s
+						Expecting actual:
+						  "hello"
+						to contain:
+						  "lp"\s""");
+			assertThatExceptionOfType(AssertionError.class).isThrownBy(() -> actual.assertThat()
+							.bodyStringDoesNotContain("he"))
+					.withMessage("""
+						[body as string]\s
+						Expecting actual:
+						  "hello"
+						not to contain:
+						  "he"
+						""");
+		}
+
+		@Test
+		void bodyJson() {
+			var actual = perform(get("/messages").accept(MediaType.APPLICATION_JSON));
+
+			assertThat(actual)
+					.bodyJsonHasPath("messages[1]")
+					.bodyJsonDoesNotHavePath("messages[3]")
+					.bodyJsonIsLenientlyEqualTo("{\"partial\":true  }")
+					.bodyJsonIsEqualTo("{\"partial\":true, \"messages\": [\"hello\", \"world\"]}");
+		}
+
+		@Test
+		void headers() {
+			var actual = perform(get("/messages").accept(MediaType.APPLICATION_JSON));
+
+			assertThat(actual)
+					.headersContain("Content-Length", "Content-Type")
+					.headersDoNotContain("Location")
+					.headerHasValue("Content-Type", MediaType.APPLICATION_JSON_VALUE);
+		}
+
+		@Test
+		void contentType() {
+			var actual = perform(get("/messages").accept(MediaType.APPLICATION_JSON));
+
+			assertThat(actual)
+					.contentTypeIs(MediaType.APPLICATION_JSON_VALUE)
+					.contentTypeIsNot(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+					.contentTypeIs(MediaType.APPLICATION_JSON)
+					.contentTypeIsNot(MediaType.APPLICATION_FORM_URLENCODED)
+					.contentTypeIsCompatibleWith(MediaType.ALL)
+					.contentTypeIsCompatibleWith("application/*");
+		}
+
+		@Test
+		void contentTypeIsNotStringSanityTest() {
+			var actual = perform(get("/messages").accept(MediaType.APPLICATION_JSON));
+
+			assertThatExceptionOfType(AssertionError.class).isThrownBy(() ->
+					assertThat(actual).contentTypeIsNot(MediaType.APPLICATION_JSON_VALUE)
+			).withMessage("foo");
+		}
+
+	}
+
+	@Nested
 	class RequestTests {
 
 		@Test
@@ -490,6 +576,11 @@ public class AssertableMockMvcIntegrationTests {
 		@GetMapping(path = "/message", produces = MediaType.APPLICATION_JSON_VALUE)
 		String message() {
 			return "{\"message\": \"hello\"}";
+		}
+
+		@GetMapping(path = "/messages", produces = MediaType.APPLICATION_JSON_VALUE)
+		String messages() {
+			return "{\"messages\": [\"hello\", \"world\"], \"partial\": true}";
 		}
 	}
 
