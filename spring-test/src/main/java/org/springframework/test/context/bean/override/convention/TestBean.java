@@ -26,7 +26,12 @@ import org.springframework.core.annotation.AliasFor;
 import org.springframework.test.context.bean.override.BeanOverride;
 
 /**
- * Mark a field to override a bean instance in the {@code BeanFactory}.
+ * Mark a field to override a bean definition in the {@code BeanFactory}.
+ *
+ * <p>By default, the bean to override is inferred from the type of the
+ * annotated field. This requires that exactly one matching definition is
+ * present in the application context. To explicitly specify a bean name to
+ * replace, set the {@link #value()} or {@link #name()} attribute.
  *
  * <p>The instance is created from a zero-argument static factory method in the
  * test class whose return type is compatible with the annotated field. In the
@@ -38,7 +43,7 @@ import org.springframework.test.context.bean.override.BeanOverride;
  * that name.</li>
  * <li>If a method name is not specified, look for exactly one static method named
  * with a suffix equal to {@value #CONVENTION_SUFFIX} and starting with either the
- * name of the annotated field or the name of the bean.</li>
+ * name of the annotated field or the name of the bean (if specified).</li>
  * </ul>
  *
  * <p>Consider the following example.
@@ -46,7 +51,7 @@ import org.springframework.test.context.bean.override.BeanOverride;
  * <pre><code>
  * class CustomerServiceTests {
  *
- *     &#064;TestBean
+ *     &#064;TestBean(name = "repository")
  *     private CustomerRepository repository;
  *
  *     // Tests
@@ -68,7 +73,7 @@ import org.springframework.test.context.bean.override.BeanOverride;
  * <pre><code>
  * class CustomerServiceTests {
  *
- *     &#064;TestBean(methodName = "createTestCustomerRepository")
+ *     &#064;TestBean(name = "repository", methodName = "createTestCustomerRepository")
  *     private CustomerRepository repository;
  *
  *     // Tests
@@ -77,10 +82,6 @@ import org.springframework.test.context.bean.override.BeanOverride;
  *         return new TestCustomerRepository();
  *     }
  * }</code></pre>
- *
- * <p>By default, the name of the bean to override is inferred from the name of
- * the annotated field. To use a different bean name, set the {@link #value()} or
- * {@link #name()} attribute.
  *
  * @author Simon Baslé
  * @author Stephane Nicoll
@@ -113,8 +114,8 @@ public @interface TestBean {
 
 	/**
 	 * Name of the bean to override.
-	 * <p>If left unspecified, the name of the bean to override is the name of
-	 * the annotated field. If specified, the field name is ignored.
+	 * <p>If left unspecified, the bean to override is selected according to
+	 * the annotated field's type.
 	 * @see #value()
 	 */
 	@AliasFor("value")
