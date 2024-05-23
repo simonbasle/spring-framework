@@ -37,12 +37,12 @@ public enum HttpStatus implements HttpStatusCode {
 
 	/**
 	 * {@code 100 Continue}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.2.1">HTTP/1.1: Semantics and Content, section 6.2.1</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.2.1">HTTP Semantics, section 15.2.1</a>
 	 */
 	CONTINUE(100, Series.INFORMATIONAL, "Continue"),
 	/**
 	 * {@code 101 Switching Protocols}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.2.2">HTTP/1.1: Semantics and Content, section 6.2.2</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.2.2">HTTP Semantics, section 15.2.2</a>
 	 */
 	SWITCHING_PROTOCOLS(101, Series.INFORMATIONAL, "Switching Protocols"),
 	/**
@@ -69,37 +69,37 @@ public enum HttpStatus implements HttpStatusCode {
 
 	/**
 	 * {@code 200 OK}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.3.1">HTTP/1.1: Semantics and Content, section 6.3.1</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.3.1">HTTP Semantics, section 15.3.1</a>
 	 */
 	OK(200, Series.SUCCESSFUL, "OK"),
 	/**
 	 * {@code 201 Created}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.3.2">HTTP/1.1: Semantics and Content, section 6.3.2</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.3.2">HTTP Semantics, section 15.3.2</a>
 	 */
 	CREATED(201, Series.SUCCESSFUL, "Created"),
 	/**
 	 * {@code 202 Accepted}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.3.3">HTTP/1.1: Semantics and Content, section 6.3.3</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.3.3">HTTP Semantics, section 15.3.3</a>
 	 */
 	ACCEPTED(202, Series.SUCCESSFUL, "Accepted"),
 	/**
 	 * {@code 203 Non-Authoritative Information}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.3.4">HTTP/1.1: Semantics and Content, section 6.3.4</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.3.4">HTTP Semantics, section 15.3.4</a>
 	 */
 	NON_AUTHORITATIVE_INFORMATION(203, Series.SUCCESSFUL, "Non-Authoritative Information"),
 	/**
 	 * {@code 204 No Content}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.3.5">HTTP/1.1: Semantics and Content, section 6.3.5</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.3.5">HTTP Semantics, section 15.3.5</a>
 	 */
 	NO_CONTENT(204, Series.SUCCESSFUL, "No Content"),
 	/**
 	 * {@code 205 Reset Content}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.3.6">HTTP/1.1: Semantics and Content, section 6.3.6</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.3.6">HTTP Semantics, section 15.3.6</a>
 	 */
 	RESET_CONTENT(205, Series.SUCCESSFUL, "Reset Content"),
 	/**
 	 * {@code 206 Partial Content}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7233#section-4.1">HTTP/1.1: Range Requests, section 4.1</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.3.7">HTTP Semantics, section 15.3.7</a>
 	 */
 	PARTIAL_CONTENT(206, Series.SUCCESSFUL, "Partial Content"),
 	/**
@@ -122,17 +122,17 @@ public enum HttpStatus implements HttpStatusCode {
 
 	/**
 	 * {@code 300 Multiple Choices}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.4.1">HTTP/1.1: Semantics and Content, section 6.4.1</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.4.1">HTTP Semantics, section 15.4.1</a>
 	 */
 	MULTIPLE_CHOICES(300, Series.REDIRECTION, "Multiple Choices"),
 	/**
 	 * {@code 301 Moved Permanently}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.4.2">HTTP/1.1: Semantics and Content, section 6.4.2</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.4.2">HTTP Semantics, section 15.4.2</a>
 	 */
 	MOVED_PERMANENTLY(301, Series.REDIRECTION, "Moved Permanently"),
 	/**
 	 * {@code 302 Found}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.4.3">HTTP/1.1: Semantics and Content, section 6.4.3</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.4.3">HTTP Semantics, section 15.4.3</a>
 	 */
 	FOUND(302, Series.REDIRECTION, "Found"),
 	/**
@@ -144,29 +144,29 @@ public enum HttpStatus implements HttpStatusCode {
 	MOVED_TEMPORARILY(302, Series.REDIRECTION, "Moved Temporarily"),
 	/**
 	 * {@code 303 See Other}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.4.4">HTTP/1.1: Semantics and Content, section 6.4.4</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.4.4">HTTP Semantics, section 15.4.4</a>
 	 */
 	SEE_OTHER(303, Series.REDIRECTION, "See Other"),
 	/**
 	 * {@code 304 Not Modified}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7232#section-4.1">HTTP/1.1: Conditional Requests, section 4.1</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.4.5">HTTP Semantics, section 15.4.5</a>
 	 */
 	NOT_MODIFIED(304, Series.REDIRECTION, "Not Modified"),
 	/**
 	 * {@code 305 Use Proxy}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.4.5">HTTP/1.1: Semantics and Content, section 6.4.5</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.4.6">HTTP Semantics, section 15.4.6</a>
 	 * @deprecated due to security concerns regarding in-band configuration of a proxy
 	 */
 	@Deprecated
 	USE_PROXY(305, Series.REDIRECTION, "Use Proxy"),
 	/**
 	 * {@code 307 Temporary Redirect}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.4.7">HTTP/1.1: Semantics and Content, section 6.4.7</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.4.8">HTTP Semantics, section 15.4.8</a>
 	 */
 	TEMPORARY_REDIRECT(307, Series.REDIRECTION, "Temporary Redirect"),
 	/**
 	 * {@code 308 Permanent Redirect}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7238">RFC 7238</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.4.9">HTTP Semantics, section 15.4.9</a>
 	 */
 	PERMANENT_REDIRECT(308, Series.REDIRECTION, "Permanent Redirect"),
 
@@ -174,78 +174,78 @@ public enum HttpStatus implements HttpStatusCode {
 
 	/**
 	 * {@code 400 Bad Request}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.1">HTTP/1.1: Semantics and Content, section 6.5.1</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.5.1">HTTP Semantics, section 15.5.1</a>
 	 */
 	BAD_REQUEST(400, Series.CLIENT_ERROR, "Bad Request"),
 	/**
 	 * {@code 401 Unauthorized}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7235#section-3.1">HTTP/1.1: Authentication, section 3.1</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.5.2">HTTP Semantics, section 15.5.2</a>
 	 */
 	UNAUTHORIZED(401, Series.CLIENT_ERROR, "Unauthorized"),
 	/**
 	 * {@code 402 Payment Required}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.2">HTTP/1.1: Semantics and Content, section 6.5.2</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.5.3">HTTP Semantics, section 15.5.3</a>
 	 */
 	PAYMENT_REQUIRED(402, Series.CLIENT_ERROR, "Payment Required"),
 	/**
 	 * {@code 403 Forbidden}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">HTTP/1.1: Semantics and Content, section 6.5.3</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.5.4">HTTP Semantics, section 15.5.4</a>
 	 */
 	FORBIDDEN(403, Series.CLIENT_ERROR, "Forbidden"),
 	/**
 	 * {@code 404 Not Found}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.4">HTTP/1.1: Semantics and Content, section 6.5.4</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.5.5">HTTP Semantics, section 15.5.5</a>
 	 */
 	NOT_FOUND(404, Series.CLIENT_ERROR, "Not Found"),
 	/**
 	 * {@code 405 Method Not Allowed}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.5">HTTP/1.1: Semantics and Content, section 6.5.5</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.5.6">HTTP Semantics, section 15.5.6</a>
 	 */
 	METHOD_NOT_ALLOWED(405, Series.CLIENT_ERROR, "Method Not Allowed"),
 	/**
 	 * {@code 406 Not Acceptable}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.6">HTTP/1.1: Semantics and Content, section 6.5.6</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.5.7">HTTP Semantics, section 15.5.7</a>
 	 */
 	NOT_ACCEPTABLE(406, Series.CLIENT_ERROR, "Not Acceptable"),
 	/**
 	 * {@code 407 Proxy Authentication Required}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7235#section-3.2">HTTP/1.1: Authentication, section 3.2</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.5.8">HTTP Semantics, section 15.5.8</a>
 	 */
 	PROXY_AUTHENTICATION_REQUIRED(407, Series.CLIENT_ERROR, "Proxy Authentication Required"),
 	/**
 	 * {@code 408 Request Timeout}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.7">HTTP/1.1: Semantics and Content, section 6.5.7</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.5.9">HTTP Semantics, section 15.5.9</a>
 	 */
 	REQUEST_TIMEOUT(408, Series.CLIENT_ERROR, "Request Timeout"),
 	/**
 	 * {@code 409 Conflict}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.8">HTTP/1.1: Semantics and Content, section 6.5.8</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.5.10">HTTP Semantics, section 15.5.10</a>
 	 */
 	CONFLICT(409, Series.CLIENT_ERROR, "Conflict"),
 	/**
 	 * {@code 410 Gone}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.9">
-	 *     HTTP/1.1: Semantics and Content, section 6.5.9</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.5.11">
+	 *     HTTP Semantics, section 15.5.11</a>
 	 */
 	GONE(410, Series.CLIENT_ERROR, "Gone"),
 	/**
 	 * {@code 411 Length Required}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.10">
-	 *     HTTP/1.1: Semantics and Content, section 6.5.10</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.5.12">
+	 *     HTTP Semantics, section 15.5.12</a>
 	 */
 	LENGTH_REQUIRED(411, Series.CLIENT_ERROR, "Length Required"),
 	/**
 	 * {@code 412 Precondition failed}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7232#section-4.2">
-	 *     HTTP/1.1: Conditional Requests, section 4.2</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.5.13">HTTP Semantics, section 15.5.13</a>
 	 */
 	PRECONDITION_FAILED(412, Series.CLIENT_ERROR, "Precondition Failed"),
 	/**
 	 * {@code 413 Payload Too Large}.
 	 * @since 4.1
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.11">
-	 *     HTTP/1.1: Semantics and Content, section 6.5.11</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.5.14">
+	 *     HTTP Semantics, section 15.5.14</a>
 	 */
+	//TODO deprecate and add CONTENT_TOO_LARGE ?
 	PAYLOAD_TOO_LARGE(413, Series.CLIENT_ERROR, "Payload Too Large"),
 	/**
 	 * {@code 413 Request Entity Too Large}.
@@ -258,8 +258,8 @@ public enum HttpStatus implements HttpStatusCode {
 	/**
 	 * {@code 414 URI Too Long}.
 	 * @since 4.1
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.12">
-	 *     HTTP/1.1: Semantics and Content, section 6.5.12</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.5.15">
+	 *     HTTP Semantics, section 15.5.15</a>
 	 */
 	URI_TOO_LONG(414, Series.CLIENT_ERROR, "URI Too Long"),
 	/**
@@ -271,19 +271,19 @@ public enum HttpStatus implements HttpStatusCode {
 	REQUEST_URI_TOO_LONG(414, Series.CLIENT_ERROR, "Request-URI Too Long"),
 	/**
 	 * {@code 415 Unsupported Media Type}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.13">
-	 *     HTTP/1.1: Semantics and Content, section 6.5.13</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.5.16">
+	 *     HTTP Semantics, section 15.5.16</a>
 	 */
 	UNSUPPORTED_MEDIA_TYPE(415, Series.CLIENT_ERROR, "Unsupported Media Type"),
 	/**
 	 * {@code 416 Requested Range Not Satisfiable}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7233#section-4.4">HTTP/1.1: Range Requests, section 4.4</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.5.17">HTTP Semantics, section 15.5.17</a>
 	 */
 	REQUESTED_RANGE_NOT_SATISFIABLE(416, Series.CLIENT_ERROR, "Requested range not satisfiable"),
 	/**
 	 * {@code 417 Expectation Failed}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.14">
-	 *     HTTP/1.1: Semantics and Content, section 6.5.14</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.5.18">
+	 *     HTTP Semantics, section 15.5.18</a>
 	 */
 	EXPECTATION_FAILED(417, Series.CLIENT_ERROR, "Expectation Failed"),
 	/**
@@ -305,6 +305,7 @@ public enum HttpStatus implements HttpStatusCode {
 	 */
 	@Deprecated
 	METHOD_FAILURE(420, Series.CLIENT_ERROR, "Method Failure"),
+	//TODO add 421 Misdirected Request 	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.5.20">HTTP Semantics, section 15.5.20</a>
 	/**
 	 * @deprecated
 	 * See <a href="https://tools.ietf.org/rfcdiff?difftype=--hwdiff&amp;url2=draft-ietf-webdav-protocol-06.txt">
@@ -312,10 +313,12 @@ public enum HttpStatus implements HttpStatusCode {
 	 */
 	@Deprecated
 	DESTINATION_LOCKED(421, Series.CLIENT_ERROR, "Destination Locked"),
+	//TODO add 422 Unprocessable Content 	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.5.21">HTTP Semantics, section 15.5.21</a>
 	/**
 	 * {@code 422 Unprocessable Entity}.
 	 * @see <a href="https://tools.ietf.org/html/rfc4918#section-11.2">WebDAV</a>
 	 */
+	//TODO deprecate
 	UNPROCESSABLE_ENTITY(422, Series.CLIENT_ERROR, "Unprocessable Entity"),
 	/**
 	 * {@code 423 Locked}.
@@ -335,7 +338,7 @@ public enum HttpStatus implements HttpStatusCode {
 	TOO_EARLY(425, Series.CLIENT_ERROR, "Too Early"),
 	/**
 	 * {@code 426 Upgrade Required}.
-	 * @see <a href="https://tools.ietf.org/html/rfc2817#section-6">Upgrading to TLS Within HTTP/1.1</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.5.22">HTTP Semantics, section 15.5.22</a>
 	 */
 	UPGRADE_REQUIRED(426, Series.CLIENT_ERROR, "Upgrade Required"),
 	/**
@@ -355,7 +358,7 @@ public enum HttpStatus implements HttpStatusCode {
 	REQUEST_HEADER_FIELDS_TOO_LARGE(431, Series.CLIENT_ERROR, "Request Header Fields Too Large"),
 	/**
 	 * {@code 451 Unavailable For Legal Reasons}.
-	 * @see <a href="https://tools.ietf.org/html/draft-ietf-httpbis-legally-restricted-status-04">
+	 * @see <a href="https://tools.ietf.org/html/rfc7725">
 	 * An HTTP Status Code to Report Legal Obstacles</a>
 	 * @since 4.3
 	 */
@@ -365,32 +368,32 @@ public enum HttpStatus implements HttpStatusCode {
 
 	/**
 	 * {@code 500 Internal Server Error}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">HTTP/1.1: Semantics and Content, section 6.6.1</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.6.1">HTTP Semantics, section 15.6.1</a>
 	 */
 	INTERNAL_SERVER_ERROR(500, Series.SERVER_ERROR, "Internal Server Error"),
 	/**
 	 * {@code 501 Not Implemented}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.6.2">HTTP/1.1: Semantics and Content, section 6.6.2</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.6.2">HTTP Semantics, section 15.6.2</a>
 	 */
 	NOT_IMPLEMENTED(501, Series.SERVER_ERROR, "Not Implemented"),
 	/**
 	 * {@code 502 Bad Gateway}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.6.3">HTTP/1.1: Semantics and Content, section 6.6.3</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.6.3">HTTP Semantics, section 15.6.3</a>
 	 */
 	BAD_GATEWAY(502, Series.SERVER_ERROR, "Bad Gateway"),
 	/**
 	 * {@code 503 Service Unavailable}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.6.4">HTTP/1.1: Semantics and Content, section 6.6.4</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.6.4">HTTP Semantics, section 15.6.4</a>
 	 */
 	SERVICE_UNAVAILABLE(503, Series.SERVER_ERROR, "Service Unavailable"),
 	/**
 	 * {@code 504 Gateway Timeout}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.6.5">HTTP/1.1: Semantics and Content, section 6.6.5</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.6.5">HTTP Semantics, section 15.6.5</a>
 	 */
 	GATEWAY_TIMEOUT(504, Series.SERVER_ERROR, "Gateway Timeout"),
 	/**
 	 * {@code 505 HTTP Version Not Supported}.
-	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.6.6">HTTP/1.1: Semantics and Content, section 6.6.6</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc9110#section-15.6.6">HTTP Semantics, section 15.6.6</a>
 	 */
 	HTTP_VERSION_NOT_SUPPORTED(505, Series.SERVER_ERROR, "HTTP Version not supported"),
 	/**
@@ -416,6 +419,7 @@ public enum HttpStatus implements HttpStatusCode {
 	 * {@code 510 Not Extended}
 	 * @see <a href="https://tools.ietf.org/html/rfc2774#section-7">HTTP Extension Framework</a>
 	 */
+	//TODO deprecate, obsoleted by https://datatracker.ietf.org/doc/status-change-http-experiments-to-historic/
 	NOT_EXTENDED(510, Series.SERVER_ERROR, "Not Extended"),
 	/**
 	 * {@code 511 Network Authentication Required}.
