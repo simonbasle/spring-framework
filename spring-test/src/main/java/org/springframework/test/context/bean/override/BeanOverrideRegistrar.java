@@ -57,7 +57,7 @@ class BeanOverrideRegistrar implements BeanFactoryAware {
 	 * detected to contain bean overriding annotations
 	 */
 	BeanOverrideRegistrar(Set<Class<?>> classesToParse) {
-		this.overrideMetadata = BeanOverrideParsingUtils.parse(classesToParse);
+		this.overrideMetadata = BeanOverrideParsingUtils.parse(classesToParse).keySet();
 	}
 
 	@Override
@@ -107,11 +107,14 @@ class BeanOverrideRegistrar implements BeanFactoryAware {
 		this.earlyOverrideMetadata.put(beanName, metadata);
 	}
 
-	void inject(Object target, OverrideMetadata overrideMetadata) {
+	void inject(Object target, OverrideMetadata overrideMetadata, Field field) {
 		String beanName = this.beanNameRegistry.get(overrideMetadata);
 		Assert.state(StringUtils.hasLength(beanName),
-				() -> "No bean found for OverrideMetadata: " + overrideMetadata);
-		inject(overrideMetadata.getField(), target, beanName);
+				() -> "No bean found for OverrideMetadata: " + overrideMetadata + " in name registry " + this.beanNameRegistry);
+		if (!field.getDeclaringClass().isAssignableFrom(target.getClass())) {
+			return;
+		}
+		inject(field, target, beanName);
 	}
 
 	private void inject(Field field, Object target, String beanName) {

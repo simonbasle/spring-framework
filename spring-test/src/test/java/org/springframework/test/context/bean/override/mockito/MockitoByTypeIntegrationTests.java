@@ -111,7 +111,7 @@ public class MockitoByTypeIntegrationTests {
 
 		@Test
 		void zeroCandidates() {
-			Class<?> caseClass = CaseNone.class;
+			Class<?> caseClass = Mock.CaseNone.class;
 			EngineExecutionResults results = EngineTestKit.engine("junit-jupiter")//
 					.selectors(selectClass(caseClass))//
 					.execute();
@@ -122,13 +122,13 @@ public class MockitoByTypeIntegrationTests {
 							.cause()
 							.isInstanceOf(IllegalStateException.class)
 							.hasMessage("Unable to select a bean definition to override, 0 bean definitions " +
-									"found of type %s (as required by annotated field '%s.example')",
+											"found of type %s",
 									ExampleService.class.getName(), caseClass.getSimpleName()));
 		}
 
 		@Test
 		void tooManyCandidates() {
-			Class<?> caseClass = CaseTooMany.class;
+			Class<?> caseClass = Mock.CaseTooMany.class;
 			EngineExecutionResults results = EngineTestKit.engine("junit-jupiter")//
 					.selectors(selectClass(caseClass))//
 					.execute();
@@ -139,7 +139,7 @@ public class MockitoByTypeIntegrationTests {
 							.cause()
 							.isInstanceOf(IllegalStateException.class)
 							.hasMessage("Unable to select a bean definition to override, 2 bean definitions " +
-									"found of type %s (as required by annotated field '%s.example')",
+											"found of type %s",
 									ExampleService.class.getName(), caseClass.getSimpleName()));
 		}
 
@@ -228,7 +228,7 @@ public class MockitoByTypeIntegrationTests {
 
 		@Test
 		void zeroCandidates() {
-			Class<?> caseClass = CaseNone.class;
+			Class<?> caseClass = Spy.CaseNone.class;
 			EngineExecutionResults results = EngineTestKit.engine("junit-jupiter")//
 					.selectors(selectClass(caseClass))//
 					.execute();
@@ -238,14 +238,14 @@ public class MockitoByTypeIntegrationTests {
 							.getThrowable()).get(THROWABLE)
 							.cause()
 							.isInstanceOf(IllegalStateException.class)
-							.hasMessage("Unable to select a bean definition to override, 0 bean definitions " +
-											"found of type %s (as required by annotated field '%s.example')",
+							.hasMessage("Unable to select a bean to override by wrapping, 0 bean instances " +
+											"found of type %s",
 									ExampleService.class.getName(), caseClass.getSimpleName()));
 		}
 
 		@Test
 		void tooManyCandidates() {
-			Class<?> caseClass = CaseTooMany.class;
+			Class<?> caseClass = Spy.CaseTooMany.class;
 			EngineExecutionResults results = EngineTestKit.engine("junit-jupiter")//
 					.selectors(selectClass(caseClass))//
 					.execute();
@@ -255,14 +255,14 @@ public class MockitoByTypeIntegrationTests {
 							.getThrowable()).get(THROWABLE)
 							.cause()
 							.isInstanceOf(IllegalStateException.class)
-							.hasMessage("Unable to select a bean definition to override, 2 bean definitions " +
-											"found of type %s (as required by annotated field '%s.example')",
+							.hasMessage("Unable to select a bean to override by wrapping, 2 bean instances " +
+											"found of type %s",
 									ExampleService.class.getName(), caseClass.getSimpleName()));
 		}
 
 		@SpringJUnitConfig(FailingNone.class)
 		static class CaseNone {
-			@MockitoBean
+			@MockitoSpyBean(reset = MockReset.BEFORE)
 			ExampleService example;
 
 			@Test
@@ -273,7 +273,7 @@ public class MockitoByTypeIntegrationTests {
 
 		@SpringJUnitConfig(FailingTooMany.class)
 		static class CaseTooMany {
-			@MockitoBean
+			@MockitoSpyBean(reset = MockReset.BEFORE)
 			ExampleService example;
 
 			@Test

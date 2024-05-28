@@ -83,8 +83,7 @@ public class MockitoSpyBeanIntegrationTests {
 						.cause()
 						.isInstanceOf(IllegalStateException.class)
 						.hasMessage("Unable to select a bean to override by wrapping, " +
-										"0 bean instances found of type %s " +
-										"(as required by annotated field '%s.notPresent')",
+										"0 bean instances found of type %s",
 								ExampleService.class.getName(), Failure1.class.getSimpleName()));
 	}
 

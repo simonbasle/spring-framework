@@ -29,8 +29,8 @@ import org.springframework.lang.Nullable;
  * Metadata for Bean Override injection points, also responsible for creation of
  * the overriding instance.
  *
- * <p><strong>WARNING</strong>: implementations are used as a cache key and
- * must implement proper {@code equals()} and {@code hashCode()} methods.
+ * <p><strong>WARNING</strong>: implementations are used as a context cache key
+ * and must implement proper {@code equals()} and {@code hashCode()} methods.
  *
  * <p>Specific implementations of metadata can have state to be used during
  * override {@linkplain #createOverride(String, BeanDefinition, Object)
@@ -42,19 +42,23 @@ import org.springframework.lang.Nullable;
  */
 public abstract class OverrideMetadata {
 
-	private final Field field;
-
 	private final ResolvableType beanType;
 
 	private final BeanOverrideStrategy strategy;
 
+	private final QualifierMetadata qualifierMetadata;
 
-	protected OverrideMetadata(Field field, ResolvableType beanType,
-			BeanOverrideStrategy strategy) {
+	/**
+	 * Create an {@code OverrideMetadata} with additional metadata about
+	 * {@link QualifierMetadata qualifier annotations} (see
+	 * {@link QualifierMetadata#forField(Field, Class[])}).
+	 */
+	protected OverrideMetadata(ResolvableType beanType,
+			BeanOverrideStrategy strategy, QualifierMetadata qualifierMetadata) {
 
-		this.field = field;
 		this.beanType = beanType;
 		this.strategy = strategy;
+		this.qualifierMetadata = qualifierMetadata;
 	}
 
 	/**
@@ -75,18 +79,19 @@ public abstract class OverrideMetadata {
 	}
 
 	/**
-	 * Get the annotated {@link Field}.
-	 */
-	public final Field getField() {
-		return this.field;
-	}
-
-	/**
 	 * Get the {@link BeanOverrideStrategy} for this instance, as a hint on
 	 * how and when the override instance should be created.
 	 */
 	public final BeanOverrideStrategy getStrategy() {
 		return this.strategy;
+	}
+
+	/**
+	 * Get the {@link QualifierMetadata} for finer-grained selection of which
+	 * bean to override.
+	 */
+	public final QualifierMetadata getQualifierMetadata() {
+		return this.qualifierMetadata;
 	}
 
 	/**
@@ -124,21 +129,21 @@ public abstract class OverrideMetadata {
 		}
 		OverrideMetadata that = (OverrideMetadata) obj;
 		return Objects.equals(this.strategy, that.strategy) &&
-				Objects.equals(this.field, that.field) &&
-				Objects.equals(this.beanType, that.beanType);
+				Objects.equals(this.qualifierMetadata, that.qualifierMetadata) &&
+				this.beanType.equalsType(that.beanType);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.strategy, this.field, this.beanType);
+		return Objects.hash(this.strategy, this.beanType.toClass(), this.qualifierMetadata);
 	}
 
 	@Override
 	public String toString() {
 		return new ToStringCreator(this)
 				.append("strategy", this.strategy)
-				.append("field", this.field)
 				.append("beanType", this.beanType)
+				.append("qualifierMetadata", this.qualifierMetadata)
 				.toString();
 	}
 

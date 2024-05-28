@@ -31,7 +31,6 @@ import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
-import org.springframework.beans.factory.config.DependencyDescriptor;
 import org.springframework.beans.factory.config.SmartInstantiationAwareBeanPostProcessor;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.RootBeanDefinition;
@@ -132,11 +131,8 @@ class BeanOverrideBeanFactoryPostProcessor implements BeanFactoryPostProcessor, 
 		if (beanName == null) {
 			Set<String> candidates = getExistingBeanNamesByType(beanFactory, overrideMetadata, true);
 			if (candidates.size() != 1) {
-				Field f = overrideMetadata.getField();
 				throw new IllegalStateException("Unable to select a bean definition to override, " +
-						candidates.size() + " bean definitions found of type " + overrideMetadata.getBeanType() +
-						" (as required by annotated field '" + f.getDeclaringClass().getSimpleName() +
-						"." + f.getName() + "')");
+						candidates.size() + " bean definitions found of type " + overrideMetadata.getBeanType());
 			}
 			beanName = candidates.iterator().next();
 			existingBeanDefinition = beanFactory.getBeanDefinition(beanName);
@@ -182,11 +178,8 @@ class BeanOverrideBeanFactoryPostProcessor implements BeanFactoryPostProcessor, 
 		if (beanName == null) {
 			Set<String> candidateNames = getExistingBeanNamesByType(beanFactory, metadata, true);
 			if (candidateNames.size() != 1) {
-				Field f = metadata.getField();
 				throw new IllegalStateException("Unable to select a bean to override by wrapping, " +
-						candidateNames.size() + " bean instances found of type " + metadata.getBeanType() +
-						" (as required by annotated field '" + f.getDeclaringClass().getSimpleName() +
-						"." + f.getName() + "')");
+						candidateNames.size() + " bean instances found of type " + metadata.getBeanType());
 			}
 			beanName = candidateNames.iterator().next();
 		}
@@ -204,7 +197,7 @@ class BeanOverrideBeanFactoryPostProcessor implements BeanFactoryPostProcessor, 
 	RootBeanDefinition createBeanDefinition(OverrideMetadata metadata) {
 		RootBeanDefinition definition = new RootBeanDefinition();
 		definition.setTargetType(metadata.getBeanType());
-		definition.setQualifiedElement(metadata.getField());
+		metadata.getQualifierMetadata().applyToDefinition(definition);
 		return definition;
 	}
 
@@ -224,9 +217,8 @@ class BeanOverrideBeanFactoryPostProcessor implements BeanFactoryPostProcessor, 
 			}
 		}
 		if (checkAutowiredCandidate) {
-			DependencyDescriptor descriptor = new DependencyDescriptor(metadata.getField(), true);
 			beans.removeIf(beanName -> ScopedProxyUtils.isScopedTarget(beanName) ||
-					!beanFactory.isAutowireCandidate(beanName, descriptor));
+					!metadata.getQualifierMetadata().matchesInFactory(beanName, beanFactory));
 		}
 		else {
 			beans.removeIf(ScopedProxyUtils::isScopedTarget);

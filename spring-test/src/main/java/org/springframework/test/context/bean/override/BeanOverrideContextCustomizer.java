@@ -50,9 +50,11 @@ class BeanOverrideContextCustomizer implements ContextCustomizer {
 
 
 	private final Set<Class<?>> detectedClasses;
+	private final Set<OverrideMetadata> metadata;
 
 	BeanOverrideContextCustomizer(Set<Class<?>> detectedClasses) {
 		this.detectedClasses = detectedClasses;
+		this.metadata = BeanOverrideParsingUtils.parse(detectedClasses).keySet();
 	}
 
 	static void registerInfrastructure(BeanDefinitionRegistry registry, Set<Class<?>> detectedClasses) {
@@ -95,12 +97,12 @@ class BeanOverrideContextCustomizer implements ContextCustomizer {
 			return false;
 		}
 		BeanOverrideContextCustomizer other = (BeanOverrideContextCustomizer) obj;
-		return this.detectedClasses.equals(other.detectedClasses);
+		return this.metadata.equals(other.metadata);
 	}
 
 	@Override
 	public int hashCode() {
-		return this.detectedClasses.hashCode();
+		return this.metadata.hashCode();
 	}
 
 }

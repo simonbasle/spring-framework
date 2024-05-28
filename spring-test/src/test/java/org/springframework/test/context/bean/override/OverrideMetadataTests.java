@@ -56,7 +56,7 @@ class OverrideMetadataTests {
 		ConcreteOverrideMetadata(Field field, ResolvableType typeToOverride,
 				BeanOverrideStrategy strategy) {
 
-			super(field, typeToOverride, strategy);
+			super(typeToOverride, strategy, QualifierMetadata.forField(field));
 		}
 
 		@Override

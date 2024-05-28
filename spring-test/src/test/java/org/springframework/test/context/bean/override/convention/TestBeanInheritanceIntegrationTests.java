@@ -85,7 +85,8 @@ public class TestBeanInheritanceIntegrationTests {
 		assertThat(results.allEvents().failed().stream()).hasSize(1).first()
 				.satisfies(e -> assertThat(e.getRequiredPayload(TestExecutionResult.class)
 						.getThrowable()).get(THROWABLE)
-						.rootCause().isInstanceOf(IllegalStateException.class)
+//						.rootCause()
+						.isInstanceOf(IllegalStateException.class)
 						.hasMessage("""
 			Failed to find a static test bean factory method in %s with return type %s \
 			whose name matches one of the supported candidates [someBeanTestOverride]""",
@@ -102,7 +103,8 @@ public class TestBeanInheritanceIntegrationTests {
 		assertThat(results.allEvents().failed().stream()).hasSize(1).first()
 				.satisfies(e -> assertThat(e.getRequiredPayload(TestExecutionResult.class)
 						.getThrowable()).get(THROWABLE)
-						.rootCause().isInstanceOf(IllegalStateException.class)
+//						.rootCause()
+						.isInstanceOf(IllegalStateException.class)
 						.hasMessage("""
 			Found 2 competing static test bean factory methods in %s with return type %s \
 			whose name matches one of the supported candidates \

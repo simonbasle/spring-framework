@@ -119,7 +119,8 @@ public class TestBeanIntegrationTests {
 		assertThat(results.allEvents().failed().stream()).hasSize(1).first()
 				.satisfies(e -> assertThat(e.getRequiredPayload(TestExecutionResult.class)
 						.getThrowable()).get(THROWABLE)
-						.rootCause().isInstanceOf(IllegalStateException.class)
+//						.rootCause()
+						.isInstanceOf(IllegalStateException.class)
 						.hasMessage("Failed to find a static test bean factory method in " +
 								"org.springframework.test.context.bean.override.convention.TestBeanIntegrationTests$Failing3 " +
 								"with return type java.lang.String whose name matches one of the " +
@@ -135,7 +136,8 @@ public class TestBeanIntegrationTests {
 		assertThat(results.allEvents().failed().stream()).hasSize(1).first()
 				.satisfies(e -> assertThat(e.getRequiredPayload(TestExecutionResult.class)
 						.getThrowable()).get(THROWABLE)
-						.rootCause().isInstanceOf(IllegalStateException.class)
+//						.rootCause()
+						.isInstanceOf(IllegalStateException.class)
 						.hasMessage("Failed to find a static test bean factory method in " +
 								"org.springframework.test.context.bean.override.convention.TestBeanIntegrationTests$Failing4 " +
 								"with return type java.lang.String whose name matches one of the " +
@@ -151,7 +153,8 @@ public class TestBeanIntegrationTests {
 		assertThat(results.allEvents().failed().stream()).hasSize(1).first()
 				.satisfies(e -> assertThat(e.getRequiredPayload(TestExecutionResult.class)
 						.getThrowable()).get(THROWABLE)
-						.rootCause().isInstanceOf(IllegalStateException.class)
+						.rootCause()
+						.isInstanceOf(IllegalStateException.class)
 						.hasMessage("Unable to override bean 'notString'; there is no bean definition to replace with " +
 								"that name of type java.lang.String"));
 	}

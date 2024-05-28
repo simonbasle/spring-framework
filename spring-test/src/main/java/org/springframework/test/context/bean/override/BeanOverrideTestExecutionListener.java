@@ -22,6 +22,7 @@ import java.util.function.BiConsumer;
 import org.springframework.test.context.TestContext;
 import org.springframework.test.context.support.AbstractTestExecutionListener;
 import org.springframework.test.context.support.DependencyInjectionTestExecutionListener;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.ReflectionUtils;
 
 /**
@@ -58,7 +59,7 @@ public class BeanOverrideTestExecutionListener extends AbstractTestExecutionList
 	 */
 	protected void injectFields(TestContext testContext) {
 		postProcessFields(testContext, (testMetadata, overrideRegistrar) -> overrideRegistrar.inject(
-				testMetadata.testInstance, testMetadata.overrideMetadata));
+				testMetadata.testInstance, testMetadata.overrideMetadata, testMetadata.field));
 	}
 
 	/**
@@ -76,10 +77,10 @@ public class BeanOverrideTestExecutionListener extends AbstractTestExecutionList
 
 			postProcessFields(testContext, (testMetadata, postProcessor) -> {
 				Object testInstance = testMetadata.testInstance;
-				Field field = testMetadata.overrideMetadata.getField();
+				Field field = testMetadata.field;
 				ReflectionUtils.makeAccessible(field);
 				ReflectionUtils.setField(field, testInstance, null);
-				postProcessor.inject(testInstance, testMetadata.overrideMetadata);
+				postProcessor.inject(testInstance, testMetadata.overrideMetadata, testMetadata.field);
 			});
 		}
 	}
@@ -89,19 +90,20 @@ public class BeanOverrideTestExecutionListener extends AbstractTestExecutionList
 
 		Class<?> testClass = testContext.getTestClass();
 		Object testInstance = testContext.getTestInstance();
+		if (!BeanOverrideParsingUtils.hasBeanOverride(testClass)) {
+			return;
+		}
 
-		if (BeanOverrideParsingUtils.hasBeanOverride(testClass)) {
+		final MultiValueMap<OverrideMetadata, Field> metadataAndFields = BeanOverrideParsingUtils.parse(testClass);
+		if (!metadataAndFields.isEmpty()) {
 			BeanOverrideRegistrar registrar =
 					testContext.getApplicationContext().getBean(BeanOverrideRegistrar.class);
-			for (OverrideMetadata metadata : registrar.getOverrideMetadata()) {
-				if (!metadata.getField().getDeclaringClass().isAssignableFrom(testClass)) {
-					continue;
-				}
-				consumer.accept(new TestContextOverrideMetadata(testInstance, metadata), registrar);
-			}
+			metadataAndFields.forEach((metadata, fieldList) ->
+					fieldList.forEach(field -> consumer.accept(
+							new TestContextOverrideMetadata(testInstance, field, metadata), registrar)));
 		}
 	}
 
-	private record TestContextOverrideMetadata(Object testInstance, OverrideMetadata overrideMetadata) {}
+	private record TestContextOverrideMetadata(Object testInstance, Field field, OverrideMetadata overrideMetadata) {}
 
 }

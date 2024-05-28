@@ -34,6 +34,7 @@ import org.springframework.test.context.TestContextAnnotationUtils;
 import org.springframework.test.context.bean.override.BeanOverrideProcessor;
 import org.springframework.test.context.bean.override.BeanOverrideStrategy;
 import org.springframework.test.context.bean.override.OverrideMetadata;
+import org.springframework.test.context.bean.override.QualifierMetadata;
 import org.springframework.util.Assert;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
@@ -143,7 +144,8 @@ class TestBeanOverrideProcessor implements BeanOverrideProcessor {
 		public TestBeanOverrideMetadata(Field field, Method overrideMethod, TestBean overrideAnnotation,
 				ResolvableType typeToOverride) {
 
-			super(field, typeToOverride, BeanOverrideStrategy.REPLACE_DEFINITION);
+			super(typeToOverride, BeanOverrideStrategy.REPLACE_DEFINITION,
+					QualifierMetadata.forField(field, TestBean.class));
 			this.beanName = overrideAnnotation.name();
 			this.overrideMethod = overrideMethod;
 		}
@@ -180,13 +182,13 @@ class TestBeanOverrideProcessor implements BeanOverrideProcessor {
 				return false;
 			}
 			TestBeanOverrideMetadata that = (TestBeanOverrideMetadata) o;
-			return Objects.equals(this.overrideMethod, that.overrideMethod)
-					&& Objects.equals(this.beanName, that.beanName);
+			return Objects.equals(this.overrideMethod.getName(), that.overrideMethod.getName()) &&
+					Objects.equals(this.beanName, that.beanName);
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(super.hashCode(), this.overrideMethod, this.beanName);
+			return Objects.hash(super.hashCode(), this.overrideMethod.getName(), this.beanName);
 		}
 	}
 

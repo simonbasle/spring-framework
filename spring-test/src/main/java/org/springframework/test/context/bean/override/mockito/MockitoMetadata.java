@@ -25,6 +25,7 @@ import org.springframework.core.ResolvableType;
 import org.springframework.lang.Nullable;
 import org.springframework.test.context.bean.override.BeanOverrideStrategy;
 import org.springframework.test.context.bean.override.OverrideMetadata;
+import org.springframework.test.context.bean.override.QualifierMetadata;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
@@ -46,7 +47,7 @@ abstract class MockitoMetadata extends OverrideMetadata {
 	MockitoMetadata(String name, @Nullable MockReset reset, boolean proxyTargetAware, Field field,
 			ResolvableType typeToOverride, BeanOverrideStrategy strategy) {
 
-		super(field, typeToOverride, strategy);
+		super(typeToOverride, strategy, QualifierMetadata.forField(field, MockitoBean.class, MockitoSpyBean.class));
 		this.name = name;
 		this.reset = (reset != null) ? reset : MockReset.AFTER;
 		this.proxyTargetAware = proxyTargetAware;

@@ -22,12 +22,14 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Objects;
 
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.core.ResolvableType;
 import org.springframework.lang.Nullable;
 import org.springframework.test.context.bean.override.BeanOverrideStrategy;
 import org.springframework.test.context.bean.override.OverrideMetadata;
+import org.springframework.test.context.bean.override.QualifierMetadata;
 import org.springframework.util.StringUtils;
 
 import static org.springframework.test.context.bean.override.example.ExampleBeanOverrideAnnotation.DEFAULT_VALUE;
@@ -41,6 +43,8 @@ class TestOverrideMetadata extends OverrideMetadata {
 	private final String beanName;
 
 	private final String methodName;
+
+	private final String fieldName;
 
 	@Nullable
 	private static Method findMethod(AnnotatedElement element, String methodName) {
@@ -78,9 +82,14 @@ class TestOverrideMetadata extends OverrideMetadata {
 		throw new IllegalStateException("Expected the annotated element to be a Field, Method or Class");
 	}
 
-	public TestOverrideMetadata(Field field, ExampleBeanOverrideAnnotation overrideAnnotation, ResolvableType typeToOverride) {
-		super(field, typeToOverride, overrideAnnotation.createIfMissing() ?
-				BeanOverrideStrategy.REPLACE_OR_CREATE_DEFINITION: BeanOverrideStrategy.REPLACE_DEFINITION);
+	public TestOverrideMetadata(Field field, ExampleBeanOverrideAnnotation overrideAnnotation,
+			ResolvableType typeToOverride) {
+
+		super(typeToOverride, overrideAnnotation.createIfMissing() ?
+				BeanOverrideStrategy.REPLACE_OR_CREATE_DEFINITION :
+				BeanOverrideStrategy.REPLACE_DEFINITION,
+				QualifierMetadata.forField(field, ExampleBeanOverrideAnnotation.class));
+		this.fieldName = field.getName();
 		this.method = findMethod(field, overrideAnnotation.value());
 		this.methodName = overrideAnnotation.value();
 		this.beanName = overrideAnnotation.beanName();
@@ -88,10 +97,11 @@ class TestOverrideMetadata extends OverrideMetadata {
 
 	//Used to trigger duplicate detection in parser test
 	TestOverrideMetadata(String duplicateTrigger) {
-		super(null, null, null);
+		super(null, null, (QualifierMetadata) null);
 		this.method = null;
 		this.methodName = duplicateTrigger;
 		this.beanName = duplicateTrigger;
+		this.fieldName = duplicateTrigger;
 	}
 
 	@Override
@@ -99,7 +109,7 @@ class TestOverrideMetadata extends OverrideMetadata {
 		if (StringUtils.hasText(this.beanName)) {
 			return this.beanName;
 		}
-		return getField().getName();
+		return this.fieldName;
 	}
 
 	String getAnnotationMethodName() {
@@ -122,12 +132,16 @@ class TestOverrideMetadata extends OverrideMetadata {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this.method == null) {
-			return obj instanceof TestOverrideMetadata tem &&
-					tem.beanName != null &&
-					tem.beanName.startsWith(ExampleBeanOverrideAnnotation.DUPLICATE_TRIGGER);
+		if (!(obj instanceof TestOverrideMetadata that)) {
+			return false;
 		}
-		return super.equals(obj);
+		if (this.method == null) {
+			return that.beanName != null &&
+					that.beanName.startsWith(ExampleBeanOverrideAnnotation.DUPLICATE_TRIGGER);
+		}
+		return super.equals(obj) &&
+				Objects.equals(this.methodName, that.methodName) &&
+				Objects.equals(this.beanName, that.beanName);
 	}
 
 	@Override
@@ -135,7 +149,7 @@ class TestOverrideMetadata extends OverrideMetadata {
 		if (this.method == null) {
 			return ExampleBeanOverrideAnnotation.DUPLICATE_TRIGGER.hashCode();
 		}
-		return super.hashCode();
+		return Objects.hash(super.hashCode(), this.methodName, this.beanName);
 	}
 
 	@Override

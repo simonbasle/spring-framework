@@ -40,14 +40,14 @@ class BeanOverrideParsingUtilsTests {
 
 	@Test
 	void findsOnField() {
-		assertThat(BeanOverrideParsingUtils.parse(SingleAnnotationOnField.class))
+		assertThat(BeanOverrideParsingUtils.parse(SingleAnnotationOnField.class).keySet())
 				.map(Object::toString)
 				.containsExactly("onField");
 	}
 
 	@Test
 	void allowsMultipleProcessorsOnDifferentElements() {
-		assertThat(BeanOverrideParsingUtils.parse(AnnotationsOnMultipleFields.class))
+		assertThat(BeanOverrideParsingUtils.parse(AnnotationsOnMultipleFields.class).keySet())
 				.map(Object::toString)
 				.containsExactlyInAnyOrder("onField1", "onField2");
 	}
@@ -62,7 +62,7 @@ class BeanOverrideParsingUtilsTests {
 
 	@Test
 	void keepsFirstOccurrenceOfEqualMetadata() {
-		assertThat(BeanOverrideParsingUtils.parse(DuplicateConf.class))
+		assertThat(BeanOverrideParsingUtils.parse(DuplicateConf.class).keySet())
 				.map(Object::toString)
 				.containsExactly("{DUPLICATE-v1}");
 	}
