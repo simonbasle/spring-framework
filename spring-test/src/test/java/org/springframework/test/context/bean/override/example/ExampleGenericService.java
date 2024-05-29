@@ -16,17 +16,14 @@
 
 package org.springframework.test.context.bean.override.example;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+/**
+ * Example service interface for mocking tests.
+ *
+ * @param <T> the generic type
+ * @author Phillip Webb
+ */
+public interface ExampleGenericService<T> {
 
-import org.springframework.beans.factory.annotation.Qualifier;
+	T greeting();
 
-@Target({ElementType.FIELD, ElementType.METHOD, ElementType.TYPE, ElementType.PARAMETER})
-@Retention(RetentionPolicy.RUNTIME)
-@Inherited
-@Qualifier
-public @interface CustomQualifier {
 }

@@ -16,17 +16,26 @@
 
 package org.springframework.test.context.bean.override.example;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 
-import org.springframework.beans.factory.annotation.Qualifier;
+/**
+ * Example bean for mocking tests that calls {@link org.springframework.test.context.bean.override.boot.mockito.example.ExampleService}.
+ *
+ * @author Phillip Webb
+ */
+public class ExampleServiceCaller {
 
-@Target({ElementType.FIELD, ElementType.METHOD, ElementType.TYPE, ElementType.PARAMETER})
-@Retention(RetentionPolicy.RUNTIME)
-@Inherited
-@Qualifier
-public @interface CustomQualifier {
+	private final ExampleService service;
+
+	public ExampleServiceCaller(ExampleService service) {
+		this.service = service;
+	}
+
+	public ExampleService getService() {
+		return this.service;
+	}
+
+	public String sayGreeting() {
+		return "I say " + this.service.greeting();
+	}
+
 }

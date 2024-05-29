@@ -16,17 +16,17 @@
 
 package org.springframework.test.context.bean.override.example;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+/**
+ * An {@link ExampleService} that uses a custom qualifier.
+ *
+ * @author Andy Wilkinson
+ */
+@CustomQualifier
+public class CustomQualifierExampleService implements ExampleService {
 
-import org.springframework.beans.factory.annotation.Qualifier;
+	@Override
+	public String greeting() {
+		return "CustomQualifier";
+	}
 
-@Target({ElementType.FIELD, ElementType.METHOD, ElementType.TYPE, ElementType.PARAMETER})
-@Retention(RetentionPolicy.RUNTIME)
-@Inherited
-@Qualifier
-public @interface CustomQualifier {
 }

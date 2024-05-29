@@ -16,17 +16,15 @@
 
 package org.springframework.test.context.bean.override.example;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+/**
+ * Example service implementation for spy tests.
+ *
+ * @author Phillip Webb
+ */
+public class SimpleExampleService extends RealExampleService {
 
-import org.springframework.beans.factory.annotation.Qualifier;
+	public SimpleExampleService() {
+		super("simple");
+	}
 
-@Target({ElementType.FIELD, ElementType.METHOD, ElementType.TYPE, ElementType.PARAMETER})
-@Retention(RetentionPolicy.RUNTIME)
-@Inherited
-@Qualifier
-public @interface CustomQualifier {
 }

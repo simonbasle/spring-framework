@@ -16,17 +16,25 @@
 
 package org.springframework.test.context.bean.override.example;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+/**
+ * Example bean for mocking tests that calls {@link ExampleGenericService}.
+ *
+ * @author Phillip Webb
+ */
+public class ExampleGenericStringServiceCaller {
 
-import org.springframework.beans.factory.annotation.Qualifier;
+	private final ExampleGenericService<String> stringService;
 
-@Target({ElementType.FIELD, ElementType.METHOD, ElementType.TYPE, ElementType.PARAMETER})
-@Retention(RetentionPolicy.RUNTIME)
-@Inherited
-@Qualifier
-public @interface CustomQualifier {
+	public ExampleGenericStringServiceCaller(ExampleGenericService<String> stringService) {
+		this.stringService = stringService;
+	}
+
+	public ExampleGenericService<String> getStringService() {
+		return this.stringService;
+	}
+
+	public String sayGreeting() {
+		return "I say " + this.stringService.greeting();
+	}
+
 }

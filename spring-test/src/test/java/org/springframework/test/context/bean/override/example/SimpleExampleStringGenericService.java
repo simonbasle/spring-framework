@@ -16,17 +16,26 @@
 
 package org.springframework.test.context.bean.override.example;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+/**
+ * Example generic service implementation for spy tests.
+ *
+ * @author Phillip Webb
+ */
+public class SimpleExampleStringGenericService implements ExampleGenericService<String> {
 
-import org.springframework.beans.factory.annotation.Qualifier;
+	private final String greeting;
 
-@Target({ElementType.FIELD, ElementType.METHOD, ElementType.TYPE, ElementType.PARAMETER})
-@Retention(RetentionPolicy.RUNTIME)
-@Inherited
-@Qualifier
-public @interface CustomQualifier {
+	public SimpleExampleStringGenericService() {
+		this("simple");
+	}
+
+	public SimpleExampleStringGenericService(String greeting) {
+		this.greeting = greeting;
+	}
+
+	@Override
+	public String greeting() {
+		return this.greeting;
+	}
+
 }
