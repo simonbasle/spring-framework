@@ -14,28 +14,24 @@
  * limitations under the License.
  */
 
-package org.springframework.test.context.bean.override.example;
+package org.springframework.test.context.bean.override.mockito;
 
+import org.junit.jupiter.api.Test;
+import org.mockito.internal.configuration.plugins.Plugins;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Example bean for mocking tests that calls {@link ExampleService}.
+ * Integration tests for {@code SpringBootMockResolver}.
  *
- * @author Phillip Webb
+ * @author Andy Wilkinson
  */
-public class ExampleServiceCaller {
-
-	private final ExampleService service;
-
-	public ExampleServiceCaller(ExampleService service) {
-		this.service = service;
-	}
-
-	public ExampleService getService() {
-		return this.service;
-	}
-
-	public String sayGreeting() {
-		return "I say " + this.service.greeting();
-	}
+//FIXME introduce the resolver?
+class SpringBootMockResolverIntegrationTests {
+//
+//	@Test
+//	void customMockResolverIsRegisteredWithMockito() {
+//		assertThat(Plugins.getMockResolvers()).hasOnlyElementsOfType(SpringBootMockResolver.class);
+//	}
 
 }

@@ -14,28 +14,14 @@
  * limitations under the License.
  */
 
-package org.springframework.test.context.bean.override.example;
-
+package org.springframework.test.context.bean.override.mockito;
 
 /**
- * Example bean for mocking tests that calls {@link ExampleService}.
+ * Concrete implementation of {@link AbstractMockitoBeanOnGenericTests}.
  *
- * @author Phillip Webb
+ * @author Madhura Bhave
  */
-public class ExampleServiceCaller {
-
-	private final ExampleService service;
-
-	public ExampleServiceCaller(ExampleService service) {
-		this.service = service;
-	}
-
-	public ExampleService getService() {
-		return this.service;
-	}
-
-	public String sayGreeting() {
-		return "I say " + this.service.greeting();
-	}
+class MockitoBeanOnGenericExtensionTests extends
+		AbstractMockitoBeanOnGenericTests<AbstractMockitoBeanOnGenericTests.ThingImpl, AbstractMockitoBeanOnGenericTests.SomethingImpl> {
 
 }
