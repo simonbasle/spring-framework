@@ -22,10 +22,13 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.core.ResolvableType;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.lang.NonNull;
+import org.springframework.test.context.bean.override.OverrideMetadataTests;
 import org.springframework.test.context.bean.override.convention.TestBeanOverrideProcessor.TestBeanOverrideMetadata;
 import org.springframework.test.context.bean.override.example.ExampleService;
+import org.springframework.test.context.bean.override.example.RealExampleService;
 import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -151,6 +154,50 @@ class TestBeanOverrideProcessorTests {
 		assertThatIllegalStateException().isThrownBy(() -> processor.createMetadata(badAnnotation, clazz, field))
 				.withMessage("Invalid annotation passed to TestBeanOverrideProcessor: expected @TestBean" +
 								" on field %s.%s", field.getDeclaringClass().getName(), field.getName());
+	}
+
+	@Test
+	void testBeanMetadataHashCodeAndEqualsShouldWorkOnDifferentClassesAndSameMethods() {
+		ResolvableType beanType = ResolvableType.forClass(ExampleService.class);
+		Method method = ReflectionUtils.findMethod(FirstCase.class, "factoryMethod");
+		TestBean annotation = AnnotationUtils.getAnnotation(ReflectionUtils.findField(FirstCase.class, "service"),
+				TestBean.class);
+
+		OverrideMetadataTests.hashCodeAndEqualsShouldWorkOnDifferentClasses(f -> new TestBeanOverrideMetadata(f, method, annotation, beanType));
+	}
+
+	@Test
+	void testBeanMetadataHashCodeAndEqualsShouldWorkOnDifferentClassesAndMethods() {
+		ResolvableType beanType = ResolvableType.forClass(ExampleService.class);
+		Method method1 = ReflectionUtils.findMethod(FirstCase.class, "factoryMethod");
+		Method method2 = ReflectionUtils.findMethod(OtherCase.class, "factoryMethod");
+		TestBean annotation = AnnotationUtils.getAnnotation(ReflectionUtils.findField(FirstCase.class, "service"),
+				TestBean.class);
+
+		assertThat(method1).isNotNull().isNotEqualTo(method2);
+		assertThat(method2).isNotNull();
+
+		OverrideMetadataTests.hashCodeAndEqualsShouldWorkOnDifferentClasses(f -> {
+				Method method = (f.getDeclaringClass().getName().endsWith("B")) ?
+				method2 : method1;
+				return new TestBeanOverrideMetadata(f, method, annotation, beanType);
+		});
+	}
+
+	private static class FirstCase {
+
+		@TestBean(methodName = "factoryMethod")
+		private ExampleService service;
+
+		private static ExampleService factoryMethod() {
+			return new RealExampleService("first case");
+		}
+	}
+
+	private static class OtherCase {
+		private static ExampleService factoryMethod() {
+			return new RealExampleService("other case");
+		}
 	}
 
 

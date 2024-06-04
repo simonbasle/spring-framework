@@ -17,15 +17,21 @@
 package org.springframework.test.context.bean.override;
 
 import java.lang.reflect.Field;
+import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.core.ResolvableType;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
+import org.springframework.test.context.bean.override.example.CustomQualifier;
+import org.springframework.test.context.bean.override.example.ExampleService;
+import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 /**
  * Tests for {@link OverrideMetadata}.
@@ -33,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Simon Baslé
  * @since 6.2
  */
-class OverrideMetadataTests {
+public class OverrideMetadataTests {
 
 	@Test
 	void implicitConfigurations() throws Exception {
@@ -41,6 +47,61 @@ class OverrideMetadataTests {
 		assertThat(metadata.getBeanName()).as("expectedBeanName").isNull();
 	}
 
+	@Test
+	void hashCodeAndEqualsShouldWorkOnDifferentClasses() {
+		ResolvableType beanType = ResolvableType.forClass(ExampleService.class);
+		hashCodeAndEqualsShouldWorkOnDifferentClasses(f -> new ConcreteOverrideMetadata(f, beanType, BeanOverrideStrategy.REPLACE_DEFINITION));
+	}
+
+	public static void hashCodeAndEqualsShouldWorkOnDifferentClasses(Function<Field, OverrideMetadata> metadataFunction) {
+		OverrideMetadata directQualifier1 = metadataFunction.apply(ReflectionUtils.findField(ConfigA.class, "directQualifier"));
+		OverrideMetadata directQualifier2 = metadataFunction.apply(ReflectionUtils.findField(ConfigB.class, "directQualifier"));
+		OverrideMetadata  differentDirectQualifier1 = metadataFunction.apply(ReflectionUtils.findField(ConfigA.class, "differentDirectQualifier"));
+		OverrideMetadata  differentDirectQualifier2 = metadataFunction.apply(ReflectionUtils.findField(ConfigB.class, "differentDirectQualifier"));
+		OverrideMetadata  customQualifier1 = metadataFunction.apply(ReflectionUtils.findField(ConfigA.class, "customQualifier"));
+		OverrideMetadata  customQualifier2 = metadataFunction.apply(ReflectionUtils.findField(ConfigB.class, "customQualifier"));
+
+		assertThat(directQualifier1).hasSameHashCodeAs(directQualifier2);
+		assertThat(differentDirectQualifier1).hasSameHashCodeAs(differentDirectQualifier2);
+		assertThat(customQualifier1).hasSameHashCodeAs(customQualifier2);
+		assertThat(differentDirectQualifier1).isEqualTo(differentDirectQualifier1)
+				.isEqualTo(differentDirectQualifier2)
+				.isNotEqualTo(directQualifier2);
+		assertThat(directQualifier1).isEqualTo(directQualifier1)
+				.isEqualTo(directQualifier2)
+				.isNotEqualTo(differentDirectQualifier1);
+		assertThat(customQualifier1).isEqualTo(customQualifier1)
+				.isEqualTo(customQualifier2)
+				.isNotEqualTo(differentDirectQualifier1);
+	}
+
+	static class ConfigA {
+
+		private ExampleService noQualifier;
+
+		@Qualifier("test")
+		private ExampleService directQualifier;
+
+		@Qualifier("different")
+		private ExampleService differentDirectQualifier;
+
+		@CustomQualifier
+		private ExampleService customQualifier;
+
+	}
+
+	static class ConfigB {
+
+		@Qualifier("test")
+		private ExampleService directQualifier;
+
+		@Qualifier("different")
+		private ExampleService differentDirectQualifier;
+
+		@CustomQualifier
+		private ExampleService customQualifier;
+
+	}
 
 	@NonNull
 	String annotated = "exampleField";

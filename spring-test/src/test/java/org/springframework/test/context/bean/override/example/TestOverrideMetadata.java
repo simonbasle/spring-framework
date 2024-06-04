@@ -22,6 +22,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Objects;
 
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.core.ResolvableType;
@@ -30,6 +31,7 @@ import org.springframework.test.context.bean.override.BeanOverrideStrategy;
 import org.springframework.test.context.bean.override.OverrideMetadata;
 import org.springframework.util.StringUtils;
 
+import static org.springframework.test.context.bean.override.example.ExampleBeanOverrideAnnotation.BY_TYPE;
 import static org.springframework.test.context.bean.override.example.ExampleBeanOverrideAnnotation.DEFAULT_VALUE;
 
 class TestOverrideMetadata extends OverrideMetadata {
@@ -97,6 +99,9 @@ class TestOverrideMetadata extends OverrideMetadata {
 	@Override
 	protected String getBeanName() {
 		if (StringUtils.hasText(this.beanName)) {
+			if (BY_TYPE.equals(this.beanName)) {
+				return null;
+			}
 			return this.beanName;
 		}
 		return getField().getName();
@@ -127,7 +132,10 @@ class TestOverrideMetadata extends OverrideMetadata {
 					tem.beanName != null &&
 					tem.beanName.startsWith(ExampleBeanOverrideAnnotation.DUPLICATE_TRIGGER);
 		}
-		return super.equals(obj);
+		if (!(obj instanceof TestOverrideMetadata tem)) {
+			return false;
+		}
+		return super.equals(obj) && Objects.equals(this.methodName, tem.methodName);
 	}
 
 	@Override
@@ -135,7 +143,7 @@ class TestOverrideMetadata extends OverrideMetadata {
 		if (this.method == null) {
 			return ExampleBeanOverrideAnnotation.DUPLICATE_TRIGGER.hashCode();
 		}
-		return super.hashCode();
+		return Objects.hash(super.hashCode(), this.methodName);
 	}
 
 	@Override

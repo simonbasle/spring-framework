@@ -17,6 +17,7 @@
 package org.springframework.test.context.bean.override;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.Objects;
 
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -124,13 +125,13 @@ public abstract class OverrideMetadata {
 		}
 		OverrideMetadata that = (OverrideMetadata) obj;
 		return Objects.equals(this.strategy, that.strategy) &&
-				Objects.equals(this.field, that.field) &&
-				Objects.equals(this.beanType, that.beanType);
+				Arrays.equals(this.field.getAnnotations(), that.field.getAnnotations()) &&
+				this.beanType.equalsType(that.beanType);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.strategy, this.field, this.beanType);
+		return Objects.hash(this.strategy, Arrays.hashCode(this.field.getAnnotations()), this.beanType.toClass());
 	}
 
 	@Override

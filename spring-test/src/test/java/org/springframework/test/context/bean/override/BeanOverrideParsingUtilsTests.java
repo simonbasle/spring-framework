@@ -21,7 +21,7 @@ import java.lang.reflect.Field;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.test.context.bean.override.example.ExampleBeanOverrideAnnotation;
-import org.springframework.test.context.bean.override.example.TestBeanOverrideMetaAnnotation;
+import org.springframework.test.context.bean.override.example.ExampleBeanOverrideMetaAnnotation;
 import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,14 +40,14 @@ class BeanOverrideParsingUtilsTests {
 
 	@Test
 	void findsOnField() {
-		assertThat(BeanOverrideParsingUtils.parse(SingleAnnotationOnField.class))
+		assertThat(BeanOverrideParsingUtils.parseDistinct(SingleAnnotationOnField.class))
 				.map(Object::toString)
 				.containsExactly("onField");
 	}
 
 	@Test
 	void allowsMultipleProcessorsOnDifferentElements() {
-		assertThat(BeanOverrideParsingUtils.parse(AnnotationsOnMultipleFields.class))
+		assertThat(BeanOverrideParsingUtils.parseDistinct(AnnotationsOnMultipleFields.class))
 				.map(Object::toString)
 				.containsExactlyInAnyOrder("onField1", "onField2");
 	}
@@ -56,16 +56,18 @@ class BeanOverrideParsingUtilsTests {
 	void rejectsMultipleAnnotationsOnSameElement() {
 		Field field = ReflectionUtils.findField(MultipleAnnotationsOnField.class, "message");
 		assertThatRuntimeException()
-				.isThrownBy(() -> BeanOverrideParsingUtils.parse(MultipleAnnotationsOnField.class))
+				.isThrownBy(() -> BeanOverrideParsingUtils.parseDistinct(MultipleAnnotationsOnField.class))
 				.withMessage("Multiple @BeanOverride annotations found on field: " + field);
 	}
 
 	@Test
 	void keepsFirstOccurrenceOfEqualMetadata() {
-		assertThat(BeanOverrideParsingUtils.parse(DuplicateConf.class))
+		assertThat(BeanOverrideParsingUtils.parseDistinct(DuplicateConf.class))
 				.map(Object::toString)
 				.containsExactly("{DUPLICATE-v1}");
 	}
+
+	//FIXME test parseAll
 
 
 	static class SingleAnnotationOnField {
@@ -81,7 +83,7 @@ class BeanOverrideParsingUtilsTests {
 	static class MultipleAnnotationsOnField {
 
 		@ExampleBeanOverrideAnnotation("foo")
-		@TestBeanOverrideMetaAnnotation
+		@ExampleBeanOverrideMetaAnnotation
 		String message;
 
 		static String foo() {

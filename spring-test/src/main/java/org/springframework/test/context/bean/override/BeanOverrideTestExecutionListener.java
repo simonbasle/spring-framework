@@ -74,12 +74,12 @@ public class BeanOverrideTestExecutionListener extends AbstractTestExecutionList
 		if (Boolean.TRUE.equals(
 				testContext.getAttribute(DependencyInjectionTestExecutionListener.REINJECT_DEPENDENCIES_ATTRIBUTE))) {
 
-			postProcessFields(testContext, (testMetadata, postProcessor) -> {
+			postProcessFields(testContext, (testMetadata, registrar) -> {
 				Object testInstance = testMetadata.testInstance;
 				Field field = testMetadata.overrideMetadata.getField();
 				ReflectionUtils.makeAccessible(field);
 				ReflectionUtils.setField(field, testInstance, null);
-				postProcessor.inject(testInstance, testMetadata.overrideMetadata);
+				registrar.inject(testInstance, testMetadata.overrideMetadata);
 			});
 		}
 	}
@@ -90,13 +90,11 @@ public class BeanOverrideTestExecutionListener extends AbstractTestExecutionList
 		Class<?> testClass = testContext.getTestClass();
 		Object testInstance = testContext.getTestInstance();
 
+
 		if (BeanOverrideParsingUtils.hasBeanOverride(testClass)) {
 			BeanOverrideRegistrar registrar =
 					testContext.getApplicationContext().getBean(BeanOverrideRegistrar.class);
-			for (OverrideMetadata metadata : registrar.getOverrideMetadata()) {
-				if (!metadata.getField().getDeclaringClass().isAssignableFrom(testClass)) {
-					continue;
-				}
+			for (OverrideMetadata metadata : BeanOverrideParsingUtils.parseAll(testClass)) {
 				consumer.accept(new TestContextOverrideMetadata(testInstance, metadata), registrar);
 			}
 		}

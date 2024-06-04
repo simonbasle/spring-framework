@@ -190,13 +190,13 @@ class TestBeanOverrideProcessor implements BeanOverrideProcessor {
 				return false;
 			}
 			TestBeanOverrideMetadata that = (TestBeanOverrideMetadata) o;
-			return Objects.equals(this.overrideMethod, that.overrideMethod)
+			return Objects.equals(this.overrideMethod.getName(), that.overrideMethod.getName())
 					&& Objects.equals(this.beanName, that.beanName);
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(super.hashCode(), this.overrideMethod, this.beanName);
+			return Objects.hash(super.hashCode(), this.overrideMethod.getName(), this.beanName);
 		}
 	}
 

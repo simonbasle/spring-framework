@@ -21,9 +21,11 @@ import java.lang.reflect.Field;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.core.ResolvableType;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.lang.Nullable;
 import org.springframework.test.context.bean.override.OverrideMetadata;
+import org.springframework.test.context.bean.override.OverrideMetadataTests;
 import org.springframework.test.context.bean.override.example.ExampleService;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -66,6 +68,20 @@ public class MockitoBeanOverrideProcessorTests {
 				.withMessage("Invalid annotation passed to MockitoBeanOverrideProcessor: expected " +
 						"@MockitoBean/@MockitoSpyBean on field %s.%s", field.getDeclaringClass().getName(),
 						field.getName());
+	}
+
+	@Test
+	void mockitoBeanMetadataHashCodeAndEqualsShouldWorkOnDifferentClasses() {
+		ResolvableType beanType = ResolvableType.forClass(ExampleService.class);
+		OverrideMetadataTests.hashCodeAndEqualsShouldWorkOnDifferentClasses(f ->
+				new MockitoBeanMetadata("", MockReset.AFTER, f, beanType, new Class[0], null, false));
+	}
+
+	@Test
+	void mockitoSpyBeanMetadataHashCodeAndEqualsShouldWorkOnDifferentClasses() {
+		ResolvableType beanType = ResolvableType.forClass(ExampleService.class);
+		OverrideMetadataTests.hashCodeAndEqualsShouldWorkOnDifferentClasses(f ->
+				new MockitoSpyBeanMetadata("", MockReset.AFTER, false, f, beanType));
 	}
 
 	static class MockitoConf {

@@ -18,7 +18,8 @@ package org.springframework.test.context.bean.override;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -64,24 +65,24 @@ abstract class BeanOverrideParsingUtils {
 	/**
 	 * Parse the specified classes for the presence of fields annotated with
 	 * {@link BeanOverride @BeanOverride}, and create an {@link OverrideMetadata}
-	 * for each identified field.
-	 * @param classes the classes to parse
+	 * for each logically identical identified injection point, suitable for
+	 * being used as a key in the TCF context cache.
+	 * @param clazz the classe to parse
+	 * @see #parseAll(Class)
 	 */
-	static Set<OverrideMetadata> parse(Iterable<Class<?>> classes) {
-		Set<OverrideMetadata> result = new LinkedHashSet<>();
-		classes.forEach(c -> ReflectionUtils.doWithFields(c, field -> parseField(field, c, result)));
-		return result;
+	static Set<OverrideMetadata> parseDistinct(Class<?> clazz) {
+		List<OverrideMetadata> all = new LinkedList<>();
+		ReflectionUtils.doWithFields(clazz, field -> parseField(field, clazz, all));
+		return new HashSet<>(all);
 	}
 
-	/**
-	 * Convenience method to parse a single test class.
-	 * @see #parse(Iterable)
-	 */
-	static Set<OverrideMetadata> parse(Class<?> clazz) {
-		return parse(List.of(clazz));
+	static List<OverrideMetadata> parseAll(Class<?> clazz) {
+		List<OverrideMetadata> all = new LinkedList<>();
+		List.of(clazz).forEach(c -> ReflectionUtils.doWithFields(c, field -> parseField(field, c, all)));
+		return all;
 	}
 
-	private static void parseField(Field field, Class<?> testClass, Set<OverrideMetadata> metadataSet) {
+	private static void parseField(Field field, Class<?> testClass, List<OverrideMetadata> metadataList) {
 		AtomicBoolean overrideAnnotationFound = new AtomicBoolean();
 		MergedAnnotations.from(field, DIRECT).stream(BeanOverride.class).forEach(mergedAnnotation -> {
 			MergedAnnotation<?> metaSource = mergedAnnotation.getMetaSource();
@@ -94,7 +95,7 @@ abstract class BeanOverrideParsingUtils {
 			Assert.state(overrideAnnotationFound.compareAndSet(false, true),
 					() -> "Multiple @BeanOverride annotations found on field: " + field);
 			OverrideMetadata metadata = processor.createMetadata(composedAnnotation, testClass, field);
-			metadataSet.add(metadata);
+			metadataList.add(metadata);
 		});
 	}
 

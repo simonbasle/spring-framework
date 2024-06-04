@@ -18,6 +18,7 @@ package org.springframework.test.context.bean.override;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -57,7 +58,8 @@ class BeanOverrideRegistrar implements BeanFactoryAware {
 	 * detected to contain bean overriding annotations
 	 */
 	BeanOverrideRegistrar(Set<Class<?>> classesToParse) {
-		this.overrideMetadata = BeanOverrideParsingUtils.parse(classesToParse);
+		this.overrideMetadata = new LinkedHashSet<>();
+		classesToParse.forEach(c -> this.overrideMetadata.addAll(BeanOverrideParsingUtils.parseDistinct(c)));
 	}
 
 	@Override
