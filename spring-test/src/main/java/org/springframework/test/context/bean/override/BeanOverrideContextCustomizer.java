@@ -58,6 +58,19 @@ class BeanOverrideContextCustomizer implements ContextCustomizer {
 		this.metadata = new LinkedHashSet<>(BeanOverrideParsingUtils.parseAll(detectedClasses));
 	}
 
+	@Override
+	public void customizeContext(ConfigurableApplicationContext context, MergedContextConfiguration mergedConfig) {
+		if (!(context instanceof BeanDefinitionRegistry registry)) {
+			throw new IllegalStateException("Cannot process bean overrides with an ApplicationContext " +
+					"that doesn't implement BeanDefinitionRegistry: " + context.getClass());
+		}
+		registerInfrastructure(registry, this.detectedClasses);
+	}
+
+	Set<OverrideMetadata> getMetadata() {
+		return this.metadata;
+	}
+
 	static void registerInfrastructure(BeanDefinitionRegistry registry, Set<Class<?>> detectedClasses) {
 		addInfrastructureBeanDefinition(registry, BeanOverrideRegistrar.class, REGISTRAR_BEAN_NAME,
 				constructorArgs -> constructorArgs.addIndexedArgumentValue(0, detectedClasses));
@@ -80,15 +93,6 @@ class BeanOverrideContextCustomizer implements ContextCustomizer {
 			constructorArgumentsConsumer.accept(constructorArguments);
 			registry.registerBeanDefinition(beanName, definition);
 		}
-	}
-
-	@Override
-	public void customizeContext(ConfigurableApplicationContext context, MergedContextConfiguration mergedConfig) {
-		if (!(context instanceof BeanDefinitionRegistry registry)) {
-			throw new IllegalStateException("Cannot process bean overrides with an ApplicationContext " +
-					"that doesn't implement BeanDefinitionRegistry: " + context.getClass());
-		}
-		registerInfrastructure(registry, this.detectedClasses);
 	}
 
 	@Override
