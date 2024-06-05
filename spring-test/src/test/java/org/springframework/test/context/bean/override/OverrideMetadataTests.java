@@ -75,7 +75,7 @@ public class OverrideMetadataTests {
 				.isNotEqualTo(differentDirectQualifier1);
 	}
 
-	static class ConfigA {
+	public static class ConfigA {
 
 		private ExampleService noQualifier;
 
@@ -90,7 +90,7 @@ public class OverrideMetadataTests {
 
 	}
 
-	static class ConfigB {
+	public static class ConfigB {
 
 		@Qualifier("test")
 		private ExampleService directQualifier;

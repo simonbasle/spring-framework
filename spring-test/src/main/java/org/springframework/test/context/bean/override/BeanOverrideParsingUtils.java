@@ -67,7 +67,7 @@ abstract class BeanOverrideParsingUtils {
 	 * {@link BeanOverride @BeanOverride}, and create an {@link OverrideMetadata}
 	 * for each logically identical identified injection point, suitable for
 	 * being used as a key in the TCF context cache.
-	 * @param clazz the classe to parse
+	 * @param clazz the class to parse
 	 * @see #parseAll(Class)
 	 */
 	static Set<OverrideMetadata> parseDistinct(Class<?> clazz) {
@@ -77,8 +77,12 @@ abstract class BeanOverrideParsingUtils {
 	}
 
 	static List<OverrideMetadata> parseAll(Class<?> clazz) {
+		return parseAll(List.of(clazz));
+	}
+
+	static List<OverrideMetadata> parseAll(Iterable<Class<?>> classes) {
 		List<OverrideMetadata> all = new LinkedList<>();
-		List.of(clazz).forEach(c -> ReflectionUtils.doWithFields(c, field -> parseField(field, c, all)));
+		classes.forEach(c -> ReflectionUtils.doWithFields(c, field -> parseField(field, c, all)));
 		return all;
 	}
 

@@ -25,7 +25,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.lang.NonNull;
+import org.springframework.test.context.bean.override.OverrideMetadata;
 import org.springframework.test.context.bean.override.OverrideMetadataTests;
+import org.springframework.test.context.bean.override.OverrideMetadataTests.ConfigA;
+import org.springframework.test.context.bean.override.OverrideMetadataTests.ConfigB;
 import org.springframework.test.context.bean.override.convention.TestBeanOverrideProcessor.TestBeanOverrideMetadata;
 import org.springframework.test.context.bean.override.example.ExampleService;
 import org.springframework.test.context.bean.override.example.RealExampleService;
@@ -167,7 +170,7 @@ class TestBeanOverrideProcessorTests {
 	}
 
 	@Test
-	void testBeanMetadataHashCodeAndEqualsShouldWorkOnDifferentClassesAndMethods() {
+	void testBeanMetadataHashCodeAndEqualsShouldDivergeForDifferentMethods() {
 		ResolvableType beanType = ResolvableType.forClass(ExampleService.class);
 		Method method1 = ReflectionUtils.findMethod(FirstCase.class, "factoryMethod");
 		Method method2 = ReflectionUtils.findMethod(OtherCase.class, "factoryMethod");
@@ -177,11 +180,31 @@ class TestBeanOverrideProcessorTests {
 		assertThat(method1).isNotNull().isNotEqualTo(method2);
 		assertThat(method2).isNotNull();
 
-		OverrideMetadataTests.hashCodeAndEqualsShouldWorkOnDifferentClasses(f -> {
-				Method method = (f.getDeclaringClass().getName().endsWith("B")) ?
-				method2 : method1;
-				return new TestBeanOverrideMetadata(f, method, annotation, beanType);
-		});
+		OverrideMetadata directQualifier1 = new TestBeanOverrideMetadata(ReflectionUtils.findField(ConfigA.class, "directQualifier"),
+				method1, annotation, beanType);
+		OverrideMetadata directQualifier2 = new TestBeanOverrideMetadata(ReflectionUtils.findField(ConfigB.class, "directQualifier"),
+				method2, annotation, beanType);
+		OverrideMetadata  differentDirectQualifier1 = new TestBeanOverrideMetadata(ReflectionUtils.findField(ConfigA.class, "differentDirectQualifier"),
+				method1, annotation, beanType);
+		OverrideMetadata  differentDirectQualifier2 = new TestBeanOverrideMetadata(ReflectionUtils.findField(ConfigB.class, "differentDirectQualifier"),
+				method2, annotation, beanType);
+		OverrideMetadata  customQualifier1 = new TestBeanOverrideMetadata(ReflectionUtils.findField(ConfigA.class, "customQualifier"),
+				method1, annotation, beanType);
+		OverrideMetadata  customQualifier2 = new TestBeanOverrideMetadata(ReflectionUtils.findField(ConfigB.class, "customQualifier"),
+				method2, annotation, beanType);
+
+		assertThat(directQualifier1).doesNotHaveSameHashCodeAs(directQualifier2);
+		assertThat(differentDirectQualifier1).doesNotHaveSameHashCodeAs(differentDirectQualifier2);
+		assertThat(customQualifier1).doesNotHaveSameHashCodeAs(customQualifier2);
+		assertThat(differentDirectQualifier1).isEqualTo(differentDirectQualifier1)
+				.isNotEqualTo(differentDirectQualifier2)
+				.isNotEqualTo(directQualifier2);
+		assertThat(directQualifier1).isEqualTo(directQualifier1)
+				.isNotEqualTo(directQualifier2)
+				.isNotEqualTo(differentDirectQualifier1);
+		assertThat(customQualifier1).isEqualTo(customQualifier1)
+				.isNotEqualTo(customQualifier2)
+				.isNotEqualTo(differentDirectQualifier1);
 	}
 
 	private static class FirstCase {

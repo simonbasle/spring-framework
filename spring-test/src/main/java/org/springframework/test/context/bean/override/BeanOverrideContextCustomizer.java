@@ -16,6 +16,7 @@
 
 package org.springframework.test.context.bean.override;
 
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -50,9 +51,11 @@ class BeanOverrideContextCustomizer implements ContextCustomizer {
 
 
 	private final Set<Class<?>> detectedClasses;
+	private final Set<OverrideMetadata> metadata;
 
 	BeanOverrideContextCustomizer(Set<Class<?>> detectedClasses) {
 		this.detectedClasses = detectedClasses;
+		this.metadata = new LinkedHashSet<>(BeanOverrideParsingUtils.parseAll(detectedClasses));
 	}
 
 	static void registerInfrastructure(BeanDefinitionRegistry registry, Set<Class<?>> detectedClasses) {
@@ -97,12 +100,12 @@ class BeanOverrideContextCustomizer implements ContextCustomizer {
 			return false;
 		}
 		BeanOverrideContextCustomizer other = (BeanOverrideContextCustomizer) obj;
-		return this.detectedClasses.equals(other.detectedClasses);
+		return this.metadata.equals(other.metadata);
 	}
 
 	@Override
 	public int hashCode() {
-		return this.detectedClasses.hashCode();
+		return this.metadata.hashCode();
 	}
 
 }

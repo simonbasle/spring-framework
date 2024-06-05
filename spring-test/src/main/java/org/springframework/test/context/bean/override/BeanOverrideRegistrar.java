@@ -58,8 +58,7 @@ class BeanOverrideRegistrar implements BeanFactoryAware {
 	 * detected to contain bean overriding annotations
 	 */
 	BeanOverrideRegistrar(Set<Class<?>> classesToParse) {
-		this.overrideMetadata = new LinkedHashSet<>();
-		classesToParse.forEach(c -> this.overrideMetadata.addAll(BeanOverrideParsingUtils.parseDistinct(c)));
+		this.overrideMetadata = new LinkedHashSet<>(BeanOverrideParsingUtils.parseAll(classesToParse));
 	}
 
 	@Override
