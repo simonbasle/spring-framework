@@ -76,8 +76,8 @@ class TestBeanOverrideProcessorTests {
 		assertThatIllegalStateException()
 				.isThrownBy(() -> findTestBeanFactoryMethod(clazz, returnType, "example1", "example3"))
 				.withMessage("""
-						Failed to find a static test bean factory method in %s with return type %s \
-						whose name matches one of the supported candidates %s""",
+								Failed to find a static test bean factory method in %s with return type %s \
+								whose name matches one of the supported candidates %s""",
 						clazz.getName(), returnType.getName(), List.of("example1", "example3"));
 	}
 
@@ -91,7 +91,7 @@ class TestBeanOverrideProcessorTests {
 				.withMessage("""
 						Found %d competing static test bean factory methods in %s with return type %s \
 						whose name matches one of the supported candidates %s""".formatted(
-								2, clazz.getName(), returnType.getName(), List.of("example2", "example4")));
+						2, clazz.getName(), returnType.getName(), List.of("example2", "example4")));
 	}
 
 	@Test
@@ -113,8 +113,8 @@ class TestBeanOverrideProcessorTests {
 		assertThatIllegalStateException()
 				.isThrownBy(() -> processor.createMetadata(overrideAnnotation, clazz, field))
 				.withMessage("""
-						Failed to find a static test bean factory method in %s with return type %s \
-						whose name matches one of the supported candidates %s""",
+								Failed to find a static test bean factory method in %s with return type %s \
+								whose name matches one of the supported candidates %s""",
 						clazz.getName(), returnType.getName(), List.of("explicit1"));
 	}
 
@@ -140,10 +140,10 @@ class TestBeanOverrideProcessorTests {
 
 		TestBeanOverrideProcessor processor = new TestBeanOverrideProcessor();
 		assertThatIllegalStateException().isThrownBy(() -> processor.createMetadata(
-				overrideAnnotation, clazz, field))
+						overrideAnnotation, clazz, field))
 				.withMessage("""
-						Failed to find a static test bean factory method in %s with return type %s \
-						whose name matches one of the supported candidates %s""",
+								Failed to find a static test bean factory method in %s with return type %s \
+								whose name matches one of the supported candidates %s""",
 						clazz.getName(), returnType.getName(), List.of("fieldTestOverride", "someFieldTestOverride"));
 	}
 
@@ -156,7 +156,7 @@ class TestBeanOverrideProcessorTests {
 		TestBeanOverrideProcessor processor = new TestBeanOverrideProcessor();
 		assertThatIllegalStateException().isThrownBy(() -> processor.createMetadata(badAnnotation, clazz, field))
 				.withMessage("Invalid annotation passed to TestBeanOverrideProcessor: expected @TestBean" +
-								" on field %s.%s", field.getDeclaringClass().getName(), field.getName());
+						" on field %s.%s", field.getDeclaringClass().getName(), field.getName());
 	}
 
 	@Test
@@ -184,13 +184,13 @@ class TestBeanOverrideProcessorTests {
 				method1, annotation, beanType);
 		OverrideMetadata directQualifier2 = new TestBeanOverrideMetadata(ReflectionUtils.findField(ConfigB.class, "directQualifier"),
 				method2, annotation, beanType);
-		OverrideMetadata  differentDirectQualifier1 = new TestBeanOverrideMetadata(ReflectionUtils.findField(ConfigA.class, "differentDirectQualifier"),
+		OverrideMetadata differentDirectQualifier1 = new TestBeanOverrideMetadata(ReflectionUtils.findField(ConfigA.class, "differentDirectQualifier"),
 				method1, annotation, beanType);
-		OverrideMetadata  differentDirectQualifier2 = new TestBeanOverrideMetadata(ReflectionUtils.findField(ConfigB.class, "differentDirectQualifier"),
+		OverrideMetadata differentDirectQualifier2 = new TestBeanOverrideMetadata(ReflectionUtils.findField(ConfigB.class, "differentDirectQualifier"),
 				method2, annotation, beanType);
-		OverrideMetadata  customQualifier1 = new TestBeanOverrideMetadata(ReflectionUtils.findField(ConfigA.class, "customQualifier"),
+		OverrideMetadata customQualifier1 = new TestBeanOverrideMetadata(ReflectionUtils.findField(ConfigA.class, "customQualifier"),
 				method1, annotation, beanType);
-		OverrideMetadata  customQualifier2 = new TestBeanOverrideMetadata(ReflectionUtils.findField(ConfigB.class, "customQualifier"),
+		OverrideMetadata customQualifier2 = new TestBeanOverrideMetadata(ReflectionUtils.findField(ConfigB.class, "customQualifier"),
 				method2, annotation, beanType);
 
 		assertThat(directQualifier1).doesNotHaveSameHashCodeAs(directQualifier2);
