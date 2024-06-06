@@ -204,7 +204,7 @@ class BeanOverrideBeanFactoryPostProcessorTests {
 
 	private AnnotationConfigApplicationContext createContext(Class<?> testClass) {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-		Set<OverrideMetadata> metadata = new LinkedHashSet<>(BeanOverrideParsingUtils.parseAll(testClass));
+		Set<OverrideMetadata> metadata = new LinkedHashSet<>(OverrideMetadata.forTestClass(testClass));
 		new BeanOverrideContextCustomizer(metadata).customizeContext(context, mock(MergedContextConfiguration.class));
 		return context;
 	}

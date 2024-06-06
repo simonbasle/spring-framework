@@ -29,7 +29,6 @@ import org.springframework.test.context.bean.override.OverrideMetadata;
 import org.springframework.test.context.bean.override.OverrideMetadataTests;
 import org.springframework.test.context.bean.override.OverrideMetadataTests.ConfigA;
 import org.springframework.test.context.bean.override.OverrideMetadataTests.ConfigB;
-import org.springframework.test.context.bean.override.convention.TestBeanOverrideProcessor.TestBeanOverrideMetadata;
 import org.springframework.test.context.bean.override.example.ExampleService;
 import org.springframework.test.context.bean.override.example.RealExampleService;
 import org.springframework.util.ReflectionUtils;
@@ -76,8 +75,8 @@ class TestBeanOverrideProcessorTests {
 		assertThatIllegalStateException()
 				.isThrownBy(() -> findTestBeanFactoryMethod(clazz, returnType, "example1", "example3"))
 				.withMessage("""
-								Failed to find a static test bean factory method in %s with return type %s \
-								whose name matches one of the supported candidates %s""",
+						Failed to find a static test bean factory method in %s with return type %s \
+						whose name matches one of the supported candidates %s""",
 						clazz.getName(), returnType.getName(), List.of("example1", "example3"));
 	}
 
@@ -91,7 +90,7 @@ class TestBeanOverrideProcessorTests {
 				.withMessage("""
 						Found %d competing static test bean factory methods in %s with return type %s \
 						whose name matches one of the supported candidates %s""".formatted(
-						2, clazz.getName(), returnType.getName(), List.of("example2", "example4")));
+								2, clazz.getName(), returnType.getName(), List.of("example2", "example4")));
 	}
 
 	@Test
@@ -113,8 +112,8 @@ class TestBeanOverrideProcessorTests {
 		assertThatIllegalStateException()
 				.isThrownBy(() -> processor.createMetadata(overrideAnnotation, clazz, field))
 				.withMessage("""
-								Failed to find a static test bean factory method in %s with return type %s \
-								whose name matches one of the supported candidates %s""",
+						Failed to find a static test bean factory method in %s with return type %s \
+						whose name matches one of the supported candidates %s""",
 						clazz.getName(), returnType.getName(), List.of("explicit1"));
 	}
 
@@ -140,10 +139,10 @@ class TestBeanOverrideProcessorTests {
 
 		TestBeanOverrideProcessor processor = new TestBeanOverrideProcessor();
 		assertThatIllegalStateException().isThrownBy(() -> processor.createMetadata(
-						overrideAnnotation, clazz, field))
+				overrideAnnotation, clazz, field))
 				.withMessage("""
-								Failed to find a static test bean factory method in %s with return type %s \
-								whose name matches one of the supported candidates %s""",
+						Failed to find a static test bean factory method in %s with return type %s \
+						whose name matches one of the supported candidates %s""",
 						clazz.getName(), returnType.getName(), List.of("fieldTestOverride", "someFieldTestOverride"));
 	}
 
@@ -156,7 +155,7 @@ class TestBeanOverrideProcessorTests {
 		TestBeanOverrideProcessor processor = new TestBeanOverrideProcessor();
 		assertThatIllegalStateException().isThrownBy(() -> processor.createMetadata(badAnnotation, clazz, field))
 				.withMessage("Invalid annotation passed to TestBeanOverrideProcessor: expected @TestBean" +
-						" on field %s.%s", field.getDeclaringClass().getName(), field.getName());
+								" on field %s.%s", field.getDeclaringClass().getName(), field.getName());
 	}
 
 	@Test

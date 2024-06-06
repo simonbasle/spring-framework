@@ -49,7 +49,7 @@ class BeanOverrideContextCustomizerFactory implements ContextCustomizerFactory {
 	}
 
 	private void findOverrideMetadata(Class<?> testClass, Set<OverrideMetadata> metadata) {
-		List<OverrideMetadata> overrideMetadata = BeanOverrideParsingUtils.parseAll(testClass);
+		List<OverrideMetadata> overrideMetadata = OverrideMetadata.forTestClass(testClass);
 		metadata.addAll(overrideMetadata);
 		if (TestContextAnnotationUtils.searchEnclosingClass(testClass)) {
 			findOverrideMetadata(testClass.getEnclosingClass(), metadata);

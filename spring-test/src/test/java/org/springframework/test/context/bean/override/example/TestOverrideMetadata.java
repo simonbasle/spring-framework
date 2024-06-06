@@ -97,7 +97,7 @@ class TestOverrideMetadata extends OverrideMetadata {
 	}
 
 	@Override
-	protected String getBeanName() {
+	public String getBeanName() {
 		if (StringUtils.hasText(this.beanName)) {
 			if (BY_TYPE.equals(this.beanName)) {
 				return null;

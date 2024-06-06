@@ -17,6 +17,7 @@
 package org.springframework.test.context.bean.override;
 
 import java.lang.reflect.Field;
+import java.util.List;
 import java.util.function.BiConsumer;
 
 import org.springframework.test.context.TestContext;
@@ -90,11 +91,11 @@ public class BeanOverrideTestExecutionListener extends AbstractTestExecutionList
 		Class<?> testClass = testContext.getTestClass();
 		Object testInstance = testContext.getTestInstance();
 
-
-		if (BeanOverrideParsingUtils.hasBeanOverride(testClass)) {
+		List<OverrideMetadata> metadataForFields = OverrideMetadata.forTestClass(testClass);
+		if (!metadataForFields.isEmpty()) {
 			BeanOverrideRegistrar registrar =
 					testContext.getApplicationContext().getBean(BeanOverrideRegistrar.class);
-			for (OverrideMetadata metadata : BeanOverrideParsingUtils.parseAll(testClass)) {
+			for (OverrideMetadata metadata : metadataForFields) {
 				consumer.accept(new TestContextOverrideMetadata(testInstance, metadata), registrar);
 			}
 		}

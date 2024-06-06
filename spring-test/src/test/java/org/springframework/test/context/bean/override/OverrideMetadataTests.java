@@ -16,7 +16,14 @@
 
 package org.springframework.test.context.bean.override;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.lang.reflect.Field;
+import java.util.HashSet;
+import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
@@ -24,13 +31,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.core.ResolvableType;
-import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
+import org.springframework.test.context.bean.override.convention.TestBean;
 import org.springframework.test.context.bean.override.example.CustomQualifier;
 import org.springframework.test.context.bean.override.example.ExampleService;
 import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 /**
  * Tests for {@link OverrideMetadata}.
@@ -40,16 +48,61 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class OverrideMetadataTests {
 
+	String annotated = "exampleField";
+
 	@Test
-	void implicitConfigurations() throws Exception {
-		OverrideMetadata metadata = exampleOverride();
-		assertThat(metadata.getBeanName()).as("expectedBeanName").isNull();
+	void forTestClassWithSingleField() {
+		List<OverrideMetadata> overrideMetadata = OverrideMetadata.forTestClass(SingleAnnotation.class);
+		assertThat(overrideMetadata).singleElement().satisfies(hasTestBeanMetadata(
+				field(SingleAnnotation.class, "message"), String.class, null));
+	}
+
+	@Test
+	void forTestClassWithSingleFieldWithBeanName() {
+		List<OverrideMetadata> overrideMetadata = OverrideMetadata.forTestClass(SingleAnnotationWithName.class);
+		assertThat(overrideMetadata).singleElement().satisfies(hasTestBeanMetadata(
+				field(SingleAnnotationWithName.class, "message"), String.class, "messageBean"));
+	}
+
+	@Test
+	void forTestClassWithMultipleFields() {
+		List<OverrideMetadata> overrideMetadata = OverrideMetadata.forTestClass(MultipleAnnotations.class);
+		assertThat(overrideMetadata).hasSize(2)
+				.anySatisfy(hasTestBeanMetadata(
+						field(MultipleAnnotations.class, "message"), String.class, null))
+				.anySatisfy(hasTestBeanMetadata(
+						field(MultipleAnnotations.class, "counter"), Integer.class, null));
+	}
+
+	@Test
+	void forTestClassWithMultipleFieldsSameMetadata() {
+		List<OverrideMetadata> overrideMetadata = OverrideMetadata.forTestClass(MultipleAnnotationsDuplicate.class);
+		assertThat(overrideMetadata).hasSize(2)
+				.anySatisfy(hasTestBeanMetadata(
+						field(MultipleAnnotationsDuplicate.class, "message1"), String.class, null))
+				.anySatisfy(hasTestBeanMetadata(
+						field(MultipleAnnotationsDuplicate.class, "message2"), String.class, null));
+		assertThat(new HashSet<>(overrideMetadata)).hasSize(1);
+	}
+
+	@Test
+	void forTestClassWithDifferentOverrideMetadataOnSameField() {
+		Field faultyField = field(MultipleAnnotationsOnSameField.class, "message");
+		assertThatIllegalStateException()
+				.isThrownBy(() -> OverrideMetadata.forTestClass(MultipleAnnotationsOnSameField.class))
+				.withMessageStartingWith("Multiple @BeanOverride annotations found")
+				.withMessageContaining(faultyField.toString());
+	}
+
+	@Test
+	void getBeanNameIsNullByDefault() {
+		OverrideMetadata metadata = new DummyOverrideMetadata(field(getClass(), "annotated"), String.class);
+		assertThat(metadata.getBeanName()).isNull();
 	}
 
 	@Test
 	void hashCodeAndEqualsShouldWorkOnDifferentClasses() {
-		ResolvableType beanType = ResolvableType.forClass(ExampleService.class);
-		hashCodeAndEqualsShouldWorkOnDifferentClasses(f -> new ConcreteOverrideMetadata(f, beanType, BeanOverrideStrategy.REPLACE_DEFINITION));
+		hashCodeAndEqualsShouldWorkOnDifferentClasses(f -> new DummyOverrideMetadata(f, ExampleService.class));
 	}
 
 	public static void hashCodeAndEqualsShouldWorkOnDifferentClasses(Function<Field, OverrideMetadata> metadataFunction) {
@@ -72,6 +125,92 @@ public class OverrideMetadataTests {
 		assertThat(customQualifier1).isEqualTo(customQualifier1)
 				.isEqualTo(customQualifier2)
 				.isNotEqualTo(differentDirectQualifier1);
+	}
+
+	private Field field(Class<?> target, String fieldName) {
+		Field field = ReflectionUtils.findField(target, fieldName);
+		assertThat(field).isNotNull();
+		return field;
+	}
+
+	private Consumer<OverrideMetadata> hasTestBeanMetadata(Field field, Class<?> beanType, @Nullable String beanName) {
+		return hasOverrideMetadata(field, beanType, BeanOverrideStrategy.REPLACE_DEFINITION, beanName);
+	}
+
+	private Consumer<OverrideMetadata> hasOverrideMetadata(Field field, Class<?> beanType, BeanOverrideStrategy strategy, @Nullable String beanName) {
+		return metadata -> {
+			assertThat(metadata.getField()).isEqualTo(field);
+			assertThat(metadata.getBeanType().toClass()).isEqualTo(beanType);
+			assertThat(metadata.getStrategy()).isEqualTo(strategy);
+			assertThat(metadata.getBeanName()).isEqualTo(beanName);
+		};
+	}
+
+	@Target(ElementType.FIELD)
+	@Retention(RetentionPolicy.RUNTIME)
+	@TestBean(methodName = "counter")
+	public @interface CounterTestBean { }
+
+
+	static class SingleAnnotation {
+
+		@TestBean(methodName = "onField")
+		String message;
+
+		static String onField() {
+			return "OK";
+		}
+	}
+
+	static class SingleAnnotationWithName {
+
+		@TestBean(name = "messageBean")
+		String message;
+
+		static String messageTestOverride() {
+			return "OK";
+		}
+	}
+
+	static class MultipleAnnotations {
+
+		@TestBean(methodName = "message")
+		String message;
+
+		@TestBean(methodName = "counter")
+		Integer counter;
+
+		static String message() {
+			return "OK";
+		}
+
+		static Integer counter() {
+			return 42;
+		}
+	}
+
+	static class MultipleAnnotationsDuplicate {
+
+		@TestBean(methodName = "message")
+		String message1;
+
+		@TestBean(methodName = "message")
+		String message2;
+
+		static String message() {
+			return "OK";
+		}
+	}
+
+	static class MultipleAnnotationsOnSameField {
+
+		@CounterTestBean()
+		@TestBean(methodName = "foo")
+		String message;
+
+		static String foo() {
+			return "foo";
+		}
 	}
 
 	public static class ConfigA {
@@ -102,21 +241,11 @@ public class OverrideMetadataTests {
 
 	}
 
-	@NonNull
-	String annotated = "exampleField";
 
-	private static OverrideMetadata exampleOverride() throws Exception {
-		Field field = OverrideMetadataTests.class.getDeclaredField("annotated");
-		return new ConcreteOverrideMetadata(field, ResolvableType.forClass(String.class),
-				BeanOverrideStrategy.REPLACE_DEFINITION);
-	}
+	static class DummyOverrideMetadata extends OverrideMetadata {
 
-	static class ConcreteOverrideMetadata extends OverrideMetadata {
-
-		ConcreteOverrideMetadata(Field field, ResolvableType typeToOverride,
-				BeanOverrideStrategy strategy) {
-
-			super(field, typeToOverride, strategy);
+		DummyOverrideMetadata(Field field, Class<?> typeToOverride) {
+			super(field, ResolvableType.forClass(typeToOverride), BeanOverrideStrategy.REPLACE_DEFINITION);
 		}
 
 		@Override

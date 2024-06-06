@@ -91,7 +91,7 @@ import org.springframework.test.context.bean.override.BeanOverride;
  * @since 6.2
  * @see TestBeanOverrideProcessor
  */
-@Target(ElementType.FIELD)
+@Target({ ElementType.FIELD, ElementType.ANNOTATION_TYPE })
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @BeanOverride(TestBeanOverrideProcessor.class)

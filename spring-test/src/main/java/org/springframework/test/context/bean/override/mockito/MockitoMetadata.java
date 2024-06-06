@@ -55,7 +55,7 @@ abstract class MockitoMetadata extends OverrideMetadata {
 
 	@Override
 	@Nullable
-	protected String getBeanName() {
+	public String getBeanName() {
 		return StringUtils.hasText(this.name) ? this.name : super.getBeanName();
 	}
 
