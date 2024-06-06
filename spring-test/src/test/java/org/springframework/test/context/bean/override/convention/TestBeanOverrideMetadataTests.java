@@ -21,14 +21,8 @@ import java.lang.reflect.Method;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ResolvableType;
-import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.test.context.bean.override.OverrideMetadata;
-import org.springframework.test.context.bean.override.OverrideMetadataTests;
-import org.springframework.test.context.bean.override.OverrideMetadataTests.ConfigA;
-import org.springframework.test.context.bean.override.OverrideMetadataTests.ConfigB;
-import org.springframework.test.context.bean.override.example.ExampleService;
-import org.springframework.test.context.bean.override.example.RealExampleService;
 import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,79 +35,101 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TestBeanOverrideMetadataTests {
 
 	@Test
-	void identitySameMetadata() {
-		
-
-	}
-
-
-	@Test
-	void testBeanMetadataHashCodeAndEqualsShouldWorkOnDifferentClassesAndSameMethods() {
-		ResolvableType beanType = ResolvableType.forClass(ExampleService.class);
-		Method method = ReflectionUtils.findMethod(FirstCase.class, "factoryMethod");
-		TestBean annotation = AnnotationUtils.getAnnotation(field(FirstCase.class, "service"),
-				TestBean.class);
-
-		OverrideMetadataTests.hashCodeAndEqualsShouldWorkOnDifferentClasses(f -> new TestBeanOverrideMetadata(f, method, annotation, beanType));
+	void getBeanNameIsNullIfAnnotationNameIsNull() {
+		TestBeanOverrideMetadata metadata = createMetadata(sampleField("message"), sampleMethod("message"));
+		assertThat(metadata.getBeanName()).isNull();
 	}
 
 	@Test
-	void testBeanMetadataHashCodeAndEqualsShouldDivergeForDifferentMethods() {
-		ResolvableType beanType = ResolvableType.forClass(ExampleService.class);
-		Method method1 = ReflectionUtils.findMethod(FirstCase.class, "factoryMethod");
-		Method method2 = ReflectionUtils.findMethod(OtherCase.class, "factoryMethod");
-		TestBean annotation = AnnotationUtils.getAnnotation(field(FirstCase.class, "service"),
-				TestBean.class);
-
-		assertThat(method1).isNotNull().isNotEqualTo(method2);
-		assertThat(method2).isNotNull();
-
-		OverrideMetadata directQualifier1 = new TestBeanOverrideMetadata(field(ConfigA.class, "directQualifier"),
-				method1, annotation, beanType);
-		OverrideMetadata directQualifier2 = new TestBeanOverrideMetadata(field(ConfigB.class, "directQualifier"),
-				method2, annotation, beanType);
-		OverrideMetadata differentDirectQualifier1 = new TestBeanOverrideMetadata(field(ConfigA.class, "differentDirectQualifier"),
-				method1, annotation, beanType);
-		OverrideMetadata differentDirectQualifier2 = new TestBeanOverrideMetadata(field(ConfigB.class, "differentDirectQualifier"),
-				method2, annotation, beanType);
-		OverrideMetadata customQualifier1 = new TestBeanOverrideMetadata(field(ConfigA.class, "customQualifier"),
-				method1, annotation, beanType);
-		OverrideMetadata customQualifier2 = new TestBeanOverrideMetadata(field(ConfigB.class, "customQualifier"),
-				method2, annotation, beanType);
-
-		assertThat(directQualifier1).doesNotHaveSameHashCodeAs(directQualifier2);
-		assertThat(differentDirectQualifier1).doesNotHaveSameHashCodeAs(differentDirectQualifier2);
-		assertThat(customQualifier1).doesNotHaveSameHashCodeAs(customQualifier2);
-		assertThat(differentDirectQualifier1).isEqualTo(differentDirectQualifier1)
-				.isNotEqualTo(differentDirectQualifier2)
-				.isNotEqualTo(directQualifier2);
-		assertThat(directQualifier1).isEqualTo(directQualifier1)
-				.isNotEqualTo(directQualifier2)
-				.isNotEqualTo(differentDirectQualifier1);
-		assertThat(customQualifier1).isEqualTo(customQualifier1)
-				.isNotEqualTo(customQualifier2)
-				.isNotEqualTo(differentDirectQualifier1);
+	void getBeanNameEqualsAnnotationName() {
+		TestBeanOverrideMetadata metadata = createMetadata(sampleField("message3"), sampleMethod("message"));
+		assertThat(metadata.getBeanName()).isEqualTo("anotherBean");
 	}
 
-	private Field field(Class<?> target, String name) {
-		Field field = ReflectionUtils.findField(target, name);
+	@Test
+	void isEqualToWithSameInstance() {
+		TestBeanOverrideMetadata metadata = createMetadata(sampleField("message"), sampleMethod("message"));
+		assertThat(metadata).isEqualTo(metadata);
+		assertThat(metadata).hasSameHashCodeAs(metadata);
+	}
+
+	@Test
+	void isEqualToWithSameMetadata() {
+		TestBeanOverrideMetadata metadata1 = createMetadata(sampleField("message"), sampleMethod("message"));
+		TestBeanOverrideMetadata metadata2 = createMetadata(sampleField("message"), sampleMethod("message"));
+		assertThat(metadata1).isEqualTo(metadata2);
+		assertThat(metadata1).hasSameHashCodeAs(metadata2);
+	}
+
+	@Test
+	void isEqualToWithSameMetadataButDifferentFields() {
+		TestBeanOverrideMetadata metadata1 = createMetadata(sampleField("message"), sampleMethod("message"));
+		TestBeanOverrideMetadata metadata2 = createMetadata(sampleField("message2"), sampleMethod("message"));
+		assertThat(metadata1).isEqualTo(metadata2);
+		assertThat(metadata1).hasSameHashCodeAs(metadata2);
+	}
+
+	@Test
+	void isNotEqualToWithSameMetadataBuDifferentBeanName() {
+		TestBeanOverrideMetadata metadata1 = createMetadata(sampleField("message"), sampleMethod("message"));
+		TestBeanOverrideMetadata metadata2 = createMetadata(sampleField("message3"), sampleMethod("message"));
+		assertThat(metadata1).isNotEqualTo(metadata2);
+	}
+
+	@Test
+	void isNotEqualToWithSameMetadataBuDifferentMethod() {
+		TestBeanOverrideMetadata metadata1 = createMetadata(sampleField("message"), sampleMethod("message"));
+		TestBeanOverrideMetadata metadata2 = createMetadata(sampleField("message"), sampleMethod("description"));
+		assertThat(metadata1).isNotEqualTo(metadata2);
+	}
+
+	@Test
+	void isNotEqualToWithSameMetadataBuDifferentAnnotations() {
+		TestBeanOverrideMetadata metadata1 = createMetadata(sampleField("message"), sampleMethod("message"));
+		TestBeanOverrideMetadata metadata2 = createMetadata(sampleField("message4"), sampleMethod("message"));
+		assertThat(metadata1).isNotEqualTo(metadata2);
+	}
+
+	private Field sampleField(String fieldName) {
+		Field field = ReflectionUtils.findField(Sample.class, fieldName);
 		assertThat(field).isNotNull();
 		return field;
 	}
 
-	static class FirstCase {
-
-		@TestBean(methodName = "factoryMethod")
-		private ExampleService service;
-
-		private static ExampleService factoryMethod() {
-			return new RealExampleService("first case");
-		}
+	private Method sampleMethod(String noArgMethodName) {
+		Method method = ReflectionUtils.findMethod(Sample.class, noArgMethodName);
+		assertThat(method).isNotNull();
+		return method;
 	}
 
-	static class OtherCase {
-		private static ExampleService factoryMethod() {
-			return new RealExampleService("other case");
+	private TestBeanOverrideMetadata createMetadata(Field field, Method overrideMethod) {
+		return new TestBeanOverrideMetadata(field, overrideMethod,
+				field.getAnnotation(TestBean.class), ResolvableType.forClass(field.getType()));
+	}
+
+
+	@SuppressWarnings("unused")
+	static class Sample {
+
+		@TestBean
+		private String message;
+
+		@TestBean
+		private String message2;
+
+		@TestBean(name = "anotherBean")
+		private String message3;
+
+		@Qualifier("anotherBean")
+		@TestBean
+		private String message4;
+
+		static String message() {
+			return "OK";
+		}
+
+		static String description() {
+			return message();
 		}
 	}
 
