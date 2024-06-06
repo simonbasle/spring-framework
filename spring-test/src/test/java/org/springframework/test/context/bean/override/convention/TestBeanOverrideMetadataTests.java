@@ -44,7 +44,7 @@ class TestBeanOverrideMetadataTests {
 	}
 
 	@Test
-	void forTestClassSetsNameToAnnotationNAme() {
+	void forTestClassSetsNameToAnnotationName() {
 		List<OverrideMetadata> list = OverrideMetadata.forTestClass(SampleOneOverrideWithName.class);
 		assertThat(list).singleElement().satisfies(metadata -> assertThat(metadata.getBeanName()).isEqualTo("anotherBean"));
 	}
@@ -73,7 +73,7 @@ class TestBeanOverrideMetadataTests {
 	}
 
 	@Test
-	void isEqualToWithSameMetadataButDifferentFields() {
+	void isEqualToWithSameMetadataButDifferentField() {
 		TestBeanOverrideMetadata metadata1 = createMetadata(sampleField("message"), sampleMethod("message"));
 		TestBeanOverrideMetadata metadata2 = createMetadata(sampleField("message2"), sampleMethod("message"));
 		assertThat(metadata1).isEqualTo(metadata2);
@@ -81,21 +81,21 @@ class TestBeanOverrideMetadataTests {
 	}
 
 	@Test
-	void isNotEqualToWithSameMetadataBuDifferentBeanName() {
+	void isNotEqualToWithSameMetadataButDifferentBeanName() {
 		TestBeanOverrideMetadata metadata1 = createMetadata(sampleField("message"), sampleMethod("message"));
 		TestBeanOverrideMetadata metadata2 = createMetadata(sampleField("message3"), sampleMethod("message"));
 		assertThat(metadata1).isNotEqualTo(metadata2);
 	}
 
 	@Test
-	void isNotEqualToWithSameMetadataBuDifferentMethod() {
+	void isNotEqualToWithSameMetadataButDifferentMethod() {
 		TestBeanOverrideMetadata metadata1 = createMetadata(sampleField("message"), sampleMethod("message"));
 		TestBeanOverrideMetadata metadata2 = createMetadata(sampleField("message"), sampleMethod("description"));
 		assertThat(metadata1).isNotEqualTo(metadata2);
 	}
 
 	@Test
-	void isNotEqualToWithSameMetadataBuDifferentAnnotations() {
+	void isNotEqualToWithSameMetadataButDifferentAnnotations() {
 		TestBeanOverrideMetadata metadata1 = createMetadata(sampleField("message"), sampleMethod("message"));
 		TestBeanOverrideMetadata metadata2 = createMetadata(sampleField("message4"), sampleMethod("message"));
 		assertThat(metadata1).isNotEqualTo(metadata2);
