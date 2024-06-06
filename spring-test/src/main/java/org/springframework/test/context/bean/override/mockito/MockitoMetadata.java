@@ -26,7 +26,6 @@ import org.springframework.lang.Nullable;
 import org.springframework.test.context.bean.override.BeanOverrideStrategy;
 import org.springframework.test.context.bean.override.OverrideMetadata;
 import org.springframework.util.ObjectUtils;
-import org.springframework.util.StringUtils;
 
 /**
  * Base class for Mockito override metadata.
@@ -36,27 +35,17 @@ import org.springframework.util.StringUtils;
  */
 abstract class MockitoMetadata extends OverrideMetadata {
 
-	protected final String name;
-
 	private final MockReset reset;
 
 	private final boolean proxyTargetAware;
 
 
-	MockitoMetadata(String name, @Nullable MockReset reset, boolean proxyTargetAware, Field field,
+	MockitoMetadata(@Nullable String name, @Nullable MockReset reset, boolean proxyTargetAware, Field field,
 			ResolvableType typeToOverride, BeanOverrideStrategy strategy) {
 
-		super(field, typeToOverride, strategy);
-		this.name = name;
+		super(field, typeToOverride, name, strategy);
 		this.reset = (reset != null) ? reset : MockReset.AFTER;
 		this.proxyTargetAware = proxyTargetAware;
-	}
-
-
-	@Override
-	@Nullable
-	public String getBeanName() {
-		return StringUtils.hasText(this.name) ? this.name : super.getBeanName();
 	}
 
 	@Override
@@ -101,7 +90,6 @@ abstract class MockitoMetadata extends OverrideMetadata {
 		}
 		MockitoMetadata other = (MockitoMetadata) obj;
 		boolean result = super.equals(obj);
-		result = result && ObjectUtils.nullSafeEquals(this.name, other.name);
 		result = result && ObjectUtils.nullSafeEquals(this.reset, other.reset);
 		result = result && ObjectUtils.nullSafeEquals(this.proxyTargetAware, other.proxyTargetAware);
 		return result;
@@ -109,7 +97,7 @@ abstract class MockitoMetadata extends OverrideMetadata {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(super.hashCode(), this.name, this.reset, this.proxyTargetAware);
+		return Objects.hash(super.hashCode(), this.reset, this.proxyTargetAware);
 	}
 
 }

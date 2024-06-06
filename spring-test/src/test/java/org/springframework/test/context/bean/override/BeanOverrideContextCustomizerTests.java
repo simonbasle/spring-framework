@@ -72,7 +72,7 @@ class BeanOverrideContextCustomizerTests {
 		private final String key;
 
 		public DummyOverrideMetadata(String key) {
-			super(mock(Field.class), ResolvableType.forClass(Object.class), BeanOverrideStrategy.REPLACE_DEFINITION);
+			super(mock(Field.class), ResolvableType.forClass(Object.class), null, BeanOverrideStrategy.REPLACE_DEFINITION);
 			this.key = key;
 		}
 

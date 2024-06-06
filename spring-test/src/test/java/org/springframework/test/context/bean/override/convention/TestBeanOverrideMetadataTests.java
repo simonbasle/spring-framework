@@ -18,14 +18,17 @@ package org.springframework.test.context.bean.override.convention;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ResolvableType;
+import org.springframework.test.context.bean.override.OverrideMetadata;
 import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 /**
  * Tests for {@link TestBeanOverrideMetadata}.
@@ -35,15 +38,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TestBeanOverrideMetadataTests {
 
 	@Test
-	void getBeanNameIsNullIfAnnotationNameIsNull() {
-		TestBeanOverrideMetadata metadata = createMetadata(sampleField("message"), sampleMethod("message"));
-		assertThat(metadata.getBeanName()).isNull();
+	void forTestClassSetsNameToNullIfAnnotationNameIsNull() {
+		List<OverrideMetadata> list = OverrideMetadata.forTestClass(SampleOneOverride.class);
+		assertThat(list).singleElement().satisfies(metadata -> assertThat(metadata.getBeanName()).isNull());
 	}
 
 	@Test
-	void getBeanNameEqualsAnnotationName() {
-		TestBeanOverrideMetadata metadata = createMetadata(sampleField("message3"), sampleMethod("message"));
-		assertThat(metadata.getBeanName()).isEqualTo("anotherBean");
+	void forTestClassSetsNameToAnnotationNAme() {
+		List<OverrideMetadata> list = OverrideMetadata.forTestClass(SampleOneOverrideWithName.class);
+		assertThat(list).singleElement().satisfies(metadata -> assertThat(metadata.getBeanName()).isEqualTo("anotherBean"));
+	}
+
+	@Test
+	void forTestClassWithMissingMethod() {
+		assertThatIllegalStateException()
+				.isThrownBy(() ->OverrideMetadata.forTestClass(SampleMissingMethod.class))
+				.withMessageStartingWith("Failed to find a static test bean factory method")
+				.withMessageContaining("messageTestOverride");
 	}
 
 	@Test
@@ -105,6 +116,35 @@ class TestBeanOverrideMetadataTests {
 	private TestBeanOverrideMetadata createMetadata(Field field, Method overrideMethod) {
 		return new TestBeanOverrideMetadata(field, overrideMethod,
 				field.getAnnotation(TestBean.class), ResolvableType.forClass(field.getType()));
+	}
+
+	static class SampleOneOverride {
+
+		@TestBean(methodName = "message")
+		String message;
+
+		static String message() {
+			return "OK";
+		}
+
+	}
+
+	static class SampleOneOverrideWithName {
+
+		@TestBean(name = "anotherBean", methodName = "message")
+		String message;
+
+		static String message() {
+			return "OK";
+		}
+
+	}
+
+	static class SampleMissingMethod {
+
+		@TestBean
+		String message;
+
 	}
 
 

@@ -29,8 +29,6 @@ import org.springframework.test.context.bean.override.BeanOverride;
 public @interface ExampleBeanOverrideAnnotation {
 
 	String DEFAULT_VALUE = "TEST OVERRIDE";
-	// TestOverrideMetadata using this as the prefix for the bean name will be considered equal
-	String DUPLICATE_TRIGGER = "DUPLICATE";
 	// TestOverrideMetadata using this as the bean name will trigger by-type matching
 	String BY_TYPE = "##BY_TYPE##";
 

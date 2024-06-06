@@ -31,9 +31,6 @@ class ExampleBeanOverrideProcessor implements BeanOverrideProcessor {
 		if (!(overrideAnnotation instanceof ExampleBeanOverrideAnnotation annotation)) {
 			throw new IllegalStateException("unexpected annotation");
 		}
-		if (annotation.value().startsWith(ExampleBeanOverrideAnnotation.DUPLICATE_TRIGGER)) {
-			return new TestOverrideMetadata(annotation.value());
-		}
 		return new TestOverrideMetadata(field, annotation, ResolvableType.forField(field, testClass));
 	}
 

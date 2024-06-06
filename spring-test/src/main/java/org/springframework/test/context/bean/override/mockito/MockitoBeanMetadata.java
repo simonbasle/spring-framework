@@ -54,11 +54,11 @@ class MockitoBeanMetadata extends MockitoMetadata {
 
 
 	MockitoBeanMetadata(MockitoBean annotation, Field field, ResolvableType typeToMock) {
-		this(annotation.name(), annotation.reset(), field, typeToMock,
-				annotation.extraInterfaces(), annotation.answers(), annotation.serializable());
+		this((StringUtils.hasText(annotation.name()) ? annotation.name() : null), annotation.reset(),
+				field, typeToMock, annotation.extraInterfaces(), annotation.answers(), annotation.serializable());
 	}
 
-	MockitoBeanMetadata(String name, MockReset reset, Field field, ResolvableType typeToMock,
+	MockitoBeanMetadata(@Nullable String name, MockReset reset, Field field, ResolvableType typeToMock,
 			Class<?>[] extraInterfaces, @Nullable Answers answer, boolean serializable) {
 
 		super(name, reset, false, field, typeToMock, BeanOverrideStrategy.REPLACE_OR_CREATE_DEFINITION);

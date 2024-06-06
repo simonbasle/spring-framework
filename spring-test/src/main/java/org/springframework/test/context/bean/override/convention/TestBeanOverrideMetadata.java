@@ -40,20 +40,12 @@ final class TestBeanOverrideMetadata extends OverrideMetadata {
 
 	private final Method overrideMethod;
 
-	private final String beanName;
-
-	public TestBeanOverrideMetadata(Field field, Method overrideMethod, TestBean overrideAnnotation,
+	public TestBeanOverrideMetadata(Field field, Method overrideMethod, TestBean annotation,
 			ResolvableType typeToOverride) {
 
-		super(field, typeToOverride, BeanOverrideStrategy.REPLACE_DEFINITION);
-		this.beanName = overrideAnnotation.name();
+		super(field, typeToOverride, (StringUtils.hasText(annotation.name()) ? annotation.name() : null),
+				BeanOverrideStrategy.REPLACE_DEFINITION);
 		this.overrideMethod = overrideMethod;
-	}
-
-	@Override
-	@Nullable
-	public String getBeanName() {
-		return StringUtils.hasText(this.beanName) ? this.beanName : super.getBeanName();
 	}
 
 	@Override
@@ -82,12 +74,11 @@ final class TestBeanOverrideMetadata extends OverrideMetadata {
 			return false;
 		}
 		TestBeanOverrideMetadata that = (TestBeanOverrideMetadata) other;
-		return Objects.equals(this.overrideMethod, that.overrideMethod)
-				&& Objects.equals(this.beanName, that.beanName);
+		return Objects.equals(this.overrideMethod, that.overrideMethod);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(super.hashCode(), this.overrideMethod, this.beanName);
+		return Objects.hash(super.hashCode(), this.overrideMethod);
 	}
 }

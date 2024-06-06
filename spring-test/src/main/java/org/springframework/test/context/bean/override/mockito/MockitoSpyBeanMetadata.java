@@ -49,11 +49,11 @@ import static org.mockito.Mockito.mock;
 class MockitoSpyBeanMetadata extends MockitoMetadata {
 
 	MockitoSpyBeanMetadata(MockitoSpyBean spyAnnotation, Field field, ResolvableType typeToSpy) {
-		this(spyAnnotation.name(), spyAnnotation.reset(), spyAnnotation.proxyTargetAware(),
-				field, typeToSpy);
+		this((StringUtils.hasText(spyAnnotation.name()) ? spyAnnotation.name() : null), spyAnnotation.reset(),
+				spyAnnotation.proxyTargetAware(), field, typeToSpy);
 	}
 
-	MockitoSpyBeanMetadata(String name, MockReset reset, boolean proxyTargetAware, Field field, ResolvableType typeToSpy) {
+	MockitoSpyBeanMetadata(@Nullable String name, MockReset reset, boolean proxyTargetAware, Field field, ResolvableType typeToSpy) {
 		super(name, reset, proxyTargetAware, field, typeToSpy, BeanOverrideStrategy.WRAP_BEAN);
 		Assert.notNull(typeToSpy, "typeToSpy must not be null");
 	}

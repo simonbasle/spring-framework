@@ -59,14 +59,16 @@ public abstract class OverrideMetadata {
 
 	private final ResolvableType beanType;
 
+	@Nullable
+	private final String beanName;
+
 	private final BeanOverrideStrategy strategy;
 
 
-	protected OverrideMetadata(Field field, ResolvableType beanType,
-			BeanOverrideStrategy strategy) {
-
+	protected OverrideMetadata(Field field, ResolvableType beanType, @Nullable String beanName, BeanOverrideStrategy strategy) {
 		this.field = field;
 		this.beanType = beanType;
+		this.beanName = beanName;
 		this.strategy = strategy;
 	}
 
@@ -124,11 +126,10 @@ public abstract class OverrideMetadata {
 	/**
 	 * Get the bean name to override, or {@code null} to look for a single
 	 * matching bean of type {@link #getBeanType()}.
-	 * <p>Defaults to {@code null}.
 	 */
 	@Nullable
 	public String getBeanName() {
-		return null;
+		return this.beanName;
 	}
 
 	/**
@@ -165,22 +166,25 @@ public abstract class OverrideMetadata {
 			return false;
 		}
 		OverrideMetadata that = (OverrideMetadata) obj;
-		return Objects.equals(this.strategy, that.strategy) &&
-				Arrays.equals(this.field.getAnnotations(), that.field.getAnnotations()) &&
-				this.beanType.equalsType(that.beanType);
+		return this.beanType.equalsType(that.beanType) &&
+				Objects.equals(this.beanName, that.beanName) &&
+				Objects.equals(this.strategy, that.strategy) &&
+				Arrays.equals(this.field.getAnnotations(), that.field.getAnnotations());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.strategy, Arrays.hashCode(this.field.getAnnotations()), this.beanType.toClass());
+		return Objects.hash(this.beanType.toClass(), this.beanName, this.strategy,
+				Arrays.hashCode(this.field.getAnnotations()));
 	}
 
 	@Override
 	public String toString() {
 		return new ToStringCreator(this)
-				.append("strategy", this.strategy)
 				.append("field", this.field)
 				.append("beanType", this.beanType)
+				.append("beanName", this.beanName)
+				.append("strategy", this.strategy)
 				.toString();
 	}
 
