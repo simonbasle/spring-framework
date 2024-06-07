@@ -26,6 +26,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ResolvableType;
 import org.springframework.test.context.bean.override.OverrideMetadata;
 import org.springframework.util.ReflectionUtils;
+import org.springframework.util.StringUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
@@ -114,8 +115,9 @@ class TestBeanOverrideMetadataTests {
 	}
 
 	private TestBeanOverrideMetadata createMetadata(Field field, Method overrideMethod) {
-		return new TestBeanOverrideMetadata(field, overrideMethod,
-				field.getAnnotation(TestBean.class), ResolvableType.forClass(field.getType()));
+		TestBean annotation = field.getAnnotation(TestBean.class);
+		String beanName = (StringUtils.hasText(annotation.value()) ? annotation.value() : null);
+		return new TestBeanOverrideMetadata(field, ResolvableType.forClass(field.getType()), beanName, overrideMethod);
 	}
 
 	static class SampleOneOverride {

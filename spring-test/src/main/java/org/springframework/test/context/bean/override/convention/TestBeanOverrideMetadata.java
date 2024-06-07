@@ -27,7 +27,6 @@ import org.springframework.lang.Nullable;
 import org.springframework.test.context.bean.override.BeanOverrideStrategy;
 import org.springframework.test.context.bean.override.OverrideMetadata;
 import org.springframework.util.ReflectionUtils;
-import org.springframework.util.StringUtils;
 
 /**
  * {@link OverrideMetadata} implementation for {@link TestBean}.
@@ -40,13 +39,14 @@ final class TestBeanOverrideMetadata extends OverrideMetadata {
 
 	private final Method overrideMethod;
 
-	public TestBeanOverrideMetadata(Field field, Method overrideMethod, TestBean annotation,
-			ResolvableType typeToOverride) {
 
-		super(field, typeToOverride, (StringUtils.hasText(annotation.name()) ? annotation.name() : null),
-				BeanOverrideStrategy.REPLACE_DEFINITION);
+	TestBeanOverrideMetadata(Field field, ResolvableType beanType, @Nullable String beanName,
+			Method overrideMethod) {
+
+		super(field, beanType, beanName, BeanOverrideStrategy.REPLACE_DEFINITION);
 		this.overrideMethod = overrideMethod;
 	}
+
 
 	@Override
 	protected Object createOverride(String beanName, @Nullable BeanDefinition existingBeanDefinition,
