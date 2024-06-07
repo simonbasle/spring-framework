@@ -166,7 +166,7 @@ public abstract class OverrideMetadata {
 			return false;
 		}
 		OverrideMetadata that = (OverrideMetadata) obj;
-		return this.beanType.equalsType(that.beanType) &&
+		return Objects.equals(this.beanType.getType(),that.beanType.getType()) &&
 				Objects.equals(this.beanName, that.beanName) &&
 				Objects.equals(this.strategy, that.strategy) &&
 				Arrays.equals(this.field.getAnnotations(), that.field.getAnnotations());
@@ -174,7 +174,7 @@ public abstract class OverrideMetadata {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.beanType.toClass(), this.beanName, this.strategy,
+		return Objects.hash(this.beanType.getType(), this.beanName, this.strategy,
 				Arrays.hashCode(this.field.getAnnotations()));
 	}
 
