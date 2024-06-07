@@ -98,7 +98,7 @@ abstract class MockitoOverrideMetadata extends OverrideMetadata {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(super.hashCode(), this.reset, this.proxyTargetAware);
+		return Objects.hash(this.reset, this.proxyTargetAware) + super.hashCode();
 	}
 
 }

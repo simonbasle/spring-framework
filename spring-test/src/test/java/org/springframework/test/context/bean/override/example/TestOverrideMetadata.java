@@ -131,7 +131,7 @@ class TestOverrideMetadata extends OverrideMetadata {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(super.hashCode(), this.methodName);
+		return this.methodName.hashCode() * 29 + super.hashCode();
 	}
 
 	@Override

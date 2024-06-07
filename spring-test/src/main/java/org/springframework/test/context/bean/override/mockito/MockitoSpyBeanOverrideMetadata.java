@@ -111,7 +111,7 @@ class MockitoSpyBeanOverrideMetadata extends MockitoOverrideMetadata {
 
 	@Override
 	public int hashCode() {
-		return super.hashCode();
+		return getClass().hashCode() * 29 + super.hashCode();
 	}
 
 	@Override

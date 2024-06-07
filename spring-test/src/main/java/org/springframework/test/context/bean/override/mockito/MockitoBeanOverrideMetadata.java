@@ -125,7 +125,7 @@ class MockitoBeanOverrideMetadata extends MockitoOverrideMetadata {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(super.hashCode(), this.extraInterfaces, this.answer, this.serializable);
+		return Objects.hash(this.extraInterfaces, this.answer, this.serializable) + super.hashCode();
 	}
 
 	@Override

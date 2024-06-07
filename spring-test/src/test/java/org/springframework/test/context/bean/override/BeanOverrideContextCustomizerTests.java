@@ -96,7 +96,7 @@ class BeanOverrideContextCustomizerTests {
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(this.key);
+			return this.key.hashCode();
 		}
 	}
 
