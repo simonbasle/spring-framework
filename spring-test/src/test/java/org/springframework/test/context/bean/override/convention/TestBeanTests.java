@@ -40,7 +40,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class TestBeanTests {
 
-
 	@Test
 	void testBeanCanBeUsedAsMetaAnnotation() {
 		List<OverrideMetadata> metadata = OverrideMetadata.forTestClass(SampleMetaAnnotation.class);

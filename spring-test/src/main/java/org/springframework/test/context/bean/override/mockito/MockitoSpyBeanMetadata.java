@@ -18,7 +18,6 @@ package org.springframework.test.context.bean.override.mockito;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;
-import java.util.Objects;
 
 import org.mockito.AdditionalAnswers;
 import org.mockito.MockSettings;
@@ -34,7 +33,6 @@ import org.springframework.test.context.bean.override.BeanOverrideStrategy;
 import org.springframework.test.context.bean.override.OverrideMetadata;
 import org.springframework.test.util.AopTestUtils;
 import org.springframework.util.Assert;
-import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 import static org.mockito.Mockito.mock;
@@ -108,13 +106,12 @@ class MockitoSpyBeanMetadata extends MockitoMetadata {
 		if (other == null || other.getClass() != getClass()) {
 			return false;
 		}
-		MockitoSpyBeanMetadata that = (MockitoSpyBeanMetadata) other;
-		return (super.equals(other) && ObjectUtils.nullSafeEquals(getBeanType(), that.getBeanType()));
+		return super.equals(other);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(super.hashCode(), getBeanType());
+		return super.hashCode();
 	}
 
 	@Override
