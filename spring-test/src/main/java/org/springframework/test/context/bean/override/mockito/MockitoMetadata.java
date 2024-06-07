@@ -40,12 +40,29 @@ abstract class MockitoMetadata extends OverrideMetadata {
 	private final boolean proxyTargetAware;
 
 
-	MockitoMetadata(@Nullable String name, @Nullable MockReset reset, boolean proxyTargetAware, Field field,
-			ResolvableType typeToOverride, BeanOverrideStrategy strategy) {
+	protected MockitoMetadata(Field field, ResolvableType beanType, @Nullable String beanName,
+			BeanOverrideStrategy strategy, @Nullable MockReset reset, boolean proxyTargetAware) {
 
-		super(field, typeToOverride, name, strategy);
+		super(field, beanType, beanName, strategy);
 		this.reset = (reset != null) ? reset : MockReset.AFTER;
 		this.proxyTargetAware = proxyTargetAware;
+	}
+
+
+	/**
+	 * Return the mock reset mode.
+	 * @return the reset mode
+	 */
+	MockReset getReset() {
+		return this.reset;
+	}
+
+	/**
+	 * Return if AOP advised beans should be proxy target aware.
+	 * @return if proxy target aware
+	 */
+	boolean isProxyTargetAware() {
+		return this.proxyTargetAware;
 	}
 
 	@Override
@@ -62,22 +79,6 @@ abstract class MockitoMetadata extends OverrideMetadata {
 			trackingBeanRegistry.registerSingleton(MockitoBeans.class.getName(), tracker);
 		}
 		tracker.add(mock);
-	}
-
-	/**
-	 * Return the mock reset mode.
-	 * @return the reset mode
-	 */
-	MockReset getReset() {
-		return this.reset;
-	}
-
-	/**
-	 * Return if AOP advised beans should be proxy target aware.
-	 * @return if proxy target aware
-	 */
-	boolean isProxyTargetAware() {
-		return this.proxyTargetAware;
 	}
 
 	@Override

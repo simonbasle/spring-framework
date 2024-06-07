@@ -36,10 +36,10 @@ class MockitoBeanOverrideProcessor implements BeanOverrideProcessor {
 	@Override
 	public MockitoMetadata createMetadata(Annotation overrideAnnotation, Class<?> testClass, Field field) {
 		if (overrideAnnotation instanceof MockitoBean mockBean) {
-			return new MockitoBeanMetadata(mockBean, field, ResolvableType.forField(field, testClass));
+			return new MockitoBeanMetadata(field, ResolvableType.forField(field, testClass), mockBean);
 		}
 		else if (overrideAnnotation instanceof MockitoSpyBean spyBean) {
-			return new MockitoSpyBeanMetadata(spyBean, field, ResolvableType.forField(field, testClass));
+			return new MockitoSpyBeanMetadata(field, ResolvableType.forField(field, testClass), spyBean);
 		}
 		throw new IllegalStateException(String.format("Invalid annotation passed to MockitoBeanOverrideProcessor: "
 				+ "expected @MockitoBean/@MockitoSpyBean on field %s.%s",

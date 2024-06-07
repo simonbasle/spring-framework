@@ -48,13 +48,15 @@ import static org.mockito.Mockito.mock;
  */
 class MockitoSpyBeanMetadata extends MockitoMetadata {
 
-	MockitoSpyBeanMetadata(MockitoSpyBean spyAnnotation, Field field, ResolvableType typeToSpy) {
-		this((StringUtils.hasText(spyAnnotation.name()) ? spyAnnotation.name() : null), spyAnnotation.reset(),
-				spyAnnotation.proxyTargetAware(), field, typeToSpy);
+	MockitoSpyBeanMetadata(Field field, ResolvableType typeToSpy, MockitoSpyBean spyAnnotation) {
+		this(field, typeToSpy, (StringUtils.hasText(spyAnnotation.name()) ? spyAnnotation.name() : null),
+				spyAnnotation.reset(), spyAnnotation.proxyTargetAware());
 	}
 
-	MockitoSpyBeanMetadata(@Nullable String name, MockReset reset, boolean proxyTargetAware, Field field, ResolvableType typeToSpy) {
-		super(name, reset, proxyTargetAware, field, typeToSpy, BeanOverrideStrategy.WRAP_BEAN);
+	MockitoSpyBeanMetadata(Field field, ResolvableType typeToSpy, @Nullable String beanName,
+			MockReset reset, boolean proxyTargetAware) {
+
+		super(field, typeToSpy, beanName, BeanOverrideStrategy.WRAP_BEAN, reset, proxyTargetAware);
 		Assert.notNull(typeToSpy, "typeToSpy must not be null");
 	}
 
@@ -66,33 +68,6 @@ class MockitoSpyBeanMetadata extends MockitoMetadata {
 		Assert.notNull(existingBeanInstance,
 				() -> "MockitoSpyBean requires an existing bean instance for bean " + beanName);
 		return createSpy(beanName, existingBeanInstance);
-	}
-
-	@Override
-	public boolean equals(@Nullable Object obj) {
-		if (obj == this) {
-			return true;
-		}
-		// For SpyBean we want the class to be exactly the same.
-		if (obj == null || obj.getClass() != getClass()) {
-			return false;
-		}
-		MockitoSpyBeanMetadata that = (MockitoSpyBeanMetadata) obj;
-		return (super.equals(obj) && ObjectUtils.nullSafeEquals(getBeanType(), that.getBeanType()));
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(super.hashCode(), getBeanType());
-	}
-
-	@Override
-	public String toString() {
-		return new ToStringCreator(this)
-				.append("beanName", getBeanName())
-				.append("beanType", getBeanType())
-				.append("reset", getReset())
-				.toString();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -124,6 +99,34 @@ class MockitoSpyBeanMetadata extends MockitoMetadata {
 		return (T) mock(toSpy, settings);
 	}
 
+	@Override
+	public boolean equals(@Nullable Object other) {
+		if (other == this) {
+			return true;
+		}
+		// For SpyBean we want the class to be exactly the same.
+		if (other == null || other.getClass() != getClass()) {
+			return false;
+		}
+		MockitoSpyBeanMetadata that = (MockitoSpyBeanMetadata) other;
+		return (super.equals(other) && ObjectUtils.nullSafeEquals(getBeanType(), that.getBeanType()));
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(super.hashCode(), getBeanType());
+	}
+
+	@Override
+	public String toString() {
+		return new ToStringCreator(this)
+				.append("beanName", getBeanName())
+				.append("beanType", getBeanType())
+				.append("reset", getReset())
+				.toString();
+	}
+
+
 	/**
 	 * A {@link VerificationStartedListener} that bypasses any proxy created by
 	 * Spring AOP when the verification of a spy starts.
@@ -134,7 +137,6 @@ class MockitoSpyBeanMetadata extends MockitoMetadata {
 		public void onVerificationStarted(VerificationStartedEvent event) {
 			event.setMock(AopTestUtils.getUltimateTargetObject(event.getMock()));
 		}
-
 	}
 
 }

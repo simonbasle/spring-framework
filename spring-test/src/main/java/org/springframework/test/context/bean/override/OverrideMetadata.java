@@ -65,7 +65,8 @@ public abstract class OverrideMetadata {
 	private final BeanOverrideStrategy strategy;
 
 
-	protected OverrideMetadata(Field field, ResolvableType beanType, @Nullable String beanName, BeanOverrideStrategy strategy) {
+	protected OverrideMetadata(Field field, ResolvableType beanType, @Nullable String beanName,
+			BeanOverrideStrategy strategy) {
 		this.field = field;
 		this.beanType = beanType;
 		this.beanName = beanName;
@@ -116,20 +117,20 @@ public abstract class OverrideMetadata {
 	}
 
 	/**
-	 * Get the {@link BeanOverrideStrategy} for this instance, as a hint on
-	 * how and when the override instance should be created.
-	 */
-	public final BeanOverrideStrategy getStrategy() {
-		return this.strategy;
-	}
-
-	/**
 	 * Get the bean name to override, or {@code null} to look for a single
 	 * matching bean of type {@link #getBeanType()}.
 	 */
 	@Nullable
 	public String getBeanName() {
 		return this.beanName;
+	}
+
+	/**
+	 * Get the {@link BeanOverrideStrategy} for this instance, as a hint on
+	 * how and when the override instance should be created.
+	 */
+	public final BeanOverrideStrategy getStrategy() {
+		return this.strategy;
 	}
 
 	/**
@@ -166,7 +167,7 @@ public abstract class OverrideMetadata {
 			return false;
 		}
 		OverrideMetadata that = (OverrideMetadata) obj;
-		return Objects.equals(this.beanType.getType(),that.beanType.getType()) &&
+		return Objects.equals(this.beanType.getType(), that.beanType.getType()) &&
 				Objects.equals(this.beanName, that.beanName) &&
 				Objects.equals(this.strategy, that.strategy) &&
 				Arrays.equals(this.field.getAnnotations(), that.field.getAnnotations());
