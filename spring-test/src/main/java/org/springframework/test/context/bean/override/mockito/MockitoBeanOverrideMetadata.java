@@ -31,6 +31,7 @@ import org.springframework.core.ResolvableType;
 import org.springframework.core.style.ToStringCreator;
 import org.springframework.lang.Nullable;
 import org.springframework.test.context.bean.override.BeanOverrideStrategy;
+import org.springframework.test.context.bean.override.OverrideMetadata;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ObjectUtils;
@@ -39,12 +40,12 @@ import org.springframework.util.StringUtils;
 import static org.mockito.Mockito.mock;
 
 /**
- * A complete definition that can be used to create a Mockito mock.
+ * {@link OverrideMetadata} implementation for Mockito {@code mock} support.
  *
  * @author Phillip Webb
  * @since 6.2
  */
-class MockitoBeanMetadata extends MockitoMetadata {
+class MockitoBeanOverrideMetadata extends MockitoOverrideMetadata {
 
 	private final Set<Class<?>> extraInterfaces;
 
@@ -53,12 +54,12 @@ class MockitoBeanMetadata extends MockitoMetadata {
 	private final boolean serializable;
 
 
-	MockitoBeanMetadata(Field field, ResolvableType typeToMock, MockitoBean annotation) {
+	MockitoBeanOverrideMetadata(Field field, ResolvableType typeToMock, MockitoBean annotation) {
 		this(field, typeToMock, (StringUtils.hasText(annotation.name()) ? annotation.name() : null),
 				annotation.reset(), annotation.extraInterfaces(), annotation.answers(), annotation.serializable());
 	}
 
-	MockitoBeanMetadata(Field field, ResolvableType typeToMock, @Nullable String beanName, MockReset reset,
+	MockitoBeanOverrideMetadata(Field field, ResolvableType typeToMock, @Nullable String beanName, MockReset reset,
 			Class<?>[] extraInterfaces, @Nullable Answers answer, boolean serializable) {
 
 		super(field, typeToMock, beanName, BeanOverrideStrategy.REPLACE_OR_CREATE_DEFINITION, reset, false);
@@ -114,7 +115,7 @@ class MockitoBeanMetadata extends MockitoMetadata {
 		if (other == null || other.getClass() != getClass()) {
 			return false;
 		}
-		MockitoBeanMetadata that = (MockitoBeanMetadata) other;
+		MockitoBeanOverrideMetadata that = (MockitoBeanOverrideMetadata) other;
 		boolean result = super.equals(that);
 		result = result && ObjectUtils.nullSafeEquals(this.extraInterfaces, that.extraInterfaces);
 		result = result && ObjectUtils.nullSafeEquals(this.answer, that.answer);

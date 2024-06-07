@@ -38,20 +38,20 @@ import org.springframework.util.StringUtils;
 import static org.mockito.Mockito.mock;
 
 /**
- * {@link OverrideMetadata} for Mockito {@code spy} support.
+ * {@link OverrideMetadata} implementation for Mockito {@code spy} support.
  *
  * @author Phillip Webb
  * @author Simon Baslé
  * @since 6.2
  */
-class MockitoSpyBeanMetadata extends MockitoMetadata {
+class MockitoSpyBeanOverrideMetadata extends MockitoOverrideMetadata {
 
-	MockitoSpyBeanMetadata(Field field, ResolvableType typeToSpy, MockitoSpyBean spyAnnotation) {
+	MockitoSpyBeanOverrideMetadata(Field field, ResolvableType typeToSpy, MockitoSpyBean spyAnnotation) {
 		this(field, typeToSpy, (StringUtils.hasText(spyAnnotation.name()) ? spyAnnotation.name() : null),
 				spyAnnotation.reset(), spyAnnotation.proxyTargetAware());
 	}
 
-	MockitoSpyBeanMetadata(Field field, ResolvableType typeToSpy, @Nullable String beanName,
+	MockitoSpyBeanOverrideMetadata(Field field, ResolvableType typeToSpy, @Nullable String beanName,
 			MockReset reset, boolean proxyTargetAware) {
 
 		super(field, typeToSpy, beanName, BeanOverrideStrategy.WRAP_BEAN, reset, proxyTargetAware);

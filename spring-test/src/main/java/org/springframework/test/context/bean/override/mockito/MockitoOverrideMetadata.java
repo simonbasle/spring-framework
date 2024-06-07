@@ -28,19 +28,19 @@ import org.springframework.test.context.bean.override.OverrideMetadata;
 import org.springframework.util.ObjectUtils;
 
 /**
- * Base class for Mockito override metadata.
+ * Base {@link OverrideMetadata} implementation for Mockito.
  *
  * @author Phillip Webb
  * @since 6.2
  */
-abstract class MockitoMetadata extends OverrideMetadata {
+abstract class MockitoOverrideMetadata extends OverrideMetadata {
 
 	private final MockReset reset;
 
 	private final boolean proxyTargetAware;
 
 
-	protected MockitoMetadata(Field field, ResolvableType beanType, @Nullable String beanName,
+	protected MockitoOverrideMetadata(Field field, ResolvableType beanType, @Nullable String beanName,
 			BeanOverrideStrategy strategy, @Nullable MockReset reset, boolean proxyTargetAware) {
 
 		super(field, beanType, beanName, strategy);
@@ -89,7 +89,7 @@ abstract class MockitoMetadata extends OverrideMetadata {
 		if (obj == null || !getClass().isAssignableFrom(obj.getClass())) {
 			return false;
 		}
-		MockitoMetadata other = (MockitoMetadata) obj;
+		MockitoOverrideMetadata other = (MockitoOverrideMetadata) obj;
 		boolean result = super.equals(obj);
 		result = result && ObjectUtils.nullSafeEquals(this.reset, other.reset);
 		result = result && ObjectUtils.nullSafeEquals(this.proxyTargetAware, other.proxyTargetAware);
