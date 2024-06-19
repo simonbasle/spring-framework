@@ -50,6 +50,13 @@ public interface GenerationContext {
 	GeneratedClasses getGeneratedClasses();
 
 	/**
+	 * Get the GeneratedResources used by the context.
+	 * <p>All generated resources are written at the end of AOT processing.
+	 * @return the generated resources
+	 */
+	GeneratedResources getGeneratedResources();
+
+	/**
 	 * Get the {@link GeneratedFiles} used by the context.
 	 * <p>Used to write resource, java source, or class bytecode files.
 	 * @return the generated files

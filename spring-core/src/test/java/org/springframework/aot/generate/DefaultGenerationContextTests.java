@@ -43,6 +43,8 @@ class DefaultGenerationContextTests {
 	private final GeneratedClasses generatedClasses = new GeneratedClasses(
 			new ClassNameGenerator(SAMPLE_TARGET));
 
+	private final GeneratedResources generatedResources = new GeneratedResources();
+
 	private final InMemoryGeneratedFiles generatedFiles = new InMemoryGeneratedFiles();
 
 	private final RuntimeHints runtimeHints = new RuntimeHints();
@@ -73,6 +75,14 @@ class DefaultGenerationContextTests {
 	}
 
 	@Test
+	void createWhenGeneratedResourcesIsNullThrowsException() {
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> new DefaultGenerationContext(this.generatedClasses,
+						null, this.generatedFiles, this.runtimeHints))
+				.withMessage("'generatedResources' must not be null");
+	}
+
+	@Test
 	void createWhenGeneratedFilesIsNullThrowsException() {
 		assertThatIllegalArgumentException()
 				.isThrownBy(() -> new DefaultGenerationContext(this.generatedClasses,
@@ -93,6 +103,13 @@ class DefaultGenerationContextTests {
 		DefaultGenerationContext context = new DefaultGenerationContext(
 				this.generatedClasses, this.generatedFiles, this.runtimeHints);
 		assertThat(context.getGeneratedClasses()).isSameAs(this.generatedClasses);
+	}
+
+	@Test
+	void getGeneratedResourcesReturnsGeneratedResources() {
+		DefaultGenerationContext context = new DefaultGenerationContext(
+				this.generatedClasses, this.generatedResources, this.generatedFiles, this.runtimeHints);
+		assertThat(context.getGeneratedResources()).isSameAs(this.generatedResources);
 	}
 
 	@Test
@@ -120,21 +137,35 @@ class DefaultGenerationContextTests {
 	}
 
 	@Test
+	void withNameUpdateResourceRootPath() {
+		DefaultGenerationContext context = new DefaultGenerationContext(
+				new ClassNameGenerator(SAMPLE_TARGET), this.generatedFiles);
+		GenerationContext anotherContext = context.withName("Another");
+		GeneratedResources.GeneratedResource generatedResource = anotherContext.getGeneratedResources()
+				.addForFeature("Test", "inner/path/file.txt", "empty content");
+		assertThat(generatedResource.path()).isEqualTo("Another/Test/inner/path/file.txt");
+	}
+
+	@Test
 	void withNameKeepsTrackOfAllGeneratedFiles() {
 		DefaultGenerationContext context = new DefaultGenerationContext(
 				new ClassNameGenerator(SAMPLE_TARGET), this.generatedFiles);
 		context.getGeneratedClasses().addForFeature("Test", typeSpecCustomizer);
+		context.getGeneratedResources().addForFeature("Test", "file.txt", "");
 		GenerationContext anotherContext = context.withName("Another");
 		assertThat(anotherContext.getGeneratedClasses()).isNotSameAs(context.getGeneratedClasses());
+		assertThat(anotherContext.getGeneratedResources()).isNotSameAs(context.getGeneratedResources());
 		assertThat(anotherContext.getGeneratedFiles()).isSameAs(context.getGeneratedFiles());
 		assertThat(anotherContext.getRuntimeHints()).isSameAs(context.getRuntimeHints());
 		anotherContext.getGeneratedClasses().addForFeature("Test", typeSpecCustomizer);
+		anotherContext.getGeneratedResources().addForFeature("Test", "file.txt", "another");
 		context.writeGeneratedContent();
 		assertThat(this.generatedFiles.getGeneratedFiles(Kind.SOURCE)).hasSize(2);
+		assertThat(this.generatedFiles.getGeneratedFiles(Kind.RESOURCE)).hasSize(2);
 	}
 
 	@Test
-	void withNameGeneratesUniqueName() {
+	void withNameGeneratesUniqueClassName() {
 		DefaultGenerationContext context = new DefaultGenerationContext(
 				new ClassNameGenerator(SAMPLE_TARGET), this.generatedFiles);
 		context.withName("Test").getGeneratedClasses()
@@ -148,6 +179,23 @@ class DefaultGenerationContextTests {
 				"com/example/SampleTarget__TestFeature.java",
 				"com/example/SampleTarget__Test1Feature.java",
 				"com/example/SampleTarget__Test2Feature.java");
+	}
+
+	@Test
+	void withNameGeneratesUniqueResourcePath() {
+		DefaultGenerationContext context = new DefaultGenerationContext(
+				new ClassNameGenerator(SAMPLE_TARGET), this.generatedFiles);
+		context.withName("Test").getGeneratedResources()
+				.addForFeature("Feature", "META-INF/some/file.txt", "file content");
+		context.withName("Test").getGeneratedResources()
+				.addForFeature("Feature", "META-INF/some/file.txt", "file content");
+		context.withName("Test").getGeneratedResources()
+				.addForFeature("Feature", "META-INF/some/file.txt", "file content");
+		context.writeGeneratedContent();
+		assertThat(this.generatedFiles.getGeneratedFiles(Kind.RESOURCE)).containsOnlyKeys(
+				"Test/Feature/META-INF/some/file.txt",
+				"Test1/Feature/META-INF/some/file.txt",
+				"Test2/Feature/META-INF/some/file.txt");
 	}
 
 }

@@ -41,6 +41,8 @@ public class DefaultGenerationContext implements GenerationContext {
 
 	private final GeneratedClasses generatedClasses;
 
+	private final GeneratedResources generatedResources;
+
 	private final GeneratedFiles generatedFiles;
 
 	private final RuntimeHints runtimeHints;
@@ -68,7 +70,8 @@ public class DefaultGenerationContext implements GenerationContext {
 	 */
 	public DefaultGenerationContext(ClassNameGenerator classNameGenerator, GeneratedFiles generatedFiles,
 			RuntimeHints runtimeHints) {
-		this(new GeneratedClasses(classNameGenerator), generatedFiles, runtimeHints);
+		this(new GeneratedClasses(classNameGenerator), new GeneratedResources(classNameGenerator.getFeatureNamePrefix()),
+				generatedFiles, runtimeHints);
 	}
 
 	/**
@@ -81,11 +84,28 @@ public class DefaultGenerationContext implements GenerationContext {
 	DefaultGenerationContext(GeneratedClasses generatedClasses,
 			GeneratedFiles generatedFiles, RuntimeHints runtimeHints) {
 
+		this(generatedClasses, new GeneratedResources(""),
+				generatedFiles, runtimeHints);
+	}
+
+	/**
+	 * Create a new {@link DefaultGenerationContext} instance backed by the
+	 * specified items.
+	 * @param generatedClasses the generated classes
+	 * @param generatedResources the generated resources
+	 * @param generatedFiles the generated files
+	 * @param runtimeHints the runtime hints
+	 */
+	DefaultGenerationContext(GeneratedClasses generatedClasses,
+			GeneratedResources generatedResources, GeneratedFiles generatedFiles, RuntimeHints runtimeHints) {
+
 		Assert.notNull(generatedClasses, "'generatedClasses' must not be null");
+		Assert.notNull(generatedResources, "'generatedResources' must not be null");
 		Assert.notNull(generatedFiles, "'generatedFiles' must not be null");
 		Assert.notNull(runtimeHints, "'runtimeHints' must not be null");
 		this.sequenceGenerator = new ConcurrentHashMap<>();
 		this.generatedClasses = generatedClasses;
+		this.generatedResources = generatedResources;
 		this.generatedFiles = generatedFiles;
 		this.runtimeHints = runtimeHints;
 	}
@@ -104,6 +124,7 @@ public class DefaultGenerationContext implements GenerationContext {
 		}
 		this.sequenceGenerator = existing.sequenceGenerator;
 		this.generatedClasses = existing.generatedClasses.withFeatureNamePrefix(featureName);
+		this.generatedResources = existing.generatedResources.withFeatureNamePrefix(featureName);
 		this.generatedFiles = existing.generatedFiles;
 		this.runtimeHints = existing.runtimeHints;
 	}
@@ -112,6 +133,11 @@ public class DefaultGenerationContext implements GenerationContext {
 	@Override
 	public GeneratedClasses getGeneratedClasses() {
 		return this.generatedClasses;
+	}
+
+	@Override
+	public GeneratedResources getGeneratedResources() {
+		return this.generatedResources;
 	}
 
 	@Override
@@ -134,6 +160,7 @@ public class DefaultGenerationContext implements GenerationContext {
 	 */
 	public void writeGeneratedContent() {
 		this.generatedClasses.writeTo(this.generatedFiles);
+		this.generatedResources.writeTo(this.generatedFiles);
 	}
 
 }
