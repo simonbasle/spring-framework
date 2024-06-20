@@ -24,6 +24,8 @@ import org.springframework.javapoet.CodeBlock;
  */
 public interface ResourceReference {
 
+	String path();
+
 	CodeBlock toVariableInitialization();
 
 }

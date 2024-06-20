@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 import org.springframework.util.function.ThrowingConsumer;
 
 /**
@@ -40,7 +41,7 @@ public class GeneratedResources {
 
 	private final String featureRootPath;
 
-	private final List<GeneratedResourceRecord> resources;
+	private final List<GeneratedResource> resources;
 
 
 	/**
@@ -59,7 +60,7 @@ public class GeneratedResources {
 		this(featureRootPath, new ArrayList<>());
 	}
 
-	private GeneratedResources(String featureRootPath, List<GeneratedResourceRecord> resources) {
+	private GeneratedResources(String featureRootPath, List<GeneratedResource> resources) {
 		Assert.notNull(featureRootPath, "'featureRootPath' must not be null");
 		this.featureRootPath = featureRootPath;
 		this.resources = resources;
@@ -72,9 +73,9 @@ public class GeneratedResources {
 	 * generated resource
 	 * @param targetPath the target path
 	 * @param content a {@link CharSequence} of the resource content
-	 * @return the newly generated resource
+	 * @return the newly generated resource reference
 	 */
-	public GeneratedResource addForFeature(String featureName,
+	public ResourceReference addForFeature(String featureName,
 			String targetPath, CharSequence content) {
 
 		Assert.notNull(content, "'content' must not be null");
@@ -88,9 +89,9 @@ public class GeneratedResources {
 	 * generated resource
 	 * @param targetPath the target path
 	 * @param content a {@link Consumer} used to build the resource content
-	 * @return the newly generated resource
+	 * @return the newly generated resource reference
 	 */
-	public GeneratedResource addForFeature(String featureName,
+	public ResourceReference addForFeature(String featureName,
 			String targetPath, ThrowingConsumer<Appendable> content) {
 
 		Assert.notNull(content, "'content' must not be null");
@@ -105,9 +106,9 @@ public class GeneratedResources {
 	 * @param targetPath the target path
 	 * @param content an {@link InputStreamSource} used to build the resource
 	 * content
-	 * @return the newly generated resource
+	 * @return the newly generated resource reference
 	 */
-	public GeneratedResource addForFeature(String featureName,
+	public ResourceReference addForFeature(String featureName,
 			String targetPath, InputStreamSource content) {
 
 		Assert.hasLength(featureName, "'featureName' must not be empty");
@@ -116,13 +117,13 @@ public class GeneratedResources {
 		return createAndAddGeneratedResource(featureName, targetPath, content);
 	}
 
-	private GeneratedResource createAndAddGeneratedResource(String featureName,
+	private ResourceReference createAndAddGeneratedResource(String featureName,
 			String path, InputStreamSource inputStreamSource) {
 
 		String fullPath = generateFullPath(featureName, path);
-		GeneratedResourceRecord generatedResource = new GeneratedResourceRecord(fullPath, inputStreamSource);
+		GeneratedResource generatedResource = new GeneratedResource(fullPath, inputStreamSource);
 		this.resources.add(generatedResource);
-		return generatedResource;
+		return new DefaultResourceReference(generatedResource.path());
 	}
 
 	private String generateFullPath(String featureName, String path) {
@@ -138,29 +139,27 @@ public class GeneratedResources {
 	 */
 	void writeTo(GeneratedFiles generatedFiles) {
 		Assert.notNull(generatedFiles, "'generatedFiles' must not be null");
-		List<GeneratedResourceRecord> generatedResources = new ArrayList<>(this.resources);
+		List<GeneratedResource> generatedResources = new ArrayList<>(this.resources);
 		generatedResources.sort(Comparator.comparing(GeneratedResource::path));
-		for (GeneratedResourceRecord generatedResource : generatedResources) {
+		for (GeneratedResource generatedResource : generatedResources) {
 			generatedFiles.addResourceFile(generatedResource.path(), generatedResource.content());
 		}
 	}
 
 	/**
-	 * Create a new {@link GeneratedResources} instance using the specified
-	 * feature name prefix to qualify generated resource names for a dedicated
-	 * round of code generation.
-	 * @param featureNamePrefix the feature name prefix to use
+	 * Create a new {@link GeneratedResources} instance using the specified name
+	 * to qualify generated resource names for a dedicated round of code
+	 * generation. The provided name is {@link StringUtils#uncapitalize(String)
+	 * uncapitalized} and used as the root directory for subsequently created
+	 * resources.
+	 * @param resourceRootName the name to use as a root for resource path
 	 * @return a new instance for the specified feature name prefix
 	 */
-	GeneratedResources withFeatureNamePrefix(String featureNamePrefix) {
-		return new GeneratedResources(featureNamePrefix, this.resources);
+	GeneratedResources withResourceRootName(String resourceRootName) {
+		return new GeneratedResources(StringUtils.uncapitalize(resourceRootName), this.resources);
 	}
 
-	public interface GeneratedResource {
-		String path();
-	}
-
-	private record GeneratedResourceRecord(String path, InputStreamSource content) implements GeneratedResource {
+	private record GeneratedResource(String path, InputStreamSource content) {
 	}
 
 }

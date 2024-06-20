@@ -112,19 +112,19 @@ public class DefaultGenerationContext implements GenerationContext {
 
 	/**
 	 * Create a new {@link DefaultGenerationContext} instance based on the
-	 * supplied {@code existing} context and feature name.
+	 * supplied {@code existing} context and a new name.
 	 * @param existing the existing context upon which to base the new one
-	 * @param featureName the feature name to use
+	 * @param contextName the feature name to use
 	 * @since 6.0.12
 	 */
-	protected DefaultGenerationContext(DefaultGenerationContext existing, String featureName) {
-		int sequence = existing.sequenceGenerator.computeIfAbsent(featureName, key -> new AtomicInteger()).getAndIncrement();
+	protected DefaultGenerationContext(DefaultGenerationContext existing, String contextName) {
+		int sequence = existing.sequenceGenerator.computeIfAbsent(contextName, key -> new AtomicInteger()).getAndIncrement();
 		if (sequence > 0) {
-			featureName += sequence;
+			contextName += sequence;
 		}
 		this.sequenceGenerator = existing.sequenceGenerator;
-		this.generatedClasses = existing.generatedClasses.withFeatureNamePrefix(featureName);
-		this.generatedResources = existing.generatedResources.withFeatureNamePrefix(featureName);
+		this.generatedClasses = existing.generatedClasses.withFeatureNamePrefix(contextName);
+		this.generatedResources = existing.generatedResources.withResourceRootName(contextName);
 		this.generatedFiles = existing.generatedFiles;
 		this.runtimeHints = existing.runtimeHints;
 	}

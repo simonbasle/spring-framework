@@ -30,6 +30,11 @@ class DefaultResourceReference implements ResourceReference {
 	public DefaultResourceReference(String path) {this.path = path;}
 
 	@Override
+	public String path() {
+		return this.path;
+	}
+
+	@Override
 	public CodeBlock toVariableInitialization() {
 		return CodeBlock.of("new $T($S)", ClassPathResource.class, this.path);
 	}
