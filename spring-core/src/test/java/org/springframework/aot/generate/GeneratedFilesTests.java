@@ -186,7 +186,7 @@ class GeneratedFilesTests {
 		this.generatedFiles.kind = Kind.RESOURCE;
 		this.generatedFiles.path = "file.txt";
 		this.generatedFiles.content = new AppendableConsumerInputStreamSource(a -> a.append("{}"));
-		this.generatedFiles.handleFile(Kind.RESOURCE, "file.txt", GeneratedFiles.GeneratedFile::existingContent);
+		this.generatedFiles.handleFile(Kind.RESOURCE, "file.txt", GeneratedFiles.Entry::existingContent);
 		assertThatFileAdded(Kind.RESOURCE, "file.txt").isEqualTo("{}");
 	}
 
@@ -224,10 +224,10 @@ class GeneratedFilesTests {
 		}
 
 		@Override
-		public void handleFile(Kind kind, String path, Function<GeneratedFile, InputStreamSource> computeFunction) {
-			final GeneratedFile generatedFile = new GeneratedFile(kind, path, kind.equals(this.kind) &&
+		public void handleFile(Kind kind, String path, Function<Entry, InputStreamSource> computeFunction) {
+			final Entry entry = new TestEntry(kind, path, kind.equals(this.kind) &&
 					path.equals(this.path), this.content);
-			final InputStreamSource newContent = computeFunction.apply(generatedFile);
+			final InputStreamSource newContent = computeFunction.apply(entry);
 			if (newContent != null && !newContent.equals(this.content)) {
 				addFile(kind, path, newContent);
 			}
@@ -242,6 +242,28 @@ class GeneratedFilesTests {
 			return assertThat(out.toString(StandardCharsets.UTF_8));
 		}
 
+	}
+
+	private static final class TestEntry extends AbstractGeneratedFiles.EmptyEntry {
+
+		private final boolean alreadyExists;
+		private final InputStreamSource content;
+
+		TestEntry(Kind kind, String path, boolean exists, InputStreamSource content) {
+			super(kind, path);
+			this.alreadyExists = exists;
+			this.content = content;
+		}
+
+		@Override
+		public boolean alreadyExists() {
+			return this.alreadyExists;
+		}
+
+		@Override
+		public InputStreamSource existingContent() {
+			return this.content;
+		}
 	}
 
 }

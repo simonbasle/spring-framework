@@ -20,9 +20,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.Function;
 
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.lang.Nullable;
@@ -32,40 +30,15 @@ import org.springframework.util.Assert;
  * {@link GeneratedFiles} implementation that keeps generated files in-memory.
  *
  * @author Phillip Webb
+ * @author Simon Baslé
  * @since 6.0
  */
-public class InMemoryGeneratedFiles implements GeneratedFiles {
-
-	private final Map<Kind, Map<String, InputStreamSource>> files = new HashMap<>();
-
+public class InMemoryGeneratedFiles extends AbstractGeneratedFiles {
 
 	@Override
-	public void addFile(Kind kind, String path, InputStreamSource content) {
-		handleFile(kind, path, f -> {
-			Assert.state(!f.alreadyExists(), () -> "Path '" + path + "' already in use");
-			return content;
-		});
+	protected void persistContent(Kind kind, String path, InputStreamSource replacement) {
+		//
 	}
-
-	@Override
-	public void handleFile(Kind kind, String path, Function<GeneratedFile, InputStreamSource> content) {
-		Assert.notNull(kind, "'kind' must not be null");
-		Assert.hasLength(path, "'path' must not be empty");
-		Assert.notNull(content, "'content' must not be null");
-		Map<String, InputStreamSource> paths = this.files.computeIfAbsent(kind,
-				key -> new LinkedHashMap<>());
-
-		boolean exists = paths.containsKey(path);
-		InputStreamSource existing = exists ? paths.get(path) : null;
-		GeneratedFile generatedFile = new GeneratedFile(kind, path, exists, existing);
-		InputStreamSource replacement = content.apply(generatedFile);
-		if (replacement == null || replacement.equals(existing)) {
-			//cancel the operation
-			return;
-		}
-		paths.put(path, replacement);
-	}
-
 
 	/**
 	 * Return a {@link Map} of the generated files of a specific {@link Kind}.
@@ -74,7 +47,18 @@ public class InMemoryGeneratedFiles implements GeneratedFiles {
 	 */
 	public Map<String, InputStreamSource> getGeneratedFiles(Kind kind) {
 		Assert.notNull(kind, "'kind' must not be null");
-		return Collections.unmodifiableMap(this.files.getOrDefault(kind, Collections.emptyMap()));
+		final Map<String, Entry> paths = this.entries.get(kind);
+		if (paths != null) {
+			HashMap<String, InputStreamSource> mapped = new HashMap<>(paths.size());
+			paths.forEach((path, entry) -> {
+				InputStreamSource existingContent = entry.existingContent();
+				if (existingContent != null) {
+					mapped.put(path, entry.existingContent());
+				}
+			});
+			return Collections.unmodifiableMap(mapped);
+		}
+		return Collections.emptyMap();
 	}
 
 	/**
@@ -103,8 +87,11 @@ public class InMemoryGeneratedFiles implements GeneratedFiles {
 	public InputStreamSource getGeneratedFile(Kind kind, String path) {
 		Assert.notNull(kind, "'kind' must not be null");
 		Assert.hasLength(path, "'path' must not be empty");
-		Map<String, InputStreamSource> paths = this.files.get(kind);
-		return (paths != null ? paths.get(path) : null);
+		Map<String, Entry> paths = this.entries.get(kind);
+		if (paths == null || !paths.containsKey(path)) {
+			return null;
+		}
+		return paths.get(path).existingContent();
 	}
 
 }

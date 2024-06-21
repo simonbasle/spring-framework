@@ -35,6 +35,7 @@ import org.springframework.util.function.ThrowingConsumer;
  * @author Phillip Webb
  * @author Brian Clozel
  * @author Stephane Nicoll
+ * @author Simon Baslé
  * @since 6.0
  * @see InMemoryGeneratedFiles
  * @see FileSystemGeneratedFiles
@@ -165,18 +166,17 @@ public interface GeneratedFiles {
 	void addFile(Kind kind, String path, InputStreamSource content);
 
 	/**
-	 * Handle a generated file of the specified {@link Kind} via the provided
-	 * compute {@link Function}.
-	 * <p>The function's {@link GeneratedFile input} reflects whether such a
-	 * file already exists or not. The function may return {@code null} in order
-	 * to cancel the operation.
+	 * Handle a generated file of the specified {@link Kind} which content is
+	 * determined via the provided compute {@link Function}.
+	 * <p>The function's {@link Entry input} notably reflects whether such a
+	 * file already exists or not. The function may either return {@code null}
+	 * or throw in order to cancel the operation.
 	 * @param kind the kind of file being written
 	 * @param path the relative path of the file
-	 * @param computeFunction a factory {@link Function} capable of checking if
-	 * the file already exists, and capable of adding the file or even replacing
-	 * the content.
+	 * @param computeFunction a factory {@link Function} returning the content
+	 * to be stored, or {@code null} to cancel the operation.
 	 */
-	void handleFile(Kind kind, String path, Function<GeneratedFile, InputStreamSource> computeFunction);
+	void handleFile(Kind kind, String path, Function<Entry, InputStreamSource> computeFunction);
 
 	private static String getClassNamePath(String className) {
 		Assert.hasLength(className, "'className' must not be empty");
@@ -232,6 +232,34 @@ public interface GeneratedFiles {
 
 	}
 
-	record GeneratedFile(Kind kind, String path, boolean alreadyExists, @Nullable InputStreamSource existingContent) {}
+	/**
+	 * A {@link GeneratedFiles} entry which allows to access existing content if
+	 * relevant.
+	 */
+	interface Entry {
+		/**
+		 * The {@link Kind} of the file this entry represents.
+		 */
+		Kind kind();
+
+		/**
+		 * The path of the file this entry represents.
+		 */
+		String path();
+
+		/**
+		 * Whether this entry represents a generated file that already
+		 * exists.
+		 */
+		boolean alreadyExists();
+
+		/**
+		 * The content of the generated file if it already exists or
+		 * {@code null}.
+		 * @see #alreadyExists()
+		 */
+		@Nullable
+		InputStreamSource existingContent();
+	}
 
 }

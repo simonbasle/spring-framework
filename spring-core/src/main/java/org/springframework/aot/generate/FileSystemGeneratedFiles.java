@@ -23,12 +23,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Function;
 
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.util.Assert;
 
@@ -37,14 +34,12 @@ import org.springframework.util.Assert;
  * {@link FileSystem}.
  *
  * @author Phillip Webb
+ * @author Simon Baslé
  * @since 6.0
  */
-public class FileSystemGeneratedFiles implements GeneratedFiles {
+public class FileSystemGeneratedFiles extends AbstractGeneratedFiles {
 
 	private final Function<Kind, Path> roots;
-
-	private final Set<Path> processedPaths;
-
 
 	/**
 	 * Create a new {@link FileSystemGeneratedFiles} instance with all files
@@ -73,7 +68,6 @@ public class FileSystemGeneratedFiles implements GeneratedFiles {
 		Assert.isTrue(Arrays.stream(Kind.values()).map(roots).noneMatch(Objects::isNull),
 				"'roots' must return a value for all file kinds");
 		this.roots = roots;
-		this.processedPaths = new HashSet<>();
 	}
 
 
@@ -87,37 +81,15 @@ public class FileSystemGeneratedFiles implements GeneratedFiles {
 	}
 
 	@Override
-	public void addFile(Kind kind, String path, InputStreamSource content) {
-		handleFile(kind, path, f -> {
-			Assert.state(!f.alreadyExists(), () -> "Path '" + path + "' already in use");
-			return content;
-		});
-	}
-
-	@Override
-	public void handleFile(Kind kind, String path,
-			Function<GeneratedFile, InputStreamSource> computeFunction) {
-
-		Assert.notNull(kind, "'kind' must not be null");
-		Assert.hasLength(path, "'path' must not be empty");
-		Assert.notNull(computeFunction, "'computeFunction' must not be null");
+	protected void persistContent(Kind kind, String path, InputStreamSource replacement) {
 		Path root = this.roots.apply(kind).toAbsolutePath().normalize();
 		Path relativePath = root.resolve(path).toAbsolutePath().normalize();
 		Assert.isTrue(relativePath.startsWith(root), "'path' must be relative");
 
-		boolean exists = this.processedPaths.contains(relativePath);
-		InputStreamSource existing = exists ? new FileSystemResource(relativePath) : null;
-		final GeneratedFile generatedFile = new GeneratedFile(kind, path, exists, existing);
 		try {
-			InputStreamSource replacement = computeFunction.apply(generatedFile);
-			if (replacement == null || replacement.equals(existing)) {
-				//cancel the operation
-				return;
-			}
 			try (InputStream inputStream = replacement.getInputStream()) {
 				Files.createDirectories(relativePath.getParent());
 				Files.copy(inputStream, relativePath, StandardCopyOption.REPLACE_EXISTING);
-				this.processedPaths.add(relativePath);
 			}
 		}
 		catch (IOException ex) {
