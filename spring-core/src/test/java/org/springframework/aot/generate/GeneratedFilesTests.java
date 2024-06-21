@@ -19,6 +19,7 @@ package org.springframework.aot.generate;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.function.UnaryOperator;
 
 import javax.lang.model.element.Modifier;
 
@@ -172,6 +173,11 @@ class GeneratedFilesTests {
 			this.kind = kind;
 			this.path = path;
 			this.content = content;
+		}
+
+		@Override
+		public void addOrReplaceFile(Kind kind, String path, UnaryOperator<InputStreamSource> content) {
+			throw new UnsupportedOperationException();
 		}
 
 		AbstractStringAssert<?> assertThatFileAdded(Kind kind, String path)

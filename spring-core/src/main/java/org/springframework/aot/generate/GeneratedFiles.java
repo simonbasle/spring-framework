@@ -16,6 +16,8 @@
 
 package org.springframework.aot.generate;
 
+import java.util.function.UnaryOperator;
+
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.javapoet.JavaFile;
 import org.springframework.util.Assert;
@@ -160,6 +162,20 @@ public interface GeneratedFiles {
 	 * stream containing the file contents
 	 */
 	void addFile(Kind kind, String path, InputStreamSource content);
+
+	/**
+	 * Add or replace a generated file of the specified {@link Kind}, applying
+	 * the provided {@link UnaryOperator}.
+	 * <p>If no such file already exists, the input to the operator is
+	 * {@code null}. In order to cancel the addition of the file, one can also
+	 * return {@code null} or the exact same input {@link InputStreamSource}
+	 * instance from the operator.
+	 * @param kind the kind of file being written
+	 * @param path the relative path of the file
+	 * @param content an {@link InputStreamSource} that will provide an input
+	 * stream containing the file contents
+	 */
+	void addOrReplaceFile(Kind kind, String path, UnaryOperator<InputStreamSource> content);
 
 	private static String getClassNamePath(String className) {
 		Assert.hasLength(className, "'className' must not be empty");

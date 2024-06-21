@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.lang.Nullable;
@@ -48,6 +49,28 @@ public class InMemoryGeneratedFiles implements GeneratedFiles {
 		Assert.state(!paths.containsKey(path), () -> "Path '" + path + "' already in use");
 		paths.put(path, content);
 	}
+
+
+	@Override
+	public void addOrReplaceFile(Kind kind, String path,
+			UnaryOperator<InputStreamSource> content) {
+
+		Assert.notNull(kind, "'kind' must not be null");
+		Assert.hasLength(path, "'path' must not be empty");
+		Assert.notNull(content, "'content' must not be null");
+
+		Map<String, InputStreamSource> paths = this.files.computeIfAbsent(kind,
+				key -> new LinkedHashMap<>());
+
+		InputStreamSource existing = paths.get(path);
+		InputStreamSource replacement = content.apply(existing);
+		if (replacement == null || replacement == existing) {
+			//do nothing
+			return;
+		}
+		paths.put(path, replacement);
+	}
+
 
 	/**
 	 * Return a {@link Map} of the generated files of a specific {@link Kind}.
