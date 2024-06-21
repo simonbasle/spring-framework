@@ -16,10 +16,11 @@
 
 package org.springframework.aot.generate;
 
-import java.util.function.UnaryOperator;
+import java.util.function.Function;
 
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.javapoet.JavaFile;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
@@ -137,7 +138,7 @@ public interface GeneratedFiles {
 	 * @param content the contents of the file
 	 */
 	default void addFile(Kind kind, String path, CharSequence content) {
-		addFile(kind, path, appendable -> appendable.append(content));
+		addFile(kind, path, (ThrowingConsumer<Appendable>) appendable -> appendable.append(content));
 	}
 
 	/**
@@ -164,18 +165,18 @@ public interface GeneratedFiles {
 	void addFile(Kind kind, String path, InputStreamSource content);
 
 	/**
-	 * Add or replace a generated file of the specified {@link Kind}, applying
-	 * the provided {@link UnaryOperator}.
-	 * <p>If no such file already exists, the input to the operator is
-	 * {@code null}. In order to cancel the addition of the file, one can also
-	 * return {@code null} or the exact same input {@link InputStreamSource}
-	 * instance from the operator.
+	 * Handle a generated file of the specified {@link Kind} via the provided
+	 * compute {@link Function}.
+	 * <p>The function's {@link GeneratedFile input} reflects whether such a
+	 * file already exists or not. The function may return {@code null} in order
+	 * to cancel the operation.
 	 * @param kind the kind of file being written
 	 * @param path the relative path of the file
-	 * @param content an {@link InputStreamSource} that will provide an input
-	 * stream containing the file contents
+	 * @param computeFunction a factory {@link Function} capable of checking if
+	 * the file already exists, and capable of adding the file or even replacing
+	 * the content.
 	 */
-	void addOrReplaceFile(Kind kind, String path, UnaryOperator<InputStreamSource> content);
+	void handleFile(Kind kind, String path, Function<GeneratedFile, InputStreamSource> computeFunction);
 
 	private static String getClassNamePath(String className) {
 		Assert.hasLength(className, "'className' must not be empty");
@@ -230,5 +231,7 @@ public interface GeneratedFiles {
 		CLASS
 
 	}
+
+	record GeneratedFile(Kind kind, String path, boolean alreadyExists, @Nullable InputStreamSource existingContent) {}
 
 }

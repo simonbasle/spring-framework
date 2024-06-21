@@ -21,10 +21,12 @@ import java.io.InputStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
 
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.InputStreamSource;
@@ -40,6 +42,8 @@ import org.springframework.util.Assert;
 public class FileSystemGeneratedFiles implements GeneratedFiles {
 
 	private final Function<Kind, Path> roots;
+
+	private final Set<Path> processedPaths;
 
 
 	/**
@@ -69,6 +73,7 @@ public class FileSystemGeneratedFiles implements GeneratedFiles {
 		Assert.isTrue(Arrays.stream(Kind.values()).map(roots).noneMatch(Objects::isNull),
 				"'roots' must return a value for all file kinds");
 		this.roots = roots;
+		this.processedPaths = new HashSet<>();
 	}
 
 
@@ -83,65 +88,40 @@ public class FileSystemGeneratedFiles implements GeneratedFiles {
 
 	@Override
 	public void addFile(Kind kind, String path, InputStreamSource content) {
+		handleFile(kind, path, f -> {
+			Assert.state(!f.alreadyExists(), () -> "Path '" + path + "' already in use");
+			return content;
+		});
+	}
+
+	@Override
+	public void handleFile(Kind kind, String path,
+			Function<GeneratedFile, InputStreamSource> computeFunction) {
+
 		Assert.notNull(kind, "'kind' must not be null");
 		Assert.hasLength(path, "'path' must not be empty");
-		Assert.notNull(content, "'content' must not be null");
+		Assert.notNull(computeFunction, "'computeFunction' must not be null");
 		Path root = this.roots.apply(kind).toAbsolutePath().normalize();
 		Path relativePath = root.resolve(path).toAbsolutePath().normalize();
 		Assert.isTrue(relativePath.startsWith(root), "'path' must be relative");
+
+		boolean exists = this.processedPaths.contains(relativePath);
+		InputStreamSource existing = exists ? new FileSystemResource(relativePath) : null;
+		final GeneratedFile generatedFile = new GeneratedFile(kind, path, exists, existing);
 		try {
-			try (InputStream inputStream = content.getInputStream()) {
+			InputStreamSource replacement = computeFunction.apply(generatedFile);
+			if (replacement == null || replacement.equals(existing)) {
+				//cancel the operation
+				return;
+			}
+			try (InputStream inputStream = replacement.getInputStream()) {
 				Files.createDirectories(relativePath.getParent());
-				Files.copy(inputStream, relativePath);
+				Files.copy(inputStream, relativePath, StandardCopyOption.REPLACE_EXISTING);
+				this.processedPaths.add(relativePath);
 			}
 		}
 		catch (IOException ex) {
 			throw new IllegalStateException(ex);
-		}
-	}
-
-	@Override
-	public void addOrReplaceFile(Kind kind, String path,
-			UnaryOperator<InputStreamSource> content) {
-
-		Assert.notNull(kind, "'kind' must not be null");
-		Assert.hasLength(path, "'path' must not be empty");
-		Assert.notNull(content, "'content' must not be null");
-		Path root = this.roots.apply(kind).toAbsolutePath().normalize();
-		Path relativePath = root.resolve(path).toAbsolutePath().normalize();
-		Assert.isTrue(relativePath.startsWith(root), "'path' must be relative");
-
-		if (Files.exists(relativePath)) {
-			InputStreamSource existing = new FileSystemResource(relativePath);
-			try {
-				InputStreamSource replacement = content.apply(existing);
-				if (replacement == null || replacement == existing) {
-					//do nothing
-					return;
-				}
-				try (InputStream inputStream = replacement.getInputStream()) {
-					Files.createDirectories(relativePath.getParent());
-					Files.copy(inputStream, relativePath);
-				}
-			}
-			catch (IOException ex) {
-				throw new IllegalStateException(ex);
-			}
-		}
-		else {
-			try {
-				final InputStreamSource replacement = content.apply(null);
-				if (replacement == null) {
-					return;
-				}
-				try (InputStream inputStream = replacement.getInputStream()) {
-					Files.createDirectories(relativePath.getParent());
-					Files.copy(inputStream, relativePath);
-				}
-			}
-			catch (IOException ex) {
-				throw new IllegalStateException(ex);
-			}
 		}
 	}
 

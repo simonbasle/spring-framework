@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.UnaryOperator;
+import java.util.function.Function;
 
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.lang.Nullable;
@@ -41,31 +41,26 @@ public class InMemoryGeneratedFiles implements GeneratedFiles {
 
 	@Override
 	public void addFile(Kind kind, String path, InputStreamSource content) {
-		Assert.notNull(kind, "'kind' must not be null");
-		Assert.hasLength(path, "'path' must not be empty");
-		Assert.notNull(content, "'content' must not be null");
-		Map<String, InputStreamSource> paths = this.files.computeIfAbsent(kind,
-				key -> new LinkedHashMap<>());
-		Assert.state(!paths.containsKey(path), () -> "Path '" + path + "' already in use");
-		paths.put(path, content);
+		handleFile(kind, path, f -> {
+			Assert.state(!f.alreadyExists(), () -> "Path '" + path + "' already in use");
+			return content;
+		});
 	}
 
-
 	@Override
-	public void addOrReplaceFile(Kind kind, String path,
-			UnaryOperator<InputStreamSource> content) {
-
+	public void handleFile(Kind kind, String path, Function<GeneratedFile, InputStreamSource> content) {
 		Assert.notNull(kind, "'kind' must not be null");
 		Assert.hasLength(path, "'path' must not be empty");
 		Assert.notNull(content, "'content' must not be null");
-
 		Map<String, InputStreamSource> paths = this.files.computeIfAbsent(kind,
 				key -> new LinkedHashMap<>());
 
-		InputStreamSource existing = paths.get(path);
-		InputStreamSource replacement = content.apply(existing);
-		if (replacement == null || replacement == existing) {
-			//do nothing
+		boolean exists = paths.containsKey(path);
+		InputStreamSource existing = exists ? paths.get(path) : null;
+		GeneratedFile generatedFile = new GeneratedFile(kind, path, exists, existing);
+		InputStreamSource replacement = content.apply(generatedFile);
+		if (replacement == null || replacement.equals(existing)) {
+			//cancel the operation
 			return;
 		}
 		paths.put(path, replacement);

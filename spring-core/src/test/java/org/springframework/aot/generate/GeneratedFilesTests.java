@@ -19,7 +19,7 @@ package org.springframework.aot.generate;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.function.UnaryOperator;
+import java.util.function.Function;
 
 import javax.lang.model.element.Modifier;
 
@@ -36,6 +36,7 @@ import org.springframework.javapoet.TypeSpec;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 /**
  * Tests for {@link GeneratedFiles}.
@@ -155,9 +156,56 @@ class GeneratedFilesTests {
 		assertThatFileAdded(Kind.SOURCE, "com/example/HelloWorld.java").isEqualTo("{}");
 	}
 
+	@Test
+	void handleFileAddsFile() throws IOException {
+		this.generatedFiles.handleFile(Kind.RESOURCE, "META-INF/test/file.txt",
+				f -> new AppendableConsumerInputStreamSource(appendable -> appendable.append("{}")));
+		assertThatFileAdded(Kind.RESOURCE, "META-INF/test/file.txt").isEqualTo("{}");
+	}
+
+	@Test
+	void handleFileThrowsException() {
+		assertThatIllegalStateException().isThrownBy(() -> this.generatedFiles.handleFile(Kind.RESOURCE,
+				"META-INF/test/file.txt", f -> { throw new IllegalStateException("exception in computeFunction"); }
+		));
+		assertThatFileNotAdded();
+	}
+
+	@Test
+	void handleFileReplacesFile() throws IOException {
+		this.generatedFiles.kind = Kind.RESOURCE;
+		this.generatedFiles.path = "file.txt";
+		this.generatedFiles.content = new AppendableConsumerInputStreamSource(a -> a.append("{}"));
+		this.generatedFiles.handleFile(Kind.RESOURCE, "file.txt", f ->
+				new AppendableConsumerInputStreamSource(a -> a.append("replacement")));
+		assertThatFileAdded(Kind.RESOURCE, "file.txt").isEqualTo("replacement");
+	}
+
+	@Test
+	void handleFileBacksOffWhenReturningOriginalInstance() throws IOException {
+		this.generatedFiles.kind = Kind.RESOURCE;
+		this.generatedFiles.path = "file.txt";
+		this.generatedFiles.content = new AppendableConsumerInputStreamSource(a -> a.append("{}"));
+		this.generatedFiles.handleFile(Kind.RESOURCE, "file.txt", GeneratedFiles.GeneratedFile::existingContent);
+		assertThatFileAdded(Kind.RESOURCE, "file.txt").isEqualTo("{}");
+	}
+
+	@Test
+	void handleFileBacksOffWhenReturningNull() throws IOException {
+		this.generatedFiles.kind = Kind.RESOURCE;
+		this.generatedFiles.path = "file.txt";
+		this.generatedFiles.content = new AppendableConsumerInputStreamSource(a -> a.append("{}"));
+		this.generatedFiles.handleFile(Kind.RESOURCE, "file.txt", f -> null);
+		assertThatFileAdded(Kind.RESOURCE, "file.txt").isEqualTo("{}");
+	}
+
 	private AbstractStringAssert<?> assertThatFileAdded(Kind kind, String path)
 			throws IOException {
 		return this.generatedFiles.assertThatFileAdded(kind, path);
+	}
+
+	private void assertThatFileNotAdded() {
+		assertThat(this.generatedFiles.content).isNull();
 	}
 
 	static class TestGeneratedFiles implements GeneratedFiles {
@@ -176,8 +224,13 @@ class GeneratedFilesTests {
 		}
 
 		@Override
-		public void addOrReplaceFile(Kind kind, String path, UnaryOperator<InputStreamSource> content) {
-			throw new UnsupportedOperationException();
+		public void handleFile(Kind kind, String path, Function<GeneratedFile, InputStreamSource> computeFunction) {
+			final GeneratedFile generatedFile = new GeneratedFile(kind, path, kind.equals(this.kind) &&
+					path.equals(this.path), this.content);
+			final InputStreamSource newContent = computeFunction.apply(generatedFile);
+			if (newContent != null && !newContent.equals(this.content)) {
+				addFile(kind, path, newContent);
+			}
 		}
 
 		AbstractStringAssert<?> assertThatFileAdded(Kind kind, String path)
