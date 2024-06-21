@@ -24,7 +24,9 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.util.Assert;
 
@@ -95,6 +97,51 @@ public class FileSystemGeneratedFiles implements GeneratedFiles {
 		}
 		catch (IOException ex) {
 			throw new IllegalStateException(ex);
+		}
+	}
+
+	@Override
+	public void addOrReplaceFile(Kind kind, String path,
+			UnaryOperator<InputStreamSource> content) {
+
+		Assert.notNull(kind, "'kind' must not be null");
+		Assert.hasLength(path, "'path' must not be empty");
+		Assert.notNull(content, "'content' must not be null");
+		Path root = this.roots.apply(kind).toAbsolutePath().normalize();
+		Path relativePath = root.resolve(path).toAbsolutePath().normalize();
+		Assert.isTrue(relativePath.startsWith(root), "'path' must be relative");
+
+		if (Files.exists(relativePath)) {
+			InputStreamSource existing = new FileSystemResource(relativePath);
+			try {
+				InputStreamSource replacement = content.apply(existing);
+				if (replacement == null || replacement == existing) {
+					//do nothing
+					return;
+				}
+				try (InputStream inputStream = replacement.getInputStream()) {
+					Files.createDirectories(relativePath.getParent());
+					Files.copy(inputStream, relativePath);
+				}
+			}
+			catch (IOException ex) {
+				throw new IllegalStateException(ex);
+			}
+		}
+		else {
+			try {
+				final InputStreamSource replacement = content.apply(null);
+				if (replacement == null) {
+					return;
+				}
+				try (InputStream inputStream = replacement.getInputStream()) {
+					Files.createDirectories(relativePath.getParent());
+					Files.copy(inputStream, relativePath);
+				}
+			}
+			catch (IOException ex) {
+				throw new IllegalStateException(ex);
+			}
 		}
 	}
 

@@ -19,13 +19,23 @@ package org.springframework.aot.generate;
 import org.springframework.javapoet.CodeBlock;
 
 /**
- *
+ * A reference to a resource with convenient code generation for
+ * loading it.
  * @author Stephane Nicoll
+ * @since 6.2
  */
 public interface ResourceReference {
 
+	/**
+	 * The path of the resource.
+	 */
 	String path();
 
+	/**
+	 * Return this resource reference as a {@link CodeBlock}.
+	 * @return a code block to load the resource as a new
+	 * {@link org.springframework.core.io.Resource}
+	 */
 	CodeBlock toVariableInitialization();
 
 }

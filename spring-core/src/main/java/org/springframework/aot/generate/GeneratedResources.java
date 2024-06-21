@@ -133,8 +133,8 @@ public class GeneratedResources {
 
 
 	/**
-	 * Write the {@link GeneratedResource generated resources} using the given
-	 * {@link GeneratedFiles} instance.
+	 * Write the generated resources using the given {@link GeneratedFiles}
+	 * instance.
 	 * @param generatedFiles where to write the generated resources
 	 */
 	void writeTo(GeneratedFiles generatedFiles) {

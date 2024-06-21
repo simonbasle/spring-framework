@@ -20,14 +20,16 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.javapoet.CodeBlock;
 
 /**
- *
+ * Default implementation of a {@link ResourceReference}.
  * @author Stephane Nicoll
  */
 class DefaultResourceReference implements ResourceReference {
 
 	private final String path;
 
-	public DefaultResourceReference(String path) {this.path = path;}
+	public DefaultResourceReference(String path) {
+		this.path = path;
+	}
 
 	@Override
 	public String path() {
