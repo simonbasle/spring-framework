@@ -79,6 +79,8 @@ public final class WebAsyncManager {
 
 	private AsyncTaskExecutor taskExecutor = DEFAULT_TASK_EXECUTOR;
 
+	private boolean isMultipart;
+
 	@Nullable
 	private volatile Object concurrentResult = RESULT_NONE;
 
@@ -240,6 +242,21 @@ public final class WebAsyncManager {
 			String key = interceptor.getClass().getName() + ":" + interceptor.hashCode();
 			this.deferredResultInterceptors.put(key, interceptor);
 		}
+	}
+
+	/**
+	 * Mark the {@link WebAsyncManager} as multipart.
+	 */
+	public void setMultipart(boolean isMultipart) {
+		this.isMultipart = isMultipart;
+	}
+
+	/**
+	 * Return {@code true} if this {@link WebAsyncManager} was previously marked
+	 * as multipart, {@code false} otherwise.
+	 */
+	public boolean isMultipart() {
+		return this.isMultipart;
 	}
 
 	/**
