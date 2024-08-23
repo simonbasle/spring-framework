@@ -53,6 +53,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.util.StringValueResolver;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.service.annotation.HttpExchange;
 
 /**
@@ -64,6 +65,7 @@ import org.springframework.web.service.annotation.HttpExchange;
  * @author Sebastien Deleuze
  * @author Olga Maciaszek-Sharma
  * @author Sam Brannen
+ * @author Simon Baslé
  * @since 6.0
  */
 final class HttpServiceMethod {
@@ -407,7 +409,8 @@ final class HttpServiceMethod {
 						"Kotlin Coroutines are only supported with reactive implementations");
 			}
 
-			MethodParameter param = new MethodParameter(method, -1).nestedIfOptional();
+			MethodParameter returnParam = new MethodParameter(method, -1);
+			MethodParameter param = returnParam.nestedIfOptional();
 			Class<?> paramType = param.getNestedParameterType();
 
 			Function<HttpRequestValues, Object> responseFunction;
@@ -433,6 +436,19 @@ final class HttpServiceMethod {
 							asOptionalIfNecessary(client.exchangeForEntity(request, bodyTypeRef), param);
 				}
 			}
+			else if (returnParam.isOptional()) {
+				ParameterizedTypeReference<?> bodyTypeRef =
+						ParameterizedTypeReference.forType(param.getNestedGenericParameterType());
+				responseFunction = request -> {
+					try {
+						Object response = client.exchangeForBody(request, bodyTypeRef);
+						return Optional.ofNullable(response);
+					}
+					catch (HttpClientErrorException.NotFound ex) {
+						return Optional.empty();
+					}
+				};
+			}
 			else {
 				ParameterizedTypeReference<?> bodyTypeRef =
 						ParameterizedTypeReference.forType(param.getNestedGenericParameterType());
@@ -446,6 +462,7 @@ final class HttpServiceMethod {
 		private static @Nullable Object asOptionalIfNecessary(@Nullable Object response, MethodParameter param) {
 			return param.getParameterType().equals(Optional.class) ? Optional.ofNullable(response) : response;
 		}
+
 	}
 
 

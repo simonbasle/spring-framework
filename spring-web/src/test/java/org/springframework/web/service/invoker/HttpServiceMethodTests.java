@@ -22,6 +22,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import io.reactivex.rxjava3.core.Completable;
@@ -36,15 +37,21 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.Nullable;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.service.annotation.GetExchange;
 import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.annotation.PostExchange;
 import org.springframework.web.service.annotation.PutExchange;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatException;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.springframework.http.MediaType.APPLICATION_CBOR_VALUE;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -61,13 +68,34 @@ import static org.springframework.http.MediaType.APPLICATION_NDJSON_VALUE;
  * @author Rossen Stoyanchev
  * @author Olga Maciaszek-Sharma
  * @author Sam Brannen
+ * @author Simon Baslé
  */
 class HttpServiceMethodTests {
 
 	private static final ParameterizedTypeReference<String> BODY_TYPE = new ParameterizedTypeReference<>() {};
 
+	private static final String ERROR_URI_TEMPLATE = "/error";
 
-	private final TestExchangeAdapter client = new TestExchangeAdapter();
+	private static final String SPECIAL_HEADER_BODY = "X-Body";
+
+	private static final String SPECIAL_HEADER_STATUS = "X-Status";
+
+	private final TestExchangeAdapter client = new TestExchangeAdapter() {
+		@Override
+		@SuppressWarnings("unchecked")
+		public <T> T exchangeForBody(HttpRequestValues requestValues, ParameterizedTypeReference<T> bodyType) {
+			String uriTemplate = requestValues.getUriTemplate();
+			if (uriTemplate == null || !uriTemplate.equals(ERROR_URI_TEMPLATE)) {
+				if (requestValues.getHeaders().containsKey(SPECIAL_HEADER_BODY)) {
+					String body = requestValues.getHeaders().getFirst(SPECIAL_HEADER_BODY);
+					return (StringUtils.hasText(body) ? (T) body : null);
+				}
+				return super.exchangeForBody(requestValues, bodyType);
+			}
+			int code = Integer.parseInt(Objects.requireNonNull(requestValues.getHeaders().getFirst(SPECIAL_HEADER_STATUS)));
+			throw HttpClientErrorException.create(HttpStatus.valueOf(code), "This is a test", requestValues.getHeaders(), new byte[0], null);
+		}
+	};
 
 	private final TestReactorExchangeAdapter reactorClient = new TestReactorExchangeAdapter();
 
@@ -101,6 +129,30 @@ class HttpServiceMethodTests {
 
 		List<String> list = service.getList();
 		assertThat(list).containsOnly("exchangeForBody");
+	}
+
+	@Test
+	void serviceOptionalAdditionalCases() {
+		OptionalService service = this.proxyFactory.createClient(OptionalService.class);
+
+		Optional<String> optionalOk = service.getBodyOptional("");
+		assertThat(optionalOk).as("ok with no body").isEmpty();
+
+		optionalOk = service.getBodyOptional("some body");
+		assertThat(optionalOk).as("ok with body").hasValue("some body");
+
+		Optional<String> optionalNotFound = service.getBodyOptionalNotFound();
+		assertThat(optionalNotFound).as("404").isEmpty();
+
+		assertThatExceptionOfType(HttpClientErrorException.Forbidden.class)
+				.as("403")
+				.isThrownBy(service::putBodyOptionalForbidden)
+				.withMessage("403 This is a test");
+
+		assertThatException().isThrownBy(service::postOptionalServerError)
+				.as("500")
+				.isExactlyInstanceOf(HttpClientErrorException.class)
+				.withMessage("500 This is a test");
 	}
 
 	@Test
@@ -278,6 +330,22 @@ class HttpServiceMethodTests {
 
 		@GetExchange
 		List<String> getList();
+
+	}
+
+	private interface OptionalService {
+
+		@GetExchange()
+		Optional<String> getBodyOptional(@RequestHeader(name = SPECIAL_HEADER_BODY) @Nullable String body);
+
+		@HttpExchange(url = ERROR_URI_TEMPLATE, headers = { SPECIAL_HEADER_STATUS + "=404"}, method = "GET")
+		Optional<String> getBodyOptionalNotFound();
+
+		@HttpExchange(url = ERROR_URI_TEMPLATE, headers = { SPECIAL_HEADER_STATUS + "=403"}, method = "PUT")
+		Optional<String> putBodyOptionalForbidden();
+
+		@HttpExchange(url = ERROR_URI_TEMPLATE, headers = { SPECIAL_HEADER_STATUS + "=500"}, method = "POST")
+		Optional<String> postOptionalServerError();
 
 	}
 
