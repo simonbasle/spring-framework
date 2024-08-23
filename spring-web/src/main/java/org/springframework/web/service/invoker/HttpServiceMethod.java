@@ -436,7 +436,7 @@ final class HttpServiceMethod {
 							asOptionalIfNecessary(client.exchangeForEntity(request, bodyTypeRef), param);
 				}
 			}
-			else if (returnParam.isOptional()) {
+			else if (returnParam.getParameterType() == Optional.class) {
 				ParameterizedTypeReference<?> bodyTypeRef =
 						ParameterizedTypeReference.forType(param.getNestedGenericParameterType());
 				responseFunction = request -> {
