@@ -16,21 +16,20 @@
 
 package org.springframework.http.support;
 
-import java.util.AbstractSet;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import io.netty5.handler.codec.http.headers.HttpHeaders;
 
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
+import org.springframework.util.LinkedCaseInsensitiveMap;
 import org.springframework.util.MultiValueMap;
 
 /**
@@ -39,7 +38,7 @@ import org.springframework.util.MultiValueMap;
  * @author Violeta Georgieva
  * @since 6.1
  */
-public final class Netty5HeadersAdapter implements MultiValueMap<String, String> {
+public final class Netty5HeadersAdapter extends AbstractHeadersAdapter {
 
 	private final HttpHeaders headers;
 
@@ -92,15 +91,11 @@ public final class Netty5HeadersAdapter implements MultiValueMap<String, String>
 
 	@Override
 	public Map<String, String> toSingleValueMap() {
-		Map<String, String> singleValueMap = CollectionUtils.newLinkedHashMap(this.headers.size());
+		Map<String, String> singleValueMap = new LinkedCaseInsensitiveMap<>(
+				this.headers.size(), Locale.ROOT);
 		this.headers.forEach(entry -> singleValueMap.putIfAbsent(
 				entry.getKey().toString(), entry.getValue().toString()));
 		return singleValueMap;
-	}
-
-	@Override
-	public int size() {
-		return this.headers.names().size();
 	}
 
 	@Override
@@ -162,52 +157,28 @@ public final class Netty5HeadersAdapter implements MultiValueMap<String, String>
 	}
 
 	@Override
-	public Set<String> keySet() {
-		return new HeaderNames();
-	}
-
-	@Override
-	public Collection<List<String>> values() {
-		List<List<String>> result = new ArrayList<>(this.headers.size());
-		forEach((key, value) -> result.add(value));
-		return result;
-	}
-
-	@Override
-	public Set<Entry<String, List<String>>> entrySet() {
-		return new AbstractSet<>() {
-			@Override
-			public Iterator<Entry<String, List<String>>> iterator() {
-				return new EntryIterator();
-			}
-
-			@Override
-			public int size() {
-				return headers.size();
-			}
-		};
-	}
-
-
-	@Override
 	public String toString() {
 		return org.springframework.http.HttpHeaders.formatHeaders(this);
 	}
 
+	@Override
+	protected Stream<String> getOriginalHeaderNames() {
+		return this.headers.names().stream().map(CharSequence::toString);
+	}
 
-	private class EntryIterator implements Iterator<Entry<String, List<String>>> {
+	@Override
+	protected Entry<String, List<String>> listAdaptingEntry(String key) {
+		return new HeaderEntry(key);
+	}
 
-		private final Iterator<CharSequence> names = headers.names().iterator();
+	@Override
+	protected boolean originalContains(String key) {
+		return this.headers.contains(key);
+	}
 
-		@Override
-		public boolean hasNext() {
-			return this.names.hasNext();
-		}
-
-		@Override
-		public Entry<String, List<String>> next() {
-			return new HeaderEntry(this.names.next());
-		}
+	@Override
+	protected void originalRemove(String key) {
+		this.headers.remove(key);
 	}
 
 
@@ -237,52 +208,4 @@ public final class Netty5HeadersAdapter implements MultiValueMap<String, String>
 			return previousValues;
 		}
 	}
-
-	private class HeaderNames extends AbstractSet<String> {
-
-		@Override
-		public Iterator<String> iterator() {
-			return new HeaderNamesIterator(headers.names().iterator());
-		}
-
-		@Override
-		public int size() {
-			return headers.names().size();
-		}
-	}
-
-	private final class HeaderNamesIterator implements Iterator<String> {
-
-		private final Iterator<CharSequence> iterator;
-
-		@Nullable
-		private CharSequence currentName;
-
-		private HeaderNamesIterator(Iterator<CharSequence> iterator) {
-			this.iterator = iterator;
-		}
-
-		@Override
-		public boolean hasNext() {
-			return this.iterator.hasNext();
-		}
-
-		@Override
-		public String next() {
-			this.currentName = this.iterator.next();
-			return this.currentName.toString();
-		}
-
-		@Override
-		public void remove() {
-			if (this.currentName == null) {
-				throw new IllegalStateException("No current Header in iterator");
-			}
-			if (!headers.contains(this.currentName)) {
-				throw new IllegalStateException("Header not present: " + this.currentName);
-			}
-			headers.remove(this.currentName);
-		}
-	}
-
 }

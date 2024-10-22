@@ -21,7 +21,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -90,12 +92,11 @@ class TomcatHeadersAdapter implements MultiValueMap<String, String> {
 	@Override
 	public int size() {
 		Enumeration<String> names = this.headers.names();
-		int size = 0;
+		Set<String> deduplicated = new LinkedHashSet<>();
 		while (names.hasMoreElements()) {
-			size++;
-			names.nextElement();
+			deduplicated.add(names.nextElement().toLowerCase(Locale.ROOT));
 		}
-		return size;
+		return deduplicated.size();
 	}
 
 	@Override
@@ -185,7 +186,7 @@ class TomcatHeadersAdapter implements MultiValueMap<String, String> {
 
 			@Override
 			public int size() {
-				return headers.size();
+				return TomcatHeadersAdapter.this.size();
 			}
 		};
 	}
