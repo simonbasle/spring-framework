@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 
 import io.netty.handler.codec.http.DefaultHttpHeaders;
 import io.undertow.util.HeaderMap;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.tomcat.util.http.MimeHeaders;
 import org.eclipse.jetty.http.HttpFields;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -35,6 +36,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.support.HttpComponentsHeadersAdapter;
 import org.springframework.http.support.JettyHeadersAdapter;
 import org.springframework.http.support.Netty4HeadersAdapter;
 import org.springframework.http.support.Netty5HeadersAdapter;
@@ -233,12 +235,12 @@ class HeadersAdaptersTests {
 	static Stream<Arguments> headers() {
 		return Stream.of(
 				argumentSet("Map", CollectionUtils.toMultiValueMap(new LinkedCaseInsensitiveMap<>(8, Locale.ENGLISH))),
-				//TODO add HttpComponentsHeaderAdapter
 				argumentSet("Netty", new Netty4HeadersAdapter(new DefaultHttpHeaders())),
 				argumentSet("Netty5", new Netty5HeadersAdapter(io.netty5.handler.codec.http.headers.HttpHeaders.newHeaders())),
 				argumentSet("Tomcat", new TomcatHeadersAdapter(new MimeHeaders())),
 				argumentSet("Undertow", new UndertowHeadersAdapter(new HeaderMap())),
-				argumentSet("Jetty", new JettyHeadersAdapter(HttpFields.build()))
+				argumentSet("Jetty", new JettyHeadersAdapter(HttpFields.build())),
+				argumentSet("HttpComponents", new HttpComponentsHeadersAdapter(new HttpGet("https://example.com")))
 		);
 	}
 

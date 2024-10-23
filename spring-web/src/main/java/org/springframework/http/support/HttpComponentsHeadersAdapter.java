@@ -21,8 +21,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -32,7 +35,7 @@ import org.apache.hc.core5.http.HttpMessage;
 import org.springframework.http.HttpHeaders;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
+import org.springframework.util.LinkedCaseInsensitiveMap;
 import org.springframework.util.MultiValueMap;
 
 /**
@@ -91,14 +94,14 @@ public final class HttpComponentsHeadersAdapter implements MultiValueMap<String,
 
 	@Override
 	public Map<String, String> toSingleValueMap() {
-		Map<String, String> map = CollectionUtils.newLinkedHashMap(size());
+		Map<String, String> map = new LinkedCaseInsensitiveMap<>(this.message.getHeaders().length, Locale.ROOT);
 		this.message.headerIterator().forEachRemaining(h -> map.putIfAbsent(h.getName(), h.getValue()));
 		return map;
 	}
 
 	@Override
 	public int size() {
-		return this.message.getHeaders().length;
+		return keySet().size();
 	}
 
 	@Override
@@ -162,18 +165,14 @@ public final class HttpComponentsHeadersAdapter implements MultiValueMap<String,
 
 	@Override
 	public Set<String> keySet() {
-		Set<String> keys = CollectionUtils.newLinkedHashSet(size());
-		for (Header header : this.message.getHeaders()) {
-			keys.add(header.getName());
-		}
-		return keys;
+		return new HeaderNames();
 	}
 
 	@Override
 	public Collection<List<String>> values() {
-		Collection<List<String>> values = new ArrayList<>(size());
-		for (Header header : this.message.getHeaders()) {
-			values.add(get(header.getName()));
+		Collection<List<String>> values = new ArrayList<>(this.message.getHeaders().length);
+		for (String headerName : keySet()) {
+			values.add(get(headerName));
 		}
 		return values;
 	}
@@ -199,10 +198,34 @@ public final class HttpComponentsHeadersAdapter implements MultiValueMap<String,
 		return HttpHeaders.formatHeaders(this);
 	}
 
+	private class HeaderNames extends AbstractSet<String> {
+
+		private static Set<String> deduplicate(Header[] original) {
+			Set<String> encountered = new HashSet<>(original.length);
+			Set<String> filtered = new LinkedHashSet<>(original.length);
+			for (Header h : original) {
+				String encounterKey = h.getName().toLowerCase(Locale.ROOT);
+				if (encountered.add(encounterKey)) {
+					filtered.add(h.getName());
+				}
+			}
+			return filtered;
+		}
+
+		@Override
+		public Iterator<String> iterator() {
+			return new HeaderNamesIterator(deduplicate(message.getHeaders()).iterator());
+		}
+
+		@Override
+		public int size() {
+			return deduplicate(message.getHeaders()).size();
+		}
+	}
 
 	private class EntryIterator implements Iterator<Entry<String, List<String>>> {
 
-		private final Iterator<Header> iterator = message.headerIterator();
+		private final Iterator<String> iterator = keySet().iterator();
 
 		@Override
 		public boolean hasNext() {
@@ -211,7 +234,7 @@ public final class HttpComponentsHeadersAdapter implements MultiValueMap<String,
 
 		@Override
 		public Entry<String, List<String>> next() {
-			return new HeaderEntry(this.iterator.next().getName());
+			return new HeaderEntry(this.iterator.next());
 		}
 	}
 
@@ -242,5 +265,40 @@ public final class HttpComponentsHeadersAdapter implements MultiValueMap<String,
 			return previousValues;
 		}
 	}
+
+	private final class HeaderNamesIterator implements Iterator<String> {
+
+		private final Iterator<String> iterator;
+
+		@Nullable
+		private String currentName;
+
+		private HeaderNamesIterator(Iterator<String> iterator) {
+			this.iterator = iterator;
+		}
+
+		@Override
+		public boolean hasNext() {
+			return this.iterator.hasNext();
+		}
+
+		@Override
+		public String next() {
+			this.currentName = this.iterator.next();
+			return this.currentName;
+		}
+
+		@Override
+		public void remove() {
+			if (this.currentName == null) {
+				throw new IllegalStateException("No current Header in iterator");
+			}
+			if (!message.containsHeader(this.currentName)) {
+				throw new IllegalStateException("Header not present: " + this.currentName);
+			}
+			message.removeHeaders(this.currentName);
+		}
+	}
+
 
 }
