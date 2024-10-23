@@ -23,6 +23,7 @@ import java.lang.annotation.Target;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import io.netty.handler.codec.http.DefaultHttpHeaders;
@@ -33,6 +34,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.support.JettyHeadersAdapter;
 import org.springframework.http.support.Netty4HeadersAdapter;
 import org.springframework.http.support.Netty5HeadersAdapter;
@@ -80,33 +82,49 @@ class HeadersAdaptersTests {
 	void toSingleValueMapIsCaseInsensitive(MultiValueMap<String, String> headers) {
 		addMultipleCaseHeaders(headers);
 		assertThat(headers.toSingleValueMap()).as("toSingleValueMap")
-				.hasSize(2)
 				.containsEntry("TestHeader", "first")
-				.containsEntry("SecondHeader", "value");
+				.containsEntry("SecondHeader", "value")
+				.hasSize(2);
 	}
 
 	@ParameterizedHeadersTest
 	void keySetIsCaseInsensitive(MultiValueMap<String, String> headers) {
 		addMultipleCaseHeaders(headers);
 		assertThat(headers.keySet()).as("keySet")
-				.hasSize(2)
-				.containsExactlyInAnyOrder("TestHeader", "SecondHeader");
+				.containsExactlyInAnyOrder("TestHeader", "SecondHeader")
+				.hasSize(2);
+	}
+
+	@ParameterizedHeadersTest
+	void shouldRemoveCaseInsensitiveFromKeySet(MultiValueMap<String, String> headers) {
+		headers.add("TestHeader", "first");
+		headers.add("TestHEADER", "second");
+		headers.add("TestHeader", "third");
+
+		Iterator<String> iterator = headers.keySet().iterator();
+		iterator.next();
+		iterator.remove();
+
+		assertThat(headers)
+				.doesNotContainKey("TestHeader")
+				.doesNotContainKey("TestHEADER")
+				.doesNotContainKey("testheader")
+				.hasSize(0);
 	}
 
 	@ParameterizedHeadersTest
 	void valuesIsCaseInsensitive(MultiValueMap<String, String> headers) {
 		addMultipleCaseHeaders(headers);
 		assertThat(headers.values()).as("values")
-				.hasSize(2)
 				.anySatisfy(values -> assertThat(values).containsExactly("first", "second", "third"))
-				.anySatisfy(values -> assertThat(values).containsExactly("value"));
+				.anySatisfy(values -> assertThat(values).containsExactly("value"))
+				.hasSize(2);
 	}
 
 	@ParameterizedHeadersTest
 	void entrySetIsCaseInsensitive(MultiValueMap<String, String> headers) {
 		addMultipleCaseHeaders(headers);
 		assertThat(headers.entrySet()).as("entrySet")
-				.hasSize(2)
 				.anySatisfy(e -> {
 					assertThat(e.getKey()).isEqualToIgnoringCase("TestHeader");
 					assertThat(e.getValue()).containsExactly("first", "second", "third");
@@ -114,7 +132,21 @@ class HeadersAdaptersTests {
 				.anySatisfy(e -> {
 					assertThat(e.getKey()).isEqualTo("SecondHeader");
 					assertThat(e.getValue()).containsExactly("value");
-				});
+				})
+				.hasSize(2);
+	}
+
+	@ParameterizedHeadersTest // gh-33730
+	void copyAllFromEntrySetShouldNotCreateDuplicateValues(MultiValueMap<String, String> headers) {
+		addMultipleCaseHeaders(headers);
+
+		HttpHeaders headers2 = new HttpHeaders();
+		for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
+			headers2.addAll(entry.getKey(), entry.getValue());
+		}
+
+		assertThat(headers2.get("TestHeader")).as("TestHeader")
+				.containsExactly("first", "second", "third");
 	}
 
 	@ParameterizedHeadersTest
@@ -201,7 +233,7 @@ class HeadersAdaptersTests {
 	static Stream<Arguments> headers() {
 		return Stream.of(
 				argumentSet("Map", CollectionUtils.toMultiValueMap(new LinkedCaseInsensitiveMap<>(8, Locale.ENGLISH))),
-//				//TODO add HttpComponentsHeaderAdapter
+				//TODO add HttpComponentsHeaderAdapter
 				argumentSet("Netty", new Netty4HeadersAdapter(new DefaultHttpHeaders())),
 				argumentSet("Netty5", new Netty5HeadersAdapter(io.netty5.handler.codec.http.headers.HttpHeaders.newHeaders())),
 				argumentSet("Tomcat", new TomcatHeadersAdapter(new MimeHeaders())),

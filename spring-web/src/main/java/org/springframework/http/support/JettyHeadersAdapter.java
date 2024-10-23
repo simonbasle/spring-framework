@@ -16,13 +16,15 @@
 
 package org.springframework.http.support;
 
+import java.util.AbstractSet;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
-import java.util.stream.Stream;
+import java.util.Set;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -39,9 +41,10 @@ import org.springframework.util.MultiValueMap;
  * @author Rossen Stoyanchev
  * @author Juergen Hoeller
  * @author Sam Brannen
+ * @author Simon Baslé
  * @since 6.1
  */
-public final class JettyHeadersAdapter extends AbstractHeadersAdapter {
+public final class JettyHeadersAdapter implements MultiValueMap<String, String> {
 
 	private final HttpFields headers;
 
@@ -111,6 +114,11 @@ public final class JettyHeadersAdapter extends AbstractHeadersAdapter {
 			}
 		});
 		return singleValueMap;
+	}
+
+	@Override
+	public int size() {
+		return this.headers.getFieldNamesCollection().size();
 	}
 
 	@Override
@@ -206,6 +214,32 @@ public final class JettyHeadersAdapter extends AbstractHeadersAdapter {
 		mutableHttpFields.clear();
 	}
 
+	@Override
+	public Set<String> keySet() {
+		return new HeaderNames();
+	}
+
+	@Override
+	public Collection<List<String>> values() {
+		return this.headers.getFieldNamesCollection().stream()
+				.map(this.headers::getValuesList).toList();
+	}
+
+	@Override
+	public Set<Entry<String, List<String>>> entrySet() {
+		return new AbstractSet<>() {
+			@Override
+			public Iterator<Entry<String, List<String>>> iterator() {
+				return new EntryIterator();
+			}
+
+			@Override
+			public int size() {
+				return headers.getFieldNamesCollection().size();
+			}
+		};
+	}
+
 	private HttpFields.Mutable mutableFields() {
 		if (this.mutable == null) {
 			throw new IllegalStateException("Immutable headers");
@@ -218,24 +252,20 @@ public final class JettyHeadersAdapter extends AbstractHeadersAdapter {
 		return HttpHeaders.formatHeaders(this);
 	}
 
-	@Override
-	protected Stream<String> getOriginalHeaderNames() {
-		return this.headers.getFieldNamesCollection().stream();
-	}
 
-	@Override
-	protected void originalRemove(String key) {
-		mutableFields().remove(key);
-	}
+	private class EntryIterator implements Iterator<Entry<String, List<String>>> {
 
-	@Override
-	protected boolean originalContains(String key) {
-		return this.headers.contains(key);
-	}
+		private final Iterator<String> names = headers.getFieldNamesCollection().iterator();
 
-	@Override
-	protected Entry<String, List<String>> listAdaptingEntry(String key) {
-		return new HeaderEntry(key);
+		@Override
+		public boolean hasNext() {
+			return this.names.hasNext();
+		}
+
+		@Override
+		public Entry<String, List<String>> next() {
+			return new HeaderEntry(this.names.next());
+		}
 	}
 
 
@@ -263,6 +293,56 @@ public final class JettyHeadersAdapter extends AbstractHeadersAdapter {
 			List<String> previousValues = headers.getValuesList(this.key);
 			mutableHttpFields.put(this.key, value);
 			return previousValues;
+		}
+	}
+
+
+	private class HeaderNames extends AbstractSet<String> {
+
+		@Override
+		public Iterator<String> iterator() {
+			return new HeaderNamesIterator(headers.getFieldNamesCollection().iterator());
+		}
+
+		@Override
+		public int size() {
+			return headers.getFieldNamesCollection().size();
+		}
+	}
+
+
+	private final class HeaderNamesIterator implements Iterator<String> {
+
+		private final Iterator<String> iterator;
+
+		@Nullable
+		private String currentName;
+
+		private HeaderNamesIterator(Iterator<String> iterator) {
+			this.iterator = iterator;
+		}
+
+		@Override
+		public boolean hasNext() {
+			return this.iterator.hasNext();
+		}
+
+		@Override
+		public String next() {
+			this.currentName = this.iterator.next();
+			return this.currentName;
+		}
+
+		@Override
+		public void remove() {
+			HttpFields.Mutable mutableHttpFields = mutableFields();
+			if (this.currentName == null) {
+				throw new IllegalStateException("No current Header in iterator");
+			}
+			if (!headers.contains(this.currentName)) {
+				throw new IllegalStateException("Header not present: " + this.currentName);
+			}
+			mutableHttpFields.remove(this.currentName);
 		}
 	}
 

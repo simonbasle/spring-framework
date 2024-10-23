@@ -40,6 +40,7 @@ import org.springframework.util.MultiValueMap;
  *
  * @author Brian Clozel
  * @author Sam Brannen
+ * @author Simon Baslé
  * @since 5.1.1
  */
 class TomcatHeadersAdapter implements MultiValueMap<String, String> {
@@ -290,11 +291,17 @@ class TomcatHeadersAdapter implements MultiValueMap<String, String> {
 			if (this.currentName == null) {
 				throw new IllegalStateException("No current Header in iterator");
 			}
-			int index = headers.findHeader(this.currentName, 0);
-			if (index == -1) {
+			//implement a mix of removeHeader(String) and removeHeader(int)
+			boolean found = false;
+			for (int i = 0; i < headers.size(); i++) {
+				if (headers.getName(i).equalsIgnoreCase(this.currentName)) {
+					headers.removeHeader(i--);
+					found = true;
+				}
+			}
+			if (!found) {
 				throw new IllegalStateException("Header not present: " + this.currentName);
 			}
-			headers.removeHeader(index);
 		}
 	}
 
