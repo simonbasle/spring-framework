@@ -78,14 +78,14 @@ class HttpHeadersAssertTests {
 	@Test
 	void doesNotContainHeaders() {
 		assertThat(Map.of("first", "1", "third", "3"))
-				.doesNotContainsHeaders("second", "fourth");
+				.doesNotContainHeaders("second", "fourth");
 	}
 
 	@Test
 	void doesNotContainHeadersWithSeveralNamesPresent() {
 		Map<String, String> map = Map.of("first", "1", "second", "2", "third", "3");
 		assertThatExceptionOfType(AssertionError.class)
-				.isThrownBy(() -> assertThat(map).doesNotContainsHeaders("first", "another-wrong-name", "second"))
+				.isThrownBy(() -> assertThat(map).doesNotContainHeaders("first", "another-wrong-name", "second"))
 				.withMessageContainingAll("HTTP headers", "first", "second");
 	}
 
@@ -175,6 +175,273 @@ class HttpHeadersAssertTests {
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(() -> assertThat(map).hasValue("wrong-name", instant.minusSeconds(1)))
 				.withMessageContainingAll("HTTP header", "header", "wrong-name");
+	}
+
+	@Test
+	void hasSingleValueWithStringMatch() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.add("header", "a");
+		assertThat(headers).hasSingleValue("header", "a");
+	}
+
+	@Test
+	void hasSingleValueWithSecondaryValues() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.addAll("header", List.of("first", "second", "third"));
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> assertThat(headers).hasSingleValue("header", "first"))
+				.withMessage("Expected HTTP header 'header' to be present without secondary values, " +
+						"but found <2> secondary values");
+	}
+
+	@Test
+	void hasSingleValueWithLongMatch() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.add("header", "123");
+		assertThat(headers).hasSingleValue("header", 123);
+	}
+
+	@Test
+	void hasSingleValueWithLongMatchButSecondaryValues() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.addAll("header", List.of("123", "456", "789"));
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> assertThat(headers).hasSingleValue("header", 123))
+				.withMessage("Expected HTTP header 'header' to be present without secondary values, " +
+						"but found <2> secondary values");
+	}
+
+	@Test
+	void hasSingleValueWithInstantMatch() {
+		Instant instant = Instant.now();
+		HttpHeaders headers = new HttpHeaders();
+		headers.setInstant("header", instant);
+		assertThat(headers).hasSingleValue("header", instant);
+	}
+
+	@Test
+	void hasSingleValueWithInstantAndSecondaryValues() {
+		Instant instant = Instant.now();
+		HttpHeaders headers = new HttpHeaders();
+		headers.setInstant("header", instant);
+		headers.add("header", "second");
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> assertThat(headers).hasSingleValue("header", instant.minusSeconds(30)))
+				.withMessage("Expected HTTP header 'header' to be present without secondary values, " +
+						"but found <1> secondary values");
+	}
+
+	@Test
+	void hasSameSizeAs() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.add("name1", "value1");
+		headers.add("name2", "value2");
+
+		HttpHeaders other = new HttpHeaders();
+		other.add("name3", "value3");
+		other.add("name4", "value4");
+
+		assertThat(headers).hasSameSizeAs(other);
+	}
+
+	@Test
+	void hasSameSizeAsWithSmallerOther() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.add("name1", "value1");
+		headers.add("name2", "value2");
+
+		HttpHeaders other = new HttpHeaders();
+		other.add("name3", "value3");
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> assertThat(headers).hasSameSizeAs(other))
+				.withMessageContainingAll("check headers have same size as '", other.toString(),
+						"Expected size: 1 but was: 2");
+	}
+
+	@Test
+	void containsOnlyHeaders() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.add("name1", "value1");
+		headers.add("name2", "value2");
+
+		assertThat(headers).containsOnlyHeaders("name2", "name1");
+	}
+
+	@Test
+	void containsOnlyHeadersWithMissingOne() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.add("name1", "value1");
+		headers.add("name2", "value2");
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> assertThat(headers).containsOnlyHeaders("name1", "name2", "name3"))
+				.withMessageContainingAll("check headers contains only HTTP headers",
+						"could not find the following element(s)", "[\"name3\"]");
+	}
+
+	@Test
+	void containsOnlyHeadersWithExtraOne() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.add("name1", "value1");
+		headers.add("name2", "value2");
+		headers.add("name3", "value3");
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> assertThat(headers).containsOnlyHeaders("name1", "name2"))
+				.withMessageContainingAll("check headers contains only HTTP headers",
+						"the following element(s) were unexpected", "[\"name3\"]");
+	}
+
+	@Test
+	void hasExactlyValues() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.addAll("name", List.of("value1", "value2"));
+		headers.add("otherName", "otherValue");
+
+		assertThat(headers).hasExactlyValues("name", List.of("value1", "value2"));
+	}
+
+	@Test
+	void hasExactlyValuesWithMissingOne() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.addAll("name", List.of("value1", "value2"));
+		headers.add("otherName", "otherValue");
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> assertThat(headers).hasExactlyValues("name", List.of("value1", "value2", "value3")))
+				.withMessageContainingAll("check all values of HTTP header 'name'",
+						"to contain exactly (and in same order)",
+						"could not find the following elements", "[\"value3\"]");
+	}
+
+	@Test
+	void hasExactlyValuesWithExtraOne() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.addAll("name", List.of("value1", "value2"));
+		headers.add("otherName", "otherValue");
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> assertThat(headers).hasExactlyValues("name", List.of("value1")))
+				.withMessageContainingAll("check all values of HTTP header 'name'",
+						"to contain exactly (and in same order)",
+						"some elements were not expected", "[\"value2\"]");
+	}
+
+	@Test
+	void hasExactlyValuesWithWrongOrder() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.addAll("name", List.of("value1", "value2"));
+		headers.add("otherName", "otherValue");
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> assertThat(headers).hasExactlyValues("name", List.of("value2", "value1")))
+				.withMessageContainingAll("check all values of HTTP header 'name'",
+						"to contain exactly (and in same order)",
+						"there were differences at these indexes",
+						"element at index 0: expected \"value2\" but was \"value1\"",
+						"element at index 1: expected \"value1\" but was \"value2\"");
+	}
+
+	@Test
+	void hasExactlyValuesInAnyOrder() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.addAll("name", List.of("value1", "value2"));
+		headers.add("otherName", "otherValue");
+
+		assertThat(headers).hasExactlyValuesInAnyOrder("name", List.of("value1", "value2"));
+	}
+
+	@Test
+	void hasExactlyValuesInAnyOrderWithDifferentOrder() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.addAll("name", List.of("value1", "value2"));
+		headers.add("otherName", "otherValue");
+
+		assertThat(headers).hasExactlyValuesInAnyOrder("name", List.of("value2", "value1"));
+	}
+
+	@Test
+	void hasExactlyValuesInAnyOrderWithMissingOne() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.addAll("name", List.of("value1", "value2"));
+		headers.add("otherName", "otherValue");
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> assertThat(headers).hasExactlyValuesInAnyOrder("name",
+						List.of("value1", "value2", "value3")))
+				.withMessageContainingAll("check all values of HTTP header 'name'",
+						"to contain exactly in any order",
+						"could not find the following elements", "[\"value3\"]");
+	}
+
+	@Test
+	void hasExactlyValuesInAnyOrderWithExtraOne() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.addAll("name", List.of("value1", "value2"));
+		headers.add("otherName", "otherValue");
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> assertThat(headers).hasExactlyValuesInAnyOrder("name", List.of("value1")))
+				.withMessageContainingAll("check all values of HTTP header 'name'",
+						"to contain exactly in any order",
+						"the following elements were unexpected", "[\"value2\"]");
+	}
+
+	@Test
+	void containsValue() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.addAll("name", List.of("value1", "value2"));
+
+		assertThat(headers).containsValue("name", "value2");
+	}
+
+	@Test
+	void containsValueWithUnexpectedValue() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.addAll("name", List.of("value1", "value2"));
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> assertThat(headers).containsValue("name", "value3"))
+				.withMessageContainingAll("check values for HTTP header 'name' contains",
+						"could not find the following element(s)", "[\"value3\"]");
+	}
+
+	@Test
+	void hasSecondaryValues() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.addAll("name", List.of("value1", "value2"));
+
+		assertThat(headers).hasSecondaryValues("name");
+	}
+
+	@Test
+	void hasSecondaryValuesWithNoSecondary() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.add("name", "value1");
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> assertThat(headers).hasSecondaryValues("name"))
+				.withMessage("Expected HTTP header 'name' to have secondary values, but only a primary value was found");
+	}
+
+	@Test
+	void doesNotHaveSecondaryValues() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.add("name", "value1");
+
+		assertThat(headers).doesNotHaveSecondaryValues("name");
+	}
+
+	@Test
+	void doesNotHaveSecondaryValuesWithSecondary() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.addAll("name", List.of("value1", "value2", "value3"));
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> assertThat(headers).doesNotHaveSecondaryValues("name"))
+				.withMessage("Expected HTTP header 'name' to be present without secondary values, " +
+						"but found <2> secondary values");
 	}
 
 
